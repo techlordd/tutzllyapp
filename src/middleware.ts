@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const publicPaths = ['/login', '/api/auth'];
+const publicPaths = ['/login', '/api/auth', '/api/setup'];
 
 // Uses jose (Edge-compatible) instead of jsonwebtoken — required for Vercel Edge Runtime
 export async function middleware(request: NextRequest) {
