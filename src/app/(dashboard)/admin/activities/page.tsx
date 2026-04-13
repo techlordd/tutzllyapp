@@ -20,7 +20,7 @@ interface Activity {
 
 export default function ActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [sessions, setSessions] = useState<{ssid: string; student_name: string; tutor_firstname: string; tutor_lastname: string; course_name: string}[]>([]);
+  const [sessions, setSessions] = useState<{ssid: string; tutor_id: string; tutor_firstname: string; tutor_lastname: string; student_id: string; student_name: string; course_name: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
