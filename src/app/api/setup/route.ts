@@ -4,11 +4,19 @@ import { join } from 'path';
 import { query } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 
-// Only callable in development. On Vercel production use your DB provider's
-// SQL console to run src/lib/schema.sql directly.
-export async function POST() {
-  if (process.env.NODE_ENV !== 'development') {
-    return NextResponse.json({ error: 'Setup endpoint is disabled in production. Run schema.sql manually via your database provider.' }, { status: 403 });
+// Protected by SETUP_SECRET env var.
+// In production: set SETUP_SECRET in Vercel env vars, call this endpoint once
+// with the header `x-setup-secret: <your-secret>`, then delete the env var.
+export async function POST(request: Request) {
+  const setupSecret = process.env.SETUP_SECRET;
+
+  if (!setupSecret) {
+    return NextResponse.json({ error: 'Setup is disabled. Set SETUP_SECRET env var to enable.' }, { status: 403 });
+  }
+
+  const incomingSecret = request.headers.get('x-setup-secret');
+  if (incomingSecret !== setupSecret) {
+    return NextResponse.json({ error: 'Invalid or missing x-setup-secret header.' }, { status: 401 });
   }
 
   try {
