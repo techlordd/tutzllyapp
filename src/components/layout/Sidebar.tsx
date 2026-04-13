@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
-  School, LogOut, Settings, Bell
+  School, LogOut, Settings, Bell, Upload
 } from 'lucide-react';
 
 interface NavItem {
@@ -30,6 +30,7 @@ const adminNav: NavItem[] = [
   { label: 'Class Activities', href: '/admin/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/admin/grades', icon: BarChart3 },
   { label: 'Messages', href: '/admin/messages', icon: MessageSquare },
+  { label: 'Import CSV', href: '/admin/import', icon: Upload },
 ];
 
 const tutorNav: NavItem[] = [
