@@ -11,7 +11,8 @@ import toast from 'react-hot-toast';
 
 interface Schedule {
   schedule_id: string; student_name: string; student_id: string;
-  tutor_name: string; tutor_id: string; course_name: string;
+  tutor_name: string; tutor_id: string; tutor_email: string; course_name: string;
+  course_id: number; course_code: string;
   day: string; session_start_time: string; session_end_time: string;
   duration: number; zoom_link: string; meeting_id: string; meeting_passcode: string;
   time_zone: string; assign_status: string; year: string;
