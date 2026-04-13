@@ -27,6 +27,7 @@ interface ImportResult {
   inserted: number;
   skipped: number;
   errors: string[];
+  log?: string[];
   total: number;
   defaultPassword?: string;
 }
@@ -37,6 +38,7 @@ export default function ImportPage() {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [showLog, setShowLog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (f: File) => {
@@ -62,6 +64,7 @@ export default function ImportPage() {
 
     setLoading(true);
     setResult(null);
+    setShowLog(false);
     try {
       const form = new FormData();
       form.append('type', entityType);
@@ -121,7 +124,7 @@ export default function ImportPage() {
             <div className="relative">
               <select
                 value={entityType}
-                onChange={e => { setEntityType(e.target.value); setResult(null); }}
+                onChange={e => { setEntityType(e.target.value); setResult(null); setShowLog(false); }}
                 required
                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent pr-10"
               >
@@ -242,6 +245,43 @@ export default function ImportPage() {
                     <span className="font-mono">{err}</span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {result.log && result.log.length > 0 && (
+              <div className="space-y-2 pt-1 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setShowLog(v => !v)}
+                    className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 transition-colors"
+                  >
+                    <ChevronDown size={13} className={cn('transition-transform', showLog && 'rotate-180')} />
+                    Debug Log ({result.log.length} lines)
+                  </button>
+                  {showLog && (
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(result.log!.join('\n'))}
+                      className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                    >
+                      Copy
+                    </button>
+                  )}
+                </div>
+                {showLog && (
+                  <pre className="text-xs font-mono bg-gray-950 rounded-xl p-4 max-h-96 overflow-auto leading-relaxed">
+                    {result.log.map((line, i) => {
+                      const color =
+                        line.startsWith('[OK]')   ? 'text-green-400' :
+                        line.startsWith('[SKIP]') ? 'text-amber-300' :
+                        line.startsWith('[ERR]')  ? 'text-red-400'   :
+                        line.startsWith('[WARN]') ? 'text-yellow-300' :
+                                                    'text-gray-400';
+                      return <span key={i} className={`block ${color}`}>{line}</span>;
+                    })}
+                  </pre>
+                )}
               </div>
             )}
           </div>

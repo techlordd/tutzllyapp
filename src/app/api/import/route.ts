@@ -294,13 +294,30 @@ export async function POST(request: NextRequest) {
   }
 
   if (records.length === 0) {
-    return NextResponse.json({ inserted: 0, skipped: 0, errors: [], total: 0, message: 'No records found in CSV' });
+    return NextResponse.json({ inserted: 0, skipped: 0, errors: [], log: ['[INFO] No records found in CSV'], total: 0, message: 'No records found in CSV' });
   }
 
   // Import in a transaction
   let inserted = 0;
   let skipped = 0;
   const errors: string[] = [];
+  const log: string[] = [];
+
+  // Column mapping analysis
+  const csvHeaders = Object.keys(records[0]);
+  const mappedHeaders = csvHeaders.filter(h => columnMap[h]);
+  const unmappedHeaders = csvHeaders.filter(h => !columnMap[h]);
+  log.push(`[INFO] Entity: ${type}  |  table: ${config.table}  |  rows: ${records.length}`);
+  log.push(`[INFO] CSV columns: ${csvHeaders.length} total — ${mappedHeaders.length} mapped, ${unmappedHeaders.length} ignored`);
+  if (unmappedHeaders.length > 0) {
+    log.push(`[WARN] Ignored columns: ${unmappedHeaders.join(' | ')}`);
+  }
+  log.push('[INFO] Column mappings:');
+  for (const h of mappedHeaders) {
+    log.push(`       ${h}  →  ${columnMap[h]}`);
+  }
+  log.push('[INFO] --- Row processing ---');
+
   const client = await pool.connect();
 
   try {
@@ -358,20 +375,29 @@ export async function POST(request: NextRequest) {
         const sql = `INSERT INTO ${config.table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT DO NOTHING`;
 
         const result = await client.query(sql, vals);
+        const rowKey = config.idField && dbRow[config.idField]
+          ? String(dbRow[config.idField])
+          : dbRow['email'] != null ? String(dbRow['email']) : `row-${i + 1}`;
         if ((result.rowCount ?? 0) === 0) {
           skipped++;
+          log.push(`[SKIP] Row ${i + 1} | ${rowKey} — conflict, already exists`);
         } else {
           inserted++;
+          log.push(`[OK]   Row ${i + 1} | ${rowKey}`);
         }
       } catch (err) {
-        errors.push(`Row ${i + 1}: ${err instanceof Error ? err.message : String(err)}`);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        errors.push(`Row ${i + 1}: ${errMsg}`);
+        log.push(`[ERR]  Row ${i + 1} | ${errMsg}`);
         if (errors.length >= 20) {
           errors.push('Stopped after 20 errors.');
+          log.push('[ERR]  Stopped processing after 20 errors.');
           break;
         }
       }
     }
 
+    log.push(`[INFO] Summary — inserted: ${inserted}, skipped: ${skipped}, errors: ${errors.length}, total: ${records.length}`);
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');
@@ -384,6 +410,7 @@ export async function POST(request: NextRequest) {
     inserted,
     skipped,
     errors,
+    log,
     total: records.length,
     defaultPassword: config.createUser ? 'Tutzlly@123' : undefined,
   });
