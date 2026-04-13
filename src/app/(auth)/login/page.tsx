@@ -5,36 +5,57 @@ import { BookOpen, Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 
+const DEMO_ACCOUNTS = [
+  { role: 'Admin',   email: 'admin@tutzllyacademy.com',          password: 'Admin@Tutzlly1!', color: 'bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30' },
+  { role: 'Tutor',   email: 'demo.tutor@tutzllyacademy.com',   password: 'Tutzlly@123',    color: 'bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30' },
+  { role: 'Student', email: 'demo.student@tutzllyacademy.com', password: 'Tutzlly@123',    color: 'bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30' },
+  { role: 'Parent',  email: 'demo.parent@tutzllyacademy.com',  password: 'Tutzlly@123',    color: 'bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30' },
+];
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState<string | null>(null);
   const router = useRouter();
   const { setUser } = useAuthStore();
+
+  const doLogin = async (loginEmail: string, loginPassword: string) => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    setUser(data.user);
+    router.push(`/${data.user.role}`);
+    return data.user;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Login failed');
-        return;
-      }
-      setUser(data.user);
+      await doLogin(email, password);
       toast.success('Welcome back!');
-      const role = data.user.role;
-      router.push(`/${role}`);
-    } catch {
-      toast.error('Network error. Please try again.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Network error. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async (demoEmail: string, demoPassword: string, role: string) => {
+    setDemoLoading(role);
+    try {
+      await doLogin(demoEmail, demoPassword);
+      toast.success(`Signed in as Demo ${role}`);
+    } catch {
+      toast.error(`Demo ${role} account not found. Run POST /api/setup first.`);
+    } finally {
+      setDemoLoading(null);
     }
   };
 
@@ -109,13 +130,28 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Role badges */}
-        <div className="flex justify-center gap-2 mt-6 flex-wrap">
-          {['Admin', 'Tutor', 'Student', 'Parent'].map((role) => (
-            <span key={role} className="text-xs px-3 py-1 bg-white/10 text-white/60 rounded-full border border-white/10">
-              {role}
-            </span>
-          ))}
+        {/* Demo Access */}
+        <div className="mt-4 bg-white/5 border border-white/10 rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-xs text-white/40 px-2 shrink-0">Demo Access</span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+          <p className="text-xs text-white/30 text-center mb-3">Click any role to sign in instantly</p>
+          <div className="grid grid-cols-2 gap-2">
+            {DEMO_ACCOUNTS.map(({ role, email: demoEmail, password: demoPassword, color }) => (
+              <button
+                key={role}
+                onClick={() => handleDemoLogin(demoEmail, demoPassword, role)}
+                disabled={!!demoLoading || loading}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${color} disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {demoLoading === role
+                  ? <><Loader2 size={13} className="animate-spin" /> Signing in...</>
+                  : role}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
