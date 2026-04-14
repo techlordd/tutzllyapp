@@ -22,11 +22,12 @@ export async function POST(request: Request) {
   try {
     // ── Pre-migration: add academy_id to existing tables before running schema ──
     // (schema.sql tries to CREATE INDEXes on academy_id; those fail if the column
-    //  doesn't exist on tables that were created by an older schema version)
+    //  doesn't exist on tables that were created by an older schema version.
+    //  Using plain INTEGER avoids a dependency on the academies table existing yet.)
     for (const table of ['tutors', 'students', 'parents', 'courses', 'tutor_course_assignments',
                           'student_enrollments', 'schedules', 'sessions', 'class_activities', 'grade_book']) {
       try {
-        await query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE`);
+        await query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS academy_id INTEGER`);
       } catch { /* table doesn't exist yet — schema.sql will create it with the column */ }
     }
 
