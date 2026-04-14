@@ -18,10 +18,9 @@ export default function SelectAcademyPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { setUser, setAcademyContext } = useAuthStore();
 
   useEffect(() => {
-    // Academies are passed via sessionStorage from the login flow
     const stored = sessionStorage.getItem('pending_academies');
     if (stored) {
       try {
@@ -30,7 +29,6 @@ export default function SelectAcademyPage() {
         setError('Failed to load academy list. Please log in again.');
       }
     } else {
-      // Redirect to login if no pending academies
       router.replace('/login');
     }
   }, [router]);
@@ -50,9 +48,19 @@ export default function SelectAcademyPage() {
         return;
       }
       sessionStorage.removeItem('pending_academies');
-      // Redirect based on role in the selected academy
-      const academy = academies.find(a => a.id === academyId);
-      const role = academy?.role || data.role || 'admin';
+      // Update auth store with the newly selected context
+      if (data.user) setUser(data.user);
+      if (data.academy_context) {
+        setAcademyContext({
+          current_academy_id: data.academy_context.current_academy_id ?? null,
+          is_super_admin: data.academy_context.is_super_admin ?? false,
+          roles: data.academy_context.roles ?? [],
+          academy: data.academy_context.academy ?? null,
+        });
+      }
+      // Redirect using role from the academy list (most reliable)
+      const pickedAcademy = academies.find(a => a.id === academyId);
+      const role = pickedAcademy?.role ?? data.user?.role ?? 'admin';
       router.push(`/${role}`);
     } catch {
       setError('Network error. Please try again.');
@@ -82,7 +90,7 @@ export default function SelectAcademyPage() {
               key={academy.id}
               onClick={() => selectAcademy(academy.id)}
               disabled={loading}
-              className="flex items-start gap-4 p-5 bg-slate-800 border border-slate-700 rounded-2xl hover:border-blue-500 hover:bg-slate-750 transition-all text-left group disabled:opacity-50"
+              className="flex items-start gap-4 p-5 bg-slate-800 border border-slate-700 rounded-2xl hover:border-blue-500 transition-all text-left group disabled:opacity-50"
             >
               <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
                 {academy.logo_url ? (

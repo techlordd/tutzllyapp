@@ -54,8 +54,8 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await doLogin(email, password);
-      toast.success('Welcome back!');
+      const user = await doLogin(email, password);
+      if (user) toast.success('Welcome back!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Network error. Please try again.');
     } finally {
@@ -66,8 +66,8 @@ export default function LoginPage() {
   const handleDemoLogin = async (demoEmail: string, demoPassword: string, role: string) => {
     setDemoLoading(role);
     try {
-      await doLogin(demoEmail, demoPassword);
-      toast.success(`Signed in as Demo ${role}`);
+      const user = await doLogin(demoEmail, demoPassword);
+      if (user) toast.success(`Signed in as Demo ${role}`);
     } catch {
       toast.error(`Demo ${role} account not found. Run POST /api/setup first.`);
     } finally {

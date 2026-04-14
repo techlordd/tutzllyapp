@@ -73,7 +73,8 @@ export async function generateFullToken(
     activeAcademyId = roleRows[0].academy_id;
   }
 
-  const activeRole = roleRows.find(r => r.academy_id === activeAcademyId)?.role ?? user.role;
+  const activeRole = roleRows.find(r => r.academy_id === activeAcademyId)?.role
+    ?? (isSuperAdmin ? 'admin' : user.role);
 
   const payload: TokenPayload = {
     id: user.id,

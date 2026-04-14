@@ -33,11 +33,15 @@ export default function BrandingPage() {
   const [form, setForm] = useState<BrandingForm>(DEFAULT_BRANDING);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { setAcademyContext, current_academy_id, is_super_admin, roles, academy } = useAuthStore();
+  const { setAcademyContext, current_academy_id, is_super_admin, roles } = useAuthStore();
 
-  useEffect(() => {
+  const loadBranding = () => {
+    setLoading(true);
     fetch('/api/branding')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(data => {
         if (data.academy) {
           setForm({
@@ -55,7 +59,9 @@ export default function BrandingPage() {
       })
       .catch(() => toast.error('Failed to load branding settings'))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { loadBranding(); }, [current_academy_id]); // re-fetch if super admin switches academy
 
   const handleSave = async () => {
     setSaving(true);

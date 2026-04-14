@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
-import { Building2, Users, ShieldCheck, Plus, RefreshCw } from 'lucide-react';
+import { Building2, Users, ShieldCheck, RefreshCw } from 'lucide-react';
 
 interface AcademyStat {
   id: number;
@@ -17,12 +17,16 @@ interface AcademyStat {
 export default function SuperAdminPage() {
   const [academies, setAcademies] = useState<AcademyStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     fetch('/api/super-admin/academies')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(data => setAcademies(data.academies || []))
-      .catch(console.error)
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -77,7 +81,11 @@ export default function SuperAdminPage() {
             <h2 className="font-semibold text-gray-800">All Academies</h2>
             {loading && <RefreshCw size={16} className="animate-spin text-gray-400" />}
           </div>
-          {academies.length === 0 && !loading ? (
+          {fetchError ? (
+            <div className="text-center py-12 text-red-500 text-sm">
+              Failed to load academies. Make sure you are logged in as a super admin.
+            </div>
+          ) : academies.length === 0 && !loading ? (
             <div className="text-center py-16 text-gray-400">
               <Building2 size={40} className="mx-auto mb-3 opacity-40" />
               <p>No academies yet</p>

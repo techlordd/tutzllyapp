@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, generateFullToken, getUserById, getUserAcademyRoles } from '@/lib/auth';
+import { queryOne } from '@/lib/db';
 
 // POST /api/auth/select-academy
 // Body: { academy_id: number }
@@ -37,12 +38,24 @@ export async function POST(request: NextRequest) {
 
     const newToken = await generateFullToken(user, Number(academy_id));
 
+    // Fetch academy branding to return in context
+    const academy = await queryOne(
+      `SELECT id, academy_id, academy_name, primary_color, secondary_color, accent_color,
+              logo_url, favicon_url, site_title, academy_description, academy_email
+       FROM academies WHERE id = $1`,
+      [Number(academy_id)]
+    );
+
     const response = NextResponse.json({
       user: {
         id: user.id, user_id: user.user_id, username: user.username,
         email: user.email, role: match.role,
+      },
+      academy_context: {
         current_academy_id: match.academy_id,
-        academy_name: match.academy_name,
+        is_super_admin: false,
+        roles: roles,
+        academy,
       },
     });
     response.cookies.set('token', newToken, {

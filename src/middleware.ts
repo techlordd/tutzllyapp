@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const publicPaths = ['/login', '/api/auth', '/api/setup', '/auth/select-academy'];
+const publicPaths = ['/login', '/api/auth', '/api/setup', '/select-academy'];
 
 // Uses jose (Edge-compatible) instead of jsonwebtoken — required for Vercel Edge Runtime
 export async function middleware(request: NextRequest) {
@@ -15,6 +15,10 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
 
   if (!token) {
+    // API routes: return JSON 401 so fetch callers can handle it cleanly
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);
@@ -47,21 +51,23 @@ export async function middleware(request: NextRequest) {
   // If multi-academy is active and no academy selected, redirect to selector
   // (allow super-admin and api routes to pass through)
   if (!currentAcademyId && !isSuperAdmin && !pathname.startsWith('/api/')) {
-    return NextResponse.redirect(new URL('/auth/select-academy', request.url));
+    return NextResponse.redirect(new URL('/select-academy', request.url));
   }
 
-  // Standard role-based route protection
-  if (pathname.startsWith('/admin') && role !== 'admin') {
-    return NextResponse.redirect(new URL(`/${role}`, request.url));
-  }
-  if (pathname.startsWith('/tutor') && role !== 'tutor' && role !== 'admin') {
-    return NextResponse.redirect(new URL(`/${role}`, request.url));
-  }
-  if (pathname.startsWith('/student') && role !== 'student' && role !== 'admin') {
-    return NextResponse.redirect(new URL(`/${role}`, request.url));
-  }
-  if (pathname.startsWith('/parent') && role !== 'parent' && role !== 'admin') {
-    return NextResponse.redirect(new URL(`/${role}`, request.url));
+  // Standard role-based route protection (super admins bypass all role guards)
+  if (!isSuperAdmin) {
+    if (pathname.startsWith('/admin') && role !== 'admin') {
+      return NextResponse.redirect(new URL(`/${role}`, request.url));
+    }
+    if (pathname.startsWith('/tutor') && role !== 'tutor' && role !== 'admin') {
+      return NextResponse.redirect(new URL(`/${role}`, request.url));
+    }
+    if (pathname.startsWith('/student') && role !== 'student' && role !== 'admin') {
+      return NextResponse.redirect(new URL(`/${role}`, request.url));
+    }
+    if (pathname.startsWith('/parent') && role !== 'parent' && role !== 'admin') {
+      return NextResponse.redirect(new URL(`/${role}`, request.url));
+    }
   }
 
   // Attach academy context to request headers for API routes
