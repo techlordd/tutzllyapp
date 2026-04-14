@@ -66,6 +66,7 @@ const parentNav: NavItem[] = [
 const superAdminNav: NavItem[] = [
   { label: 'Super Admin', href: '/super-admin', icon: ShieldCheck },
   { label: 'Academies', href: '/super-admin/academies', icon: Building2 },
+  { label: 'Import CSV', href: '/super-admin/import', icon: Upload },
 ];
 
 const navMap: Record<string, NavItem[]> = {
