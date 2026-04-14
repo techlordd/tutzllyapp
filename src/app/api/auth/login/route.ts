@@ -14,6 +14,27 @@ export async function POST(request: NextRequest) {
 
     const academyRoles = await getUserAcademyRoles(user.id);
 
+    // Super admin (platform-level Tutzlly staff): skip academy selection entirely
+    if (user.role === 'super_admin') {
+      const token = await generateFullToken(user, null);
+      const response = NextResponse.json({
+        user: {
+          id: user.id, user_id: user.user_id, username: user.username,
+          email: user.email, role: 'super_admin',
+          current_academy_id: null, academy_name: null,
+          is_super_admin: true,
+        },
+      });
+      response.cookies.set('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+      });
+      return response;
+    }
+
     // Multiple academies: ask the client to pick one
     if (academyRoles.length > 1) {
       // Issue a pending token (no current_academy_id) and set as cookie

@@ -63,17 +63,18 @@ const parentNav: NavItem[] = [
   { label: 'Messages', href: '/parent/messages', icon: MessageSquare },
 ];
 
+const superAdminNav: NavItem[] = [
+  { label: 'Super Admin', href: '/super-admin', icon: ShieldCheck },
+  { label: 'Academies', href: '/super-admin/academies', icon: Building2 },
+];
+
 const navMap: Record<string, NavItem[]> = {
   admin: adminNav,
   tutor: tutorNav,
   student: studentNav,
   parent: parentNav,
+  super_admin: superAdminNav,
 };
-
-const superAdminNav: NavItem[] = [
-  { label: 'Super Admin', href: '/super-admin', icon: ShieldCheck },
-  { label: 'Academies', href: '/super-admin/academies', icon: Building2 },
-];
 
 interface SidebarProps {
   role: string;
@@ -126,11 +127,12 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
           <span className={cn(
             'text-xs font-semibold px-2.5 py-1 rounded-full capitalize',
             role === 'admin' ? 'bg-red-500/20 text-red-300' :
+            role === 'super_admin' ? 'bg-amber-500/20 text-amber-300' :
             role === 'tutor' ? 'bg-blue-500/20 text-blue-300' :
             role === 'student' ? 'bg-green-500/20 text-green-300' :
             'bg-purple-500/20 text-purple-300'
           )}>
-            {role}
+            {role === 'super_admin' ? 'Super Admin' : role}
           </span>
         </div>
       )}
@@ -166,39 +168,28 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
           );
         })}
 
-        {/* Super Admin section */}
-        {isSuperAdmin && (
+        {/* Return to Control Panel — shown when super admin has switched into an academy */}
+        {isSuperAdmin && role === 'admin' && (
           <>
             {!collapsed && (
-              <p className="text-xs text-slate-500 uppercase tracking-wider px-3 pt-4 pb-1">
-                Super Admin
+              <p className="text-xs text-amber-500/70 uppercase tracking-wider px-3 pt-4 pb-1">
+                Tutzlly Platform
               </p>
             )}
-            {superAdminNav.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-200 group relative',
-                    isActive
-                      ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
-                      : 'text-amber-400 hover:bg-slate-700 hover:text-amber-300'
-                  )}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <Icon size={18} className="flex-shrink-0" />
-                  {!collapsed && <span className="text-sm font-medium truncate">{item.label}</span>}
-                  {collapsed && (
-                    <div className="absolute left-full ml-2 px-2 py-1 bg-slate-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 transition-opacity">
-                      {item.label}
-                    </div>
-                  )}
-                </Link>
-              );
-            })}
+            <button
+              onClick={async () => {
+                await fetch('/api/super-admin/exit-academy', { method: 'POST' });
+                window.location.href = '/super-admin';
+              }}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 w-full transition-all duration-200',
+                'text-amber-400 hover:bg-amber-500/20 hover:text-amber-300'
+              )}
+              title={collapsed ? 'Return to Control Panel' : undefined}
+            >
+              <ShieldCheck size={18} className="flex-shrink-0" />
+              {!collapsed && <span className="text-sm font-medium truncate">Return to Control Panel</span>}
+            </button>
           </>
         )}
       </nav>

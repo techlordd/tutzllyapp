@@ -6,10 +6,11 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 
 const DEMO_ACCOUNTS = [
-  { role: 'Admin',   email: 'admin@tutzllyacademy.com',          password: 'Admin@Tutzlly1!', color: 'bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30' },
-  { role: 'Tutor',   email: 'demo.tutor@tutzllyacademy.com',   password: 'Tutzlly@123',    color: 'bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30' },
-  { role: 'Student', email: 'demo.student@tutzllyacademy.com', password: 'Tutzlly@123',    color: 'bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30' },
-  { role: 'Parent',  email: 'demo.parent@tutzllyacademy.com',  password: 'Tutzlly@123',    color: 'bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30' },
+  { role: 'Super Admin', email: 'superadmin@tutzlly.com',             password: 'Tutzlly@SuperAdmin1!', color: 'bg-amber-500/20 border-amber-500/30 text-amber-300 hover:bg-amber-500/30' },
+  { role: 'Admin',       email: 'admin@tutzllyacademy.com',            password: 'Admin@Tutzlly1!',      color: 'bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30' },
+  { role: 'Tutor',       email: 'demo.tutor@tutzllyacademy.com',     password: 'Tutzlly@123',          color: 'bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30' },
+  { role: 'Student',     email: 'demo.student@tutzllyacademy.com',   password: 'Tutzlly@123',          color: 'bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30' },
+  { role: 'Parent',      email: 'demo.parent@tutzllyacademy.com',    password: 'Tutzlly@123',          color: 'bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30' },
 ];
 
 export default function LoginPage() {
@@ -46,7 +47,9 @@ export default function LoginPage() {
         academy: data.academy ?? null,
       });
     }
-    router.push(`/${data.user.role}`);
+    // super_admin role lives at /super-admin, all others at /<role>
+    const dest = data.user.role === 'super_admin' ? '/super-admin' : `/${data.user.role}`;
+    router.push(dest);
     return data.user;
   };
 

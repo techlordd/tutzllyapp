@@ -24,18 +24,49 @@ export async function POST(request: Request) {
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);
 
+    // ── Migration: add super_admin to users role constraint (idempotent) ─────
+    await query(`
+      ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+      ALTER TABLE users ADD CONSTRAINT users_role_check
+        CHECK (role IN ('admin', 'tutor', 'student', 'parent', 'super_admin'));
+    `);
+
     const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@Tutzlly1!';
+    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'Tutzlly@SuperAdmin1!';
     const demoPassword = 'Tutzlly@123';
     const adminHash = await hashPassword(adminPassword);
+    const superAdminHash = await hashPassword(superAdminPassword);
     const demoHash = await hashPassword(demoPassword);
 
-    // ── Admin ────────────────────────────────────────────────────────────────
+    // ── Tutzlly Platform Super Admin ─────────────────────────────────────────
+    // This account belongs to Tutzlly company — platform-level, no academy membership.
+    const superAdminRows = await query<{ id: number }>(
+      `INSERT INTO users (user_id, username, email, password_hash, role, is_active, created_at)
+       VALUES ('SUP-001', 'superadmin', 'superadmin@tutzlly.com', $1, 'super_admin', true, NOW())
+       ON CONFLICT (email) DO UPDATE SET updated_at = NOW() RETURNING id`,
+      [superAdminHash]
+    );
+    if (superAdminRows[0]) {
+      await query(
+        `INSERT INTO super_admins (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+        [superAdminRows[0].id]
+      );
+    }
+
+    // ── Admin (Default Academy admin — NOT a super admin) ────────────────────
     await query(
       `INSERT INTO users (user_id, username, email, password_hash, role, is_active, created_at)
        VALUES ('ADM-001', 'admin', 'admin@tutzllyacademy.com', $1, 'admin', true, NOW())
        ON CONFLICT (email) DO NOTHING`,
       [adminHash]
     );
+    // Ensure admin is NOT in super_admins (clean separation)
+    const adminUserRow = await query<{ id: number }>(
+      `SELECT id FROM users WHERE email = 'admin@tutzllyacademy.com' LIMIT 1`
+    );
+    if (adminUserRow[0]) {
+      await query(`DELETE FROM super_admins WHERE user_id = $1`, [adminUserRow[0].id]);
+    }
 
     // ── Demo Tutor ───────────────────────────────────────────────────────────
     const tutorRows = await query<{ id: number }>(
@@ -118,11 +149,7 @@ export async function POST(request: Request) {
            VALUES ($1, $2, 'admin') ON CONFLICT DO NOTHING`,
           [adminRows[0].id, defaultAcademyId]
         );
-        // Mark admin as super admin
-        await query(
-          `INSERT INTO super_admins (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
-          [adminRows[0].id]
-        );
+        // Admin is a plain academy admin — NOT a super admin
       }
       if (tutorRows[0]) {
         await query(
@@ -151,10 +178,11 @@ export async function POST(request: Request) {
       success: true,
       message: 'Database initialized with demo accounts',
       accounts: {
-        admin:   { email: 'admin@tutzllyacademy.com',          password: adminPassword },
-        tutor:   { email: 'demo.tutor@tutzllyacademy.com',   password: demoPassword },
-        student: { email: 'demo.student@tutzllyacademy.com', password: demoPassword },
-        parent:  { email: 'demo.parent@tutzllyacademy.com',  password: demoPassword },
+        super_admin: { email: 'superadmin@tutzlly.com',             password: superAdminPassword, note: 'Tutzlly platform super admin' },
+        admin:       { email: 'admin@tutzllyacademy.com',            password: adminPassword,      note: 'Default Academy admin' },
+        tutor:       { email: 'demo.tutor@tutzllyacademy.com',     password: demoPassword },
+        student:     { email: 'demo.student@tutzllyacademy.com',   password: demoPassword },
+        parent:      { email: 'demo.parent@tutzllyacademy.com',    password: demoPassword },
       },
     });
   } catch (err) {

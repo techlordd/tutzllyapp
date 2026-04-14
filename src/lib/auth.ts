@@ -10,7 +10,7 @@ export interface AuthUser {
   user_id: string;
   username: string;
   email: string;
-  role: 'admin' | 'tutor' | 'student' | 'parent';
+  role: 'admin' | 'tutor' | 'student' | 'parent' | 'super_admin';
   is_active: boolean;
 }
 
@@ -53,6 +53,24 @@ export async function generateFullToken(
   user: AuthUser,
   currentAcademyId?: number | null
 ): Promise<string> {
+  // Super admin = platform-level Tutzlly staff (role='super_admin' in users table).
+  // They are NOT members of any academy unless they explicitly switch into one.
+  const isSuperAdmin = user.role === 'super_admin';
+
+  if (isSuperAdmin && !currentAcademyId) {
+    // Platform-level token — no academy context
+    const payload: TokenPayload = {
+      id: user.id,
+      user_id: user.user_id,
+      email: user.email,
+      role: 'super_admin',
+      roles: [],
+      current_academy_id: null,
+      is_super_admin: true,
+    };
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+  }
+
   const roleRows = await query<{ academy_id: number; role: string; academy_name: string }>(
     `SELECT uar.academy_id, uar.role, a.academy_name
      FROM user_academy_roles uar
@@ -62,19 +80,16 @@ export async function generateFullToken(
     [user.id]
   );
 
-  const isSuperAdmin = !!(await queryOne<{ id: number }>(
-    'SELECT id FROM super_admins WHERE user_id = $1',
-    [user.id]
-  ));
-
   // Resolve which academy is "active"
   let activeAcademyId: number | null = currentAcademyId ?? null;
   if (!activeAcademyId && roleRows.length > 0) {
     activeAcademyId = roleRows[0].academy_id;
   }
 
-  const activeRole = roleRows.find(r => r.academy_id === activeAcademyId)?.role
-    ?? (isSuperAdmin ? 'admin' : user.role);
+  // Super admin acting inside an academy gets 'admin' role for that session
+  const activeRole = isSuperAdmin
+    ? 'admin'
+    : (roleRows.find(r => r.academy_id === activeAcademyId)?.role ?? user.role);
 
   const payload: TokenPayload = {
     id: user.id,

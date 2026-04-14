@@ -43,31 +43,42 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Super admin routes – only accessible to super admins
-  if (pathname.startsWith('/super-admin') && !isSuperAdmin) {
-    return NextResponse.redirect(new URL(`/${role}`, request.url));
+  // Super admin role (platform-level): can only access /super-admin.
+  // They must "switch academy" to get an admin-scoped token for /admin routes.
+  if (role === 'super_admin') {
+    if (!pathname.startsWith('/super-admin') && !pathname.startsWith('/api/')) {
+      return NextResponse.redirect(new URL('/super-admin', request.url));
+    }
+    // Allow /super-admin and all API calls
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-user-role', role);
+    requestHeaders.set('x-is-super-admin', '1');
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // If multi-academy is active and no academy selected, redirect to selector
-  // (allow super-admin and api routes to pass through)
-  if (!currentAcademyId && !isSuperAdmin && !pathname.startsWith('/api/')) {
+  if (!currentAcademyId && !pathname.startsWith('/api/')) {
     return NextResponse.redirect(new URL('/select-academy', request.url));
   }
 
-  // Standard role-based route protection (super admins bypass all role guards)
-  if (!isSuperAdmin) {
-    if (pathname.startsWith('/admin') && role !== 'admin') {
-      return NextResponse.redirect(new URL(`/${role}`, request.url));
-    }
-    if (pathname.startsWith('/tutor') && role !== 'tutor' && role !== 'admin') {
-      return NextResponse.redirect(new URL(`/${role}`, request.url));
-    }
-    if (pathname.startsWith('/student') && role !== 'student' && role !== 'admin') {
-      return NextResponse.redirect(new URL(`/${role}`, request.url));
-    }
-    if (pathname.startsWith('/parent') && role !== 'parent' && role !== 'admin') {
-      return NextResponse.redirect(new URL(`/${role}`, request.url));
-    }
+  // Standard role-based route protection
+  if (pathname.startsWith('/admin') && role !== 'admin') {
+    return NextResponse.redirect(new URL(`/${role}`, request.url));
+  }
+  if (pathname.startsWith('/tutor') && role !== 'tutor' && role !== 'admin') {
+    return NextResponse.redirect(new URL(`/${role}`, request.url));
+  }
+  if (pathname.startsWith('/student') && role !== 'student' && role !== 'admin') {
+    return NextResponse.redirect(new URL(`/${role}`, request.url));
+  }
+  if (pathname.startsWith('/parent') && role !== 'parent' && role !== 'admin') {
+    return NextResponse.redirect(new URL(`/${role}`, request.url));
+  }
+
+  // /super-admin routes: only super_admin role (already handled above) or
+  // is_super_admin flag (legacy compat for session pre-separation)
+  if (pathname.startsWith('/super-admin') && !isSuperAdmin) {
+    return NextResponse.redirect(new URL(`/${role}`, request.url));
   }
 
   // Attach academy context to request headers for API routes
