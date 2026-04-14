@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, generateFullToken, getUserAcademyRoles } from '@/lib/auth';
+import { queryOne } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +34,42 @@ export async function POST(request: NextRequest) {
         path: '/',
       });
       return response;
+    }
+
+    // Domain-based auto-selection: if the request arrived via a branded subdomain or custom
+    // domain, pre-select that academy instead of showing the academy picker.
+    const domainHint = request.headers.get('x-domain-hint');
+    if (domainHint) {
+      const hintAcademy = await queryOne<{ id: number }>(
+        `SELECT id FROM academies WHERE (subdomain = $1 OR custom_domain = $1) AND is_active = true LIMIT 1`,
+        [domainHint]
+      );
+      if (hintAcademy) {
+        const matchedRole = academyRoles.find(r => r.academy_id === hintAcademy.id);
+        if (!matchedRole) {
+          return NextResponse.json(
+            { error: "You don't have access to this portal. Contact your administrator." },
+            { status: 403 }
+          );
+        }
+        const token = await generateFullToken(user, hintAcademy.id);
+        const response = NextResponse.json({
+          user: {
+            id: user.id, user_id: user.user_id, username: user.username,
+            email: user.email, role: matchedRole.role,
+            current_academy_id: hintAcademy.id,
+            academy_name: matchedRole.academy_name,
+          },
+        });
+        response.cookies.set('token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7,
+          path: '/',
+        });
+        return response;
+      }
     }
 
     // Multiple academies: ask the client to pick one

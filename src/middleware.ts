@@ -2,14 +2,34 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const publicPaths = ['/login', '/api/auth', '/api/setup', '/select-academy'];
+const publicPaths = ['/login', '/api/auth', '/api/setup', '/api/branding/public', '/select-academy'];
 
 // Uses jose (Edge-compatible) instead of jsonwebtoken — required for Vercel Edge Runtime
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── Domain-based routing ──────────────────────────────────────────────────────────────
+  // Parse hostname to extract a "domain slug" for branded subdomains
+  // (brightminds.tutzlly.com → "brightminds") or custom domains
+  // (portal.brightminds.com → "portal.brightminds.com").
+  // Set NEXT_PUBLIC_ROOT_DOMAIN in Vercel env vars to activate;
+  // when absent, no slug is produced (dev/localhost safety).
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? '';
+  const hostname = request.nextUrl.hostname;
+  let domainSlug: string | null = null;
+  if (rootDomain && hostname !== rootDomain
+      && !hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
+    domainSlug = hostname.endsWith(`.${rootDomain}`)
+      ? hostname.slice(0, -(rootDomain.length + 1))   // wildcard subdomain
+      : hostname;                                       // custom domain
+  }
+
   if (publicPaths.some((p) => pathname.startsWith(p)) || pathname === '/') {
-    return NextResponse.next();
+    // Forward domain hint to public routes (login API, /api/branding/public)
+    if (!domainSlug) return NextResponse.next();
+    const fwdHeaders = new Headers(request.headers);
+    fwdHeaders.set('x-domain-hint', domainSlug);
+    return NextResponse.next({ request: { headers: fwdHeaders } });
   }
 
   const token = request.cookies.get('token')?.value;
@@ -21,12 +41,14 @@ export async function middleware(request: NextRequest) {
     }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', pathname);
+    if (domainSlug) loginUrl.searchParams.set('a', domainSlug);
     return NextResponse.redirect(loginUrl);
   }
 
   let role: string;
   let currentAcademyId: number | null = null;
   let isSuperAdmin = false;
+  let academySubdomain: string | null = null;
 
   try {
     const secret = new TextEncoder().encode(
@@ -36,8 +58,23 @@ export async function middleware(request: NextRequest) {
     role = payload.role as string;
     currentAcademyId = (payload.current_academy_id as number) ?? null;
     isSuperAdmin = !!(payload.is_super_admin);
+    academySubdomain = (payload.academy_subdomain as string) ?? null;
   } catch {
     const loginUrl = new URL('/login', request.url);
+    if (domainSlug) loginUrl.searchParams.set('a', domainSlug);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete('token');
+    return response;
+  }
+
+  // Domain enforcement: if the request arrived via a branded subdomain or custom domain,
+  // verify the user's JWT is for that same academy. A mismatch means the user is logged
+  // into a different academy — redirect them to the login page for this domain.
+  // Skipped when there is no domain slug (plain root domain or dev) or when the academy
+  // hasn't configured a subdomain yet.
+  if (domainSlug && academySubdomain && academySubdomain !== domainSlug) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('a', domainSlug);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.delete('token');
     return response;
@@ -53,6 +90,7 @@ export async function middleware(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-role', role);
     requestHeaders.set('x-is-super-admin', '1');
+    if (domainSlug) requestHeaders.set('x-domain-hint', domainSlug);
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
@@ -88,6 +126,7 @@ export async function middleware(request: NextRequest) {
   }
   requestHeaders.set('x-user-role', role);
   requestHeaders.set('x-is-super-admin', isSuperAdmin ? '1' : '0');
+  if (domainSlug) requestHeaders.set('x-domain-hint', domainSlug);
 
   return NextResponse.next({ request: { headers: requestHeaders } });
 }

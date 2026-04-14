@@ -31,6 +31,16 @@ export async function POST(request: Request) {
       } catch { /* table doesn't exist yet — schema.sql will create it with the column */ }
     }
 
+    // Add branding + domain routing columns (all idempotent for existing DBs)
+    try {
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS login_bg_url TEXT`);
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS login_tagline VARCHAR(255)`);
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS subdomain VARCHAR(100)`);
+      await query(`CREATE UNIQUE INDEX IF NOT EXISTS academies_subdomain_key ON academies (subdomain) WHERE subdomain IS NOT NULL`);
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS custom_domain VARCHAR(255)`);
+      await query(`CREATE UNIQUE INDEX IF NOT EXISTS academies_custom_domain_key ON academies (custom_domain) WHERE custom_domain IS NOT NULL`);
+    } catch { /* academies table doesn't exist yet — schema.sql will create it */ }
+
     const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);

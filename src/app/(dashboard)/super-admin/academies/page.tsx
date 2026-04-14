@@ -13,12 +13,16 @@ interface Academy {
   is_active: boolean;
   member_count: number;
   created_at: string;
+  subdomain: string | null;
+  custom_domain: string | null;
 }
 
 interface CreateForm {
   academy_name: string;
   academy_email: string;
   academy_description: string;
+  subdomain: string;
+  custom_domain: string;
 }
 
 export default function AcademiesPage() {
@@ -27,7 +31,7 @@ export default function AcademiesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [switching, setSwitching] = useState<number | null>(null);
-  const [form, setForm] = useState<CreateForm>({ academy_name: '', academy_email: '', academy_description: '' });
+  const [form, setForm] = useState<CreateForm>({ academy_name: '', academy_email: '', academy_description: '', subdomain: '', custom_domain: '' });
 
   const load = () => {
     setLoading(true);
@@ -54,7 +58,7 @@ export default function AcademiesPage() {
       if (!res.ok) throw new Error(data.error || 'Create failed');
       toast.success(`Academy "${data.academy.academy_name}" created!`);
       setShowCreate(false);
-      setForm({ academy_name: '', academy_email: '', academy_description: '' });
+      setForm({ academy_name: '', academy_email: '', academy_description: '', subdomain: '', custom_domain: '' });
       load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Create failed');
@@ -142,6 +146,37 @@ export default function AcademiesPage() {
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                 </div>
+                {/* Domain routing */}
+                <div className="border-t border-gray-100 pt-4 space-y-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Domain Routing <span className="font-normal normal-case text-gray-400">(optional)</span></p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Subdomain</label>
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value={form.subdomain}
+                        onChange={e => setForm(f => ({ ...f, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+                        placeholder="brightminds"
+                        className="flex-1 border border-gray-300 rounded-l-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="bg-gray-100 border border-l-0 border-gray-300 rounded-r-xl px-3 py-2.5 text-sm text-gray-500 whitespace-nowrap">
+                        .{process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'yourdomain.com'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Then add wildcard *.{process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'yourdomain.com'} in Vercel → Domains</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Custom Domain</label>
+                    <input
+                      type="text"
+                      value={form.custom_domain}
+                      onChange={e => setForm(f => ({ ...f, custom_domain: e.target.value.toLowerCase() }))}
+                      placeholder="portal.brightminds.com"
+                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Academy adds <span className="font-mono">CNAME → cname.vercel-dns.com</span>, you add domain in Vercel</p>
+                  </div>
+                </div>
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
@@ -200,6 +235,28 @@ export default function AcademiesPage() {
                     </div>
                     {a.academy_description && (
                       <p className="text-sm text-gray-500 mt-0.5 truncate">{a.academy_description}</p>
+                    )}
+                    {(a.subdomain || a.custom_domain) && (
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        {a.subdomain && (
+                          <a
+                            href={`https://${a.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'yourdomain.com'}/login`}
+                            target="_blank" rel="noopener noreferrer"
+                            className="text-xs text-blue-600 font-mono hover:underline"
+                          >
+                            {a.subdomain}.{process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'yourdomain.com'}
+                          </a>
+                        )}
+                        {a.custom_domain && (
+                          <a
+                            href={`https://${a.custom_domain}/login`}
+                            target="_blank" rel="noopener noreferrer"
+                            className="text-xs text-emerald-600 font-mono hover:underline"
+                          >
+                            {a.custom_domain}
+                          </a>
+                        )}
+                      </div>
                     )}
                   </div>
                   <button

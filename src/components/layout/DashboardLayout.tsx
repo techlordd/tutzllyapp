@@ -17,25 +17,26 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const router = useRouter();
 
+  // Always refresh academy context on mount — Zustand persists `user` across reloads,
+  // so an `if (!user)` guard would skip the fetch and leave `academy` stale (causing
+  // the sidebar to fall back to the hardcoded 'Tutzlly' placeholder).
   useEffect(() => {
-    if (!user) {
-      fetch('/api/auth/me')
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.user) {
-            setUser(data.user);
-            setAcademyContext({
-              current_academy_id: data.current_academy_id ?? null,
-              is_super_admin: data.is_super_admin ?? false,
-              roles: data.roles ?? [],
-              academy: data.academy ?? null,
-            });
-          } else {
-            router.push('/login');
-          }
-        })
-        .catch(() => router.push('/login'));
-    }
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.user) {
+          setUser(data.user);
+          setAcademyContext({
+            current_academy_id: data.current_academy_id ?? null,
+            is_super_admin: data.is_super_admin ?? false,
+            roles: data.roles ?? [],
+            academy: data.academy ?? null,
+          });
+        } else {
+          router.push('/login');
+        }
+      })
+      .catch(() => router.push('/login'));
 
     const handleResize = () => {
       if (window.innerWidth < 768) setSidebarCollapsed(true);
@@ -43,7 +44,8 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [router, user, setUser, setAcademyContext]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Apply academy branding as CSS custom properties
   useEffect(() => {

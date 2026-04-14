@@ -28,6 +28,8 @@ export interface TokenPayload {
   roles: AcademyRole[];
   current_academy_id: number | null;
   is_super_admin: boolean;
+  /** Subdomain of the active academy (e.g. "brightminds") — used by middleware for domain enforcement. Null if no subdomain configured. */
+  academy_subdomain: string | null;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -67,12 +69,13 @@ export async function generateFullToken(
       roles: [],
       current_academy_id: null,
       is_super_admin: true,
+      academy_subdomain: null,
     };
     return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
   }
 
-  const roleRows = await query<{ academy_id: number; role: string; academy_name: string }>(
-    `SELECT uar.academy_id, uar.role, a.academy_name
+  const roleRows = await query<{ academy_id: number; role: string; academy_name: string; academy_subdomain: string | null }>(
+    `SELECT uar.academy_id, uar.role, a.academy_name, a.subdomain AS academy_subdomain
      FROM user_academy_roles uar
      JOIN academies a ON a.id = uar.academy_id
      WHERE uar.user_id = $1 AND a.is_active = true
@@ -87,9 +90,19 @@ export async function generateFullToken(
   }
 
   // Super admin acting inside an academy gets 'admin' role for that session
-  const activeRole = isSuperAdmin
-    ? 'admin'
-    : (roleRows.find(r => r.academy_id === activeAcademyId)?.role ?? user.role);
+  const activeRoleRow = roleRows.find(r => r.academy_id === activeAcademyId);
+  const activeRole = isSuperAdmin ? 'admin' : (activeRoleRow?.role ?? user.role);
+
+  // Resolve subdomain for the active academy (used by middleware for domain enforcement).
+  // Super admin may not have a role row for the switched-into academy, so query directly.
+  let academySubdomain: string | null = activeRoleRow?.academy_subdomain ?? null;
+  if (!activeRoleRow && activeAcademyId) {
+    const aRow = await queryOne<{ subdomain: string | null }>(
+      'SELECT subdomain FROM academies WHERE id = $1',
+      [activeAcademyId]
+    );
+    academySubdomain = aRow?.subdomain ?? null;
+  }
 
   const payload: TokenPayload = {
     id: user.id,
@@ -99,6 +112,7 @@ export async function generateFullToken(
     roles: roleRows,
     current_academy_id: activeAcademyId,
     is_super_admin: isSuperAdmin,
+    academy_subdomain: academySubdomain,
   };
 
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });

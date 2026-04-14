@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
   if (payload.current_academy_id) {
     academy = await queryOne(
       `SELECT id, academy_id, academy_name, primary_color, secondary_color, accent_color,
-              logo_url, favicon_url, site_title, academy_description, academy_email
+              logo_url, favicon_url, site_title, academy_description, academy_email,
+              login_bg_url, login_tagline
        FROM academies WHERE id = $1`,
       [payload.current_academy_id]
     );

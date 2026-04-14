@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuthStore } from '@/store/authStore';
-import { Palette, Save, RefreshCw } from 'lucide-react';
+import { Palette, Save, RefreshCw, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface BrandingForm {
@@ -15,6 +15,10 @@ interface BrandingForm {
   accent_color: string;
   logo_url: string;
   favicon_url: string;
+  login_bg_url: string;
+  login_tagline: string;
+  subdomain: string;
+  custom_domain: string;
 }
 
 const DEFAULT_BRANDING: BrandingForm = {
@@ -27,13 +31,17 @@ const DEFAULT_BRANDING: BrandingForm = {
   accent_color: '#10B981',
   logo_url: '',
   favicon_url: '',
+  login_bg_url: '',
+  login_tagline: '',
+  subdomain: '',
+  custom_domain: '',
 };
 
 export default function BrandingPage() {
   const [form, setForm] = useState<BrandingForm>(DEFAULT_BRANDING);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { setAcademyContext, current_academy_id, is_super_admin, roles } = useAuthStore();
+  const { setAcademyContext, current_academy_id, is_super_admin, roles, academy } = useAuthStore();
 
   const loadBranding = () => {
     setLoading(true);
@@ -54,6 +62,10 @@ export default function BrandingPage() {
             accent_color: data.academy.accent_color || '#10B981',
             logo_url: data.academy.logo_url || '',
             favicon_url: data.academy.favicon_url || '',
+            login_bg_url: data.academy.login_bg_url || '',
+            login_tagline: data.academy.login_tagline || '',
+            subdomain: data.academy.subdomain || '',
+            custom_domain: data.academy.custom_domain || '',
           });
         }
       })
@@ -254,6 +266,94 @@ export default function BrandingPage() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Login Page */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+          <h2 className="text-lg font-semibold text-gray-800">Login Page</h2>
+          {academy && (
+            <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm">
+              <span className="text-gray-600 flex-1 truncate font-mono text-xs">
+                {typeof window !== 'undefined' ? window.location.origin : ''}/login?a={academy.academy_id}
+              </span>
+              <a
+                href={`/login?a=${academy.academy_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+              >
+                <ExternalLink size={14} /> Preview
+              </a>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Background Image URL</label>
+            <input
+              type="url"
+              value={form.login_bg_url}
+              onChange={e => set('login_bg_url', e.target.value)}
+              placeholder="https://..."
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {form.login_bg_url && (
+              <img src={form.login_bg_url} alt="Login background preview" className="mt-2 h-24 w-full object-cover rounded-xl" />
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Login Page Tagline</label>
+            <input
+              type="text"
+              value={form.login_tagline}
+              onChange={e => set('login_tagline', e.target.value)}
+              placeholder="e.g. Student Portal"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Domain Settings */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">Domain Settings</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Set a branded URL for this academy&apos;s portal. Contact Tutzlly support to activate DNS after saving.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Subdomain</label>
+            <div className="flex items-center">
+              <input
+                type="text"
+                value={form.subdomain}
+                onChange={e => set('subdomain', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                placeholder="brightminds"
+                className="flex-1 border border-gray-300 rounded-l-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="bg-gray-100 border border-l-0 border-gray-300 rounded-r-xl px-3 py-2.5 text-sm text-gray-500 whitespace-nowrap">
+                .{process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'yourdomain.com'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Lowercase letters, numbers, and hyphens only</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Custom Domain</label>
+            <input
+              type="text"
+              value={form.custom_domain}
+              onChange={e => set('custom_domain', e.target.value.toLowerCase())}
+              placeholder="portal.brightminds.com"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Your IT team adds <span className="font-mono">CNAME → cname.vercel-dns.com</span>, then Tutzlly adds the domain in Vercel.
+            </p>
+          </div>
+          {(form.subdomain || form.custom_domain) && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+              <strong>After saving:</strong> notify Tutzlly to activate DNS routing. Users will access the portal at{' '}
+              {form.subdomain && <span className="font-mono">{form.subdomain}.{process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'yourdomain.com'}</span>}
+              {form.subdomain && form.custom_domain && ' or '}
+              {form.custom_domain && <span className="font-mono">{form.custom_domain}</span>}.
+            </div>
+          )}
         </div>
 
         {/* Save bottom */}

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (!payload) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
-    const { academy_name, academy_email, academy_description } = body;
+    const { academy_name, academy_email, academy_description, subdomain, custom_domain } = body;
     if (!academy_name) return NextResponse.json({ error: 'academy_name is required' }, { status: 400 });
 
     // Auto-generate a unique slug; retry once on collision
@@ -47,11 +47,11 @@ export async function POST(request: NextRequest) {
     for (let attempt = 0; attempt < 3 && !academy; attempt++) {
       const slug = makeSlug();
       academy = await queryOne(
-        `INSERT INTO academies (academy_id, academy_name, academy_email, academy_description, is_active)
-         VALUES ($1, $2, $3, $4, true)
+        `INSERT INTO academies (academy_id, academy_name, academy_email, academy_description, subdomain, custom_domain, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, true)
          ON CONFLICT (academy_id) DO NOTHING
          RETURNING *`,
-        [slug, academy_name, academy_email || null, academy_description || null]
+        [slug, academy_name, academy_email || null, academy_description || null, subdomain || null, custom_domain || null]
       );
     }
 

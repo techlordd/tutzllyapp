@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -21,6 +21,29 @@ export default function LoginPage() {
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
   const router = useRouter();
   const { setUser, setAcademyContext } = useAuthStore();
+
+  // If ?a=ACADEMY_SLUG is in the URL, fetch public branding before login.
+  // We read window.location.search directly (no useSearchParams — avoids Suspense requirement).
+  const [branding, setBranding] = useState<{
+    academy_name?: string;
+    primary_color?: string;
+    logo_url?: string;
+    login_bg_url?: string;
+    login_tagline?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get('a');
+    if (!slug) return;
+    fetch(`/api/branding/public?a=${encodeURIComponent(slug)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.branding) setBranding(data.branding); })
+      .catch(() => {});
+  }, []);
+
+  const primaryColor = branding?.primary_color ?? '#2563EB';
+  const academyName  = branding?.academy_name  ?? 'Tutzlly';
+  const tagline      = branding?.login_tagline  ?? 'Academy Portal';
 
   const doLogin = async (loginEmail: string, loginPassword: string) => {
     const res = await fetch('/api/auth/login', {
@@ -79,7 +102,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={branding?.login_bg_url
+        ? { backgroundImage: `url(${branding.login_bg_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+        : { background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%)' }
+      }
+    >
+      {branding?.login_bg_url && <div className="absolute inset-0 bg-black/60 pointer-events-none" />}
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"></div>
@@ -89,11 +119,19 @@ export default function LoginPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-lg shadow-blue-600/40 mb-4">
-            <BookOpen size={28} className="text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">Tutzlly</h1>
-          <p className="text-blue-300 mt-1">Academy Portal</p>
+          {branding?.logo_url
+            ? <img src={branding.logo_url} alt={academyName} className="h-16 mx-auto mb-4 object-contain" />
+            : (
+              <div
+                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl shadow-lg mb-4"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <BookOpen size={28} className="text-white" />
+              </div>
+            )
+          }
+          <h1 className="text-3xl font-bold text-white">{academyName}</h1>
+          <p className="text-blue-300 mt-1">{tagline}</p>
         </div>
 
         {/* Form card */}
@@ -137,7 +175,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/40 flex items-center justify-center gap-2 mt-2"
+              style={{ backgroundColor: primaryColor }}
+              className="w-full py-3 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 mt-2 hover:opacity-90 disabled:opacity-60"
             >
               {loading && <Loader2 size={18} className="animate-spin" />}
               {loading ? 'Signing in...' : 'Sign In'}

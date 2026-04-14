@@ -13,6 +13,8 @@ export interface AcademyBranding {
   site_title?: string;
   academy_description?: string;
   academy_email?: string;
+  login_bg_url?: string;
+  login_tagline?: string;
 }
 
 export interface AcademyRole {

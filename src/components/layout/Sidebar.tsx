@@ -111,7 +111,7 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-sm">T</div>
             <div>
               <p className="font-bold text-sm leading-tight">{academyName || 'Tutzlly'}</p>
-              <p className="text-xs text-slate-400">Academy</p>
+              <p className="text-xs text-slate-400">Portal</p>
             </div>
           </div>
         )}

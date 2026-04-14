@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS academies (
   logo_url TEXT,
   favicon_url TEXT,
   site_title VARCHAR(255),
+  login_bg_url TEXT,
+  login_tagline VARCHAR(255),
+  subdomain VARCHAR(100) UNIQUE,
+  custom_domain VARCHAR(255) UNIQUE,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
