@@ -1,6 +1,41 @@
 -- Tutzlly Academy Database Schema
 -- Modeled after existing Formidable Forms structure
 
+-- ─── Multi-Tenant: Academies ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS academies (
+  id SERIAL PRIMARY KEY,
+  academy_id VARCHAR(50) UNIQUE NOT NULL,
+  academy_name VARCHAR(255) NOT NULL,
+  academy_email VARCHAR(255),
+  academy_description TEXT,
+  primary_color VARCHAR(7) DEFAULT '#3B82F6',
+  secondary_color VARCHAR(7) DEFAULT '#1E40AF',
+  accent_color VARCHAR(7) DEFAULT '#10B981',
+  logo_url TEXT,
+  favicon_url TEXT,
+  site_title VARCHAR(255),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ─── Multi-Tenant: Per-Academy Role Assignments ───────────────────────────────
+CREATE TABLE IF NOT EXISTS user_academy_roles (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  academy_id INTEGER NOT NULL REFERENCES academies(id) ON DELETE CASCADE,
+  role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'tutor', 'student', 'parent')),
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (user_id, academy_id, role)
+);
+
+-- ─── Super Admins (platform-level, across all academies) ─────────────────────
+CREATE TABLE IF NOT EXISTS super_admins (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Users table (shared authentication across all roles)
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
@@ -17,6 +52,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Tutors table
 CREATE TABLE IF NOT EXISTS tutors (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   tutor_id VARCHAR(50) UNIQUE NOT NULL,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   username VARCHAR(100),
@@ -50,6 +86,7 @@ CREATE TABLE IF NOT EXISTS tutors (
 -- Students table
 CREATE TABLE IF NOT EXISTS students (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   student_id VARCHAR(50) UNIQUE NOT NULL,
   enrollment_id VARCHAR(50),
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -89,6 +126,7 @@ CREATE TABLE IF NOT EXISTS students (
 -- Parents table
 CREATE TABLE IF NOT EXISTS parents (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   parent_id VARCHAR(50) UNIQUE NOT NULL,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   username VARCHAR(100),
@@ -128,6 +166,7 @@ CREATE TABLE IF NOT EXISTS parents (
 -- Courses table
 CREATE TABLE IF NOT EXISTS courses (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   course_name VARCHAR(255) NOT NULL,
   course_code VARCHAR(50) UNIQUE NOT NULL,
   course_name_deprecated VARCHAR(255),
@@ -144,6 +183,7 @@ CREATE TABLE IF NOT EXISTS courses (
 -- Tutor course assignments
 CREATE TABLE IF NOT EXISTS tutor_course_assignments (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   tutor_assign_id VARCHAR(50) UNIQUE NOT NULL,
   tutor_id VARCHAR(50) NOT NULL,
   tutor_username VARCHAR(100),
@@ -164,6 +204,7 @@ CREATE TABLE IF NOT EXISTS tutor_course_assignments (
 -- Student enrollments (assign tutor + course to student)
 CREATE TABLE IF NOT EXISTS student_enrollments (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   assign_id VARCHAR(50) UNIQUE NOT NULL,
   student_id VARCHAR(50) NOT NULL,
   student_name VARCHAR(200),
@@ -188,6 +229,7 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
 -- Schedules
 CREATE TABLE IF NOT EXISTS schedules (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   schedule_id VARCHAR(50) UNIQUE NOT NULL,
   student_id VARCHAR(50) NOT NULL,
   student_name VARCHAR(200),
@@ -220,6 +262,7 @@ CREATE TABLE IF NOT EXISTS schedules (
 -- Sessions (Start session form)
 CREATE TABLE IF NOT EXISTS sessions (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   ssid VARCHAR(50) UNIQUE NOT NULL,
   schedule_id VARCHAR(50),
   tutor_id VARCHAR(50),
@@ -283,6 +326,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- Class activities
 CREATE TABLE IF NOT EXISTS class_activities (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   ssid VARCHAR(50),
   tutor_id VARCHAR(50),
   tutor_firstname VARCHAR(100),
@@ -344,6 +388,7 @@ CREATE TABLE IF NOT EXISTS class_activities (
 -- Grade book
 CREATE TABLE IF NOT EXISTS grade_book (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   tutor_id VARCHAR(50),
   tutor_name VARCHAR(200),
   student_id VARCHAR(50),
@@ -372,6 +417,7 @@ CREATE TABLE IF NOT EXISTS grade_book (
 -- Messages - chat with admin
 CREATE TABLE IF NOT EXISTS messages_admin (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   message_date DATE,
   message_time TIME,
   role VARCHAR(20),
@@ -402,6 +448,7 @@ CREATE TABLE IF NOT EXISTS messages_admin (
 -- Messages - chat with parent
 CREATE TABLE IF NOT EXISTS messages_parent (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   message_date DATE,
   message_time TIME,
   role VARCHAR(20),
@@ -434,6 +481,7 @@ CREATE TABLE IF NOT EXISTS messages_parent (
 -- Messages - chat with student
 CREATE TABLE IF NOT EXISTS messages_student (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   message_date DATE,
   message_time TIME,
   role VARCHAR(20),
@@ -471,6 +519,7 @@ CREATE TABLE IF NOT EXISTS messages_student (
 -- Messages - chat with tutor
 CREATE TABLE IF NOT EXISTS messages_tutor (
   id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   message_date DATE,
   message_time TIME,
   role VARCHAR(20),
@@ -503,15 +552,26 @@ CREATE TABLE IF NOT EXISTS messages_tutor (
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_tutors_tutor_id ON tutors(tutor_id);
+CREATE INDEX IF NOT EXISTS idx_tutors_academy_id ON tutors(academy_id);
 CREATE INDEX IF NOT EXISTS idx_students_student_id ON students(student_id);
+CREATE INDEX IF NOT EXISTS idx_students_academy_id ON students(academy_id);
 CREATE INDEX IF NOT EXISTS idx_parents_parent_id ON parents(parent_id);
+CREATE INDEX IF NOT EXISTS idx_parents_academy_id ON parents(academy_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_student_id ON schedules(student_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_tutor_id ON schedules(tutor_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_academy_id ON schedules(academy_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_student_id ON sessions(student_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_tutor_id ON sessions(tutor_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_ssid ON sessions(ssid);
+CREATE INDEX IF NOT EXISTS idx_sessions_academy_id ON sessions(academy_id);
 CREATE INDEX IF NOT EXISTS idx_class_activities_tutor_id ON class_activities(tutor_id);
 CREATE INDEX IF NOT EXISTS idx_class_activities_student_id ON class_activities(student_id);
+CREATE INDEX IF NOT EXISTS idx_class_activities_academy_id ON class_activities(academy_id);
 CREATE INDEX IF NOT EXISTS idx_grade_book_student_id ON grade_book(student_id);
+CREATE INDEX IF NOT EXISTS idx_grade_book_academy_id ON grade_book(academy_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON student_enrollments(student_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_tutor_id ON student_enrollments(tutor_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_academy_id ON student_enrollments(academy_id);
+CREATE INDEX IF NOT EXISTS idx_courses_academy_id ON courses(academy_id);
+CREATE INDEX IF NOT EXISTS idx_user_academy_roles_user_id ON user_academy_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_academy_roles_academy_id ON user_academy_roles(academy_id);

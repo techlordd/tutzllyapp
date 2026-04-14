@@ -12,7 +12,7 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, academy, setAcademyContext, is_super_admin } = useAuthStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const router = useRouter();
@@ -24,6 +24,12 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         .then((data) => {
           if (data.user) {
             setUser(data.user);
+            setAcademyContext({
+              current_academy_id: data.current_academy_id ?? null,
+              is_super_admin: data.is_super_admin ?? false,
+              roles: data.roles ?? [],
+              academy: data.academy ?? null,
+            });
           } else {
             router.push('/login');
           }
@@ -37,7 +43,17 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [router, user, setUser]);
+  }, [router, user, setUser, setAcademyContext]);
+
+  // Apply academy branding as CSS custom properties
+  useEffect(() => {
+    if (!academy) return;
+    const root = document.documentElement;
+    if (academy.primary_color) root.style.setProperty('--color-primary', academy.primary_color);
+    if (academy.secondary_color) root.style.setProperty('--color-secondary', academy.secondary_color);
+    if (academy.accent_color) root.style.setProperty('--color-accent', academy.accent_color);
+    if (academy.site_title) document.title = academy.site_title;
+  }, [academy]);
 
   if (!user) {
     return (
@@ -69,6 +85,8 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
           role={user.role}
           userName={user.username}
           userEmail={user.email}
+          isSuperAdmin={is_super_admin}
+          academyName={academy?.academy_name}
         />
       </div>
 

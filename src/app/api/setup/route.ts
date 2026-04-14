@@ -87,6 +87,66 @@ export async function POST(request: Request) {
       );
     }
 
+    // ── Default Academy ──────────────────────────────────────────────────────
+    await query(
+      `INSERT INTO academies (academy_id, academy_name, academy_email, is_active)
+       VALUES ('ACM-DEFAULT', 'Default Academy', 'admin@tutzllyacademy.com', true)
+       ON CONFLICT (academy_id) DO NOTHING`
+    );
+    const academyRows = await query<{ id: number }>(
+      `SELECT id FROM academies WHERE academy_id = 'ACM-DEFAULT' LIMIT 1`
+    );
+    const defaultAcademyId = academyRows[0]?.id;
+
+    if (defaultAcademyId) {
+      // Backfill entity rows with academy_id
+      for (const table of ['tutors', 'students', 'parents', 'courses', 'tutor_course_assignments',
+                            'student_enrollments', 'schedules', 'sessions', 'class_activities', 'grade_book']) {
+        await query(
+          `UPDATE ${table} SET academy_id = $1 WHERE academy_id IS NULL`,
+          [defaultAcademyId]
+        );
+      }
+
+      // Register all 4 demo users in user_academy_roles
+      const adminRows = await query<{ id: number }>(
+        `SELECT id FROM users WHERE email = 'admin@tutzllyacademy.com' LIMIT 1`
+      );
+      if (adminRows[0]) {
+        await query(
+          `INSERT INTO user_academy_roles (user_id, academy_id, role)
+           VALUES ($1, $2, 'admin') ON CONFLICT DO NOTHING`,
+          [adminRows[0].id, defaultAcademyId]
+        );
+        // Mark admin as super admin
+        await query(
+          `INSERT INTO super_admins (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+          [adminRows[0].id]
+        );
+      }
+      if (tutorRows[0]) {
+        await query(
+          `INSERT INTO user_academy_roles (user_id, academy_id, role)
+           VALUES ($1, $2, 'tutor') ON CONFLICT DO NOTHING`,
+          [tutorRows[0].id, defaultAcademyId]
+        );
+      }
+      if (studentRows[0]) {
+        await query(
+          `INSERT INTO user_academy_roles (user_id, academy_id, role)
+           VALUES ($1, $2, 'student') ON CONFLICT DO NOTHING`,
+          [studentRows[0].id, defaultAcademyId]
+        );
+      }
+      if (parentRows[0]) {
+        await query(
+          `INSERT INTO user_academy_roles (user_id, academy_id, role)
+           VALUES ($1, $2, 'parent') ON CONFLICT DO NOTHING`,
+          [parentRows[0].id, defaultAcademyId]
+        );
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Database initialized with demo accounts',

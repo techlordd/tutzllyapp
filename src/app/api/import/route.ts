@@ -257,6 +257,7 @@ export async function POST(request: NextRequest) {
   if (!payload || payload.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
   }
+  const academyId: number = payload.current_academy_id ?? 0;
 
   // Parse multipart form
   let formData: FormData;
@@ -342,7 +343,11 @@ export async function POST(request: NextRequest) {
         }
         if (!dbRow['entry_status']) dbRow['entry_status'] = 'active';
 
+        // Attach academy context
+        if (academyId) dbRow['academy_id'] = academyId;
+
         // Create login account for user-bearing entities
+        let createdUserId: number | null = null;
         if (config.createUser && dbRow['email']) {
           const existing = await client.query<{ id: number }>(
             'SELECT id FROM users WHERE email = $1',
@@ -367,6 +372,7 @@ export async function POST(request: NextRequest) {
             userId = r.rows[0].id;
           }
           dbRow['user_id'] = userId;
+          createdUserId = userId;
         }
 
         const cols = Object.keys(dbRow);
@@ -384,6 +390,13 @@ export async function POST(request: NextRequest) {
         } else {
           inserted++;
           log.push(`[OK]   Row ${i + 1} | ${rowKey}`);
+          // Also register role in user_academy_roles for user-bearing entities
+          if (config.createUser && createdUserId && academyId && config.userRole) {
+            await client.query(
+              `INSERT INTO user_academy_roles (user_id, academy_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+              [createdUserId, academyId, config.userRole]
+            );
+          }
         }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);

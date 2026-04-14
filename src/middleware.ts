@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const publicPaths = ['/login', '/api/auth', '/api/setup'];
+const publicPaths = ['/login', '/api/auth', '/api/setup', '/auth/select-academy'];
 
 // Uses jose (Edge-compatible) instead of jsonwebtoken — required for Vercel Edge Runtime
 export async function middleware(request: NextRequest) {
@@ -21,12 +21,17 @@ export async function middleware(request: NextRequest) {
   }
 
   let role: string;
+  let currentAcademyId: number | null = null;
+  let isSuperAdmin = false;
+
   try {
     const secret = new TextEncoder().encode(
       process.env.NEXTAUTH_SECRET || 'fallback-secret-change-in-production'
     );
     const { payload } = await jwtVerify(token, secret);
     role = payload.role as string;
+    currentAcademyId = (payload.current_academy_id as number) ?? null;
+    isSuperAdmin = !!(payload.is_super_admin);
   } catch {
     const loginUrl = new URL('/login', request.url);
     const response = NextResponse.redirect(loginUrl);
@@ -34,6 +39,18 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // Super admin routes – only accessible to super admins
+  if (pathname.startsWith('/super-admin') && !isSuperAdmin) {
+    return NextResponse.redirect(new URL(`/${role}`, request.url));
+  }
+
+  // If multi-academy is active and no academy selected, redirect to selector
+  // (allow super-admin and api routes to pass through)
+  if (!currentAcademyId && !isSuperAdmin && !pathname.startsWith('/api/')) {
+    return NextResponse.redirect(new URL('/auth/select-academy', request.url));
+  }
+
+  // Standard role-based route protection
   if (pathname.startsWith('/admin') && role !== 'admin') {
     return NextResponse.redirect(new URL(`/${role}`, request.url));
   }
@@ -47,7 +64,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${role}`, request.url));
   }
 
-  return NextResponse.next();
+  // Attach academy context to request headers for API routes
+  const requestHeaders = new Headers(request.headers);
+  if (currentAcademyId) {
+    requestHeaders.set('x-academy-id', String(currentAcademyId));
+  }
+  requestHeaders.set('x-user-role', role);
+  requestHeaders.set('x-is-super-admin', isSuperAdmin ? '1' : '0');
+
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
   const router = useRouter();
-  const { setUser } = useAuthStore();
+  const { setUser, setAcademyContext } = useAuthStore();
 
   const doLogin = async (loginEmail: string, loginPassword: string) => {
     const res = await fetch('/api/auth/login', {
@@ -29,7 +29,23 @@ export default function LoginPage() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Login failed');
+
+    // Multi-academy: user must pick which academy to enter
+    if (data.needs_academy_selection) {
+      sessionStorage.setItem('pending_academies', JSON.stringify(data.academies));
+      router.push('/select-academy');
+      return null;
+    }
+
     setUser(data.user);
+    if (data.current_academy_id !== undefined) {
+      setAcademyContext({
+        current_academy_id: data.current_academy_id ?? null,
+        is_super_admin: data.is_super_admin ?? false,
+        roles: data.roles ?? [],
+        academy: data.academy ?? null,
+      });
+    }
     router.push(`/${data.user.role}`);
     return data.user;
   };

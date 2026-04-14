@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
-  School, LogOut, Settings, Bell, Upload
+  School, LogOut, Settings, Bell, Upload, Palette, Building2, ShieldCheck
 } from 'lucide-react';
 
 interface NavItem {
@@ -31,6 +31,7 @@ const adminNav: NavItem[] = [
   { label: 'Grade Book', href: '/admin/grades', icon: BarChart3 },
   { label: 'Messages', href: '/admin/messages', icon: MessageSquare },
   { label: 'Import CSV', href: '/admin/import', icon: Upload },
+  { label: 'Branding', href: '/admin/branding', icon: Palette },
 ];
 
 const tutorNav: NavItem[] = [
@@ -70,13 +71,20 @@ const navMap: Record<string, NavItem[]> = {
   parent: parentNav,
 };
 
+const superAdminNav: NavItem[] = [
+  { label: 'Super Admin', href: '/super-admin', icon: ShieldCheck },
+  { label: 'Academies', href: '/super-admin/academies', icon: Building2 },
+];
+
 interface SidebarProps {
   role: string;
   userName: string;
   userEmail: string;
+  isSuperAdmin?: boolean;
+  academyName?: string;
 }
 
-export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
+export default function Sidebar({ role, userName, userEmail, isSuperAdmin, academyName }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const navItems = navMap[role] || [];
@@ -99,7 +107,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-sm">T</div>
             <div>
-              <p className="font-bold text-sm leading-tight">Tutzlly</p>
+              <p className="font-bold text-sm leading-tight">{academyName || 'Tutzlly'}</p>
               <p className="text-xs text-slate-400">Academy</p>
             </div>
           </div>
@@ -157,6 +165,42 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
             </Link>
           );
         })}
+
+        {/* Super Admin section */}
+        {isSuperAdmin && (
+          <>
+            {!collapsed && (
+              <p className="text-xs text-slate-500 uppercase tracking-wider px-3 pt-4 pb-1">
+                Super Admin
+              </p>
+            )}
+            {superAdminNav.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-200 group relative',
+                    isActive
+                      ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                      : 'text-amber-400 hover:bg-slate-700 hover:text-amber-300'
+                  )}
+                  title={collapsed ? item.label : undefined}
+                >
+                  <Icon size={18} className="flex-shrink-0" />
+                  {!collapsed && <span className="text-sm font-medium truncate">{item.label}</span>}
+                  {collapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-slate-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 transition-opacity">
+                      {item.label}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </>
+        )}
       </nav>
 
       {/* User Info + Logout */}
