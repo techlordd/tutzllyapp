@@ -42,7 +42,7 @@ export default function TutorSessionsPage() {
       const res = await fetch(`/api/sessions?tutor_id=${user.user_id}`);
       const data = await res.json();
       setSessions(data.sessions || []);
-    } catch { ''; }
+    } catch { toast.error('Failed to load data'); }
     setLoading(false);
   }, [user?.user_id]);
 
@@ -114,7 +114,8 @@ export default function TutorSessionsPage() {
                   <button onClick={() => {
                     if (confirm('Mark this session as missed?'))
                       fetch(`/api/sessions/${row.ssid}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'missed' }) })
-                        .then(() => { toast.success('Session marked as missed'); fetchSessions(); });
+                        .then(() => { toast.success('Session marked as missed'); fetchSessions(); })
+                        .catch(() => toast.error('Failed to mark session as missed'));
                   }}
                   className="px-2 py-1 text-xs rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200">
                     Missed

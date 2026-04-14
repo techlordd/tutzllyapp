@@ -6,6 +6,7 @@ import { statusBadge } from '@/components/ui/Badge';
 import { Video } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 
 interface Session {
   ssid: string; student_name: string; tutor_firstname: string; tutor_lastname: string; course_name: string;
@@ -23,7 +24,7 @@ export default function ParentSessionsPage() {
     fetch(`/api/sessions?parent_id=${user.user_id}`)
       .then(r => r.json())
       .then(d => { setSessions(d.sessions || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setLoading(false); toast.error('Failed to load data'); });
   }, [user?.user_id]);
 
   const columns = [

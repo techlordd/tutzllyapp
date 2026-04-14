@@ -5,10 +5,12 @@ import StatCard from '@/components/ui/StatCard';
 import { Video, ClipboardList, BarChart3, Calendar, BookOpen } from 'lucide-react';
 import { formatTime } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 
 export default function StudentDashboard() {
   const user = useAuthStore(state => state.user);
   const [stats, setStats] = useState({ sessions: 0, activities: 0, grades: 0, schedule: 0 });
+  const [loading, setLoading] = useState(true);
   const [todaySchedules, setTodaySchedules] = useState<{schedule_id: string; tutor_name: string; course_name: string; session_start_time: string; zoom_link: string}[]>([]);
   const [recentGrades, setRecentGrades] = useState<{id: number; course_name: string; month: string; year: string; test_score: number}[]>([]);
 
@@ -32,7 +34,8 @@ export default function StudentDashboard() {
         const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
         setTodaySchedules((schData.schedules || []).filter((s: {day: string}) => s.day === today));
         setRecentGrades((graData.grades || []).slice(0, 3));
-      } catch { ''; }
+      } catch { toast.error('Failed to load dashboard data'); }
+      setLoading(false);
     };
     fetchData();
   }, [user?.user_id]);
@@ -41,10 +44,10 @@ export default function StudentDashboard() {
     <DashboardLayout title="Student Dashboard">
       <div className="space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard title="My Sessions" value={stats.sessions} icon={Video} color="blue" />
-          <StatCard title="Class Activities" value={stats.activities} icon={ClipboardList} color="green" />
-          <StatCard title="Grade Reports" value={stats.grades} icon={BarChart3} color="purple" />
-          <StatCard title="My Schedules" value={stats.schedule} icon={Calendar} color="orange" />
+          <StatCard title="My Sessions" value={loading ? '...' : stats.sessions} icon={Video} color="blue" />
+          <StatCard title="Class Activities" value={loading ? '...' : stats.activities} icon={ClipboardList} color="green" />
+          <StatCard title="Grade Reports" value={loading ? '...' : stats.grades} icon={BarChart3} color="purple" />
+          <StatCard title="My Schedules" value={loading ? '...' : stats.schedule} icon={Calendar} color="orange" />
         </div>
 
         {todaySchedules.length > 0 && (

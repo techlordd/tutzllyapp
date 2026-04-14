@@ -6,6 +6,7 @@ import Modal from '@/components/ui/Modal';
 import Avatar from '@/components/ui/Avatar';
 import { Eye } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 
 interface Student {
   student_id: string; student_name: string; course_name: string;
@@ -34,7 +35,7 @@ export default function TutorStudentsPage() {
         setStudents(Object.values(unique));
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { setLoading(false); toast.error('Failed to load data'); });
   }, [user?.user_id]);
 
   const columns = [

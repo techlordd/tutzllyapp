@@ -4,6 +4,7 @@ import { Users, GraduationCap, BookOpen, Calendar, Video, ClipboardList, BarChar
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatCard from '@/components/ui/StatCard';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import toast from 'react-hot-toast';
 
 const radarData = [
   { subject: 'Punctuality', A: 85 },
@@ -45,7 +46,7 @@ export default function AdminDashboard() {
           sessions: sessions.sessions?.length || 0,
           activities: activities.activities?.length || 0,
         });
-      } catch { /* ignore */ }
+      } catch { toast.error('Failed to load stats'); }
       setLoading(false);
     };
     fetchStats();
@@ -67,7 +68,10 @@ export default function AdminDashboard() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <h3 className="font-semibold text-gray-800 mb-4">Weekly Sessions Overview</h3>
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              Weekly Sessions Overview
+              <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Sample Data</span>
+            </h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={sessionData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -82,7 +86,10 @@ export default function AdminDashboard() {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <h3 className="font-semibold text-gray-800 mb-4">Average Student Performance</h3>
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              Average Student Performance
+              <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Sample Data</span>
+            </h3>
             <ResponsiveContainer width="100%" height={240}>
               <RadarChart data={radarData}>
                 <PolarGrid />

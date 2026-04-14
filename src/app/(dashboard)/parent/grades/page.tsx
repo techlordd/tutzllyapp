@@ -6,6 +6,7 @@ import Modal from '@/components/ui/Modal';
 import { statusBadge } from '@/components/ui/Badge';
 import { Eye, BarChart3 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 
 interface Grade {
   id: number; tutor_name: string; student_name: string; course_name: string;
@@ -39,7 +40,7 @@ export default function GradesSharedPage() {
     fetch(`/api/grades?${param}`)
       .then(r => r.json())
       .then(d => { setGrades(d.grades || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setLoading(false); toast.error('Failed to load data'); });
   }, [user?.user_id]);
 
   const columns = [

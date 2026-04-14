@@ -4,10 +4,12 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatCard from '@/components/ui/StatCard';
 import { Users, Video, BarChart3, Calendar, MessageSquare } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 
 export default function ParentDashboard() {
   const user = useAuthStore(state => state.user);
   const [stats, setStats] = useState({ children: 0, sessions: 0, grades: 0, schedules: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user?.user_id) return;
@@ -25,17 +27,18 @@ export default function ParentDashboard() {
         schedules: (schedData.schedules || []).length,
         grades: (gradeData.grades || []).length,
       });
-    }).catch(() => {});
+    }).catch(() => toast.error('Failed to load dashboard data'))
+      .finally(() => setLoading(false));
   }, [user?.user_id]);
 
   return (
     <DashboardLayout title="Parent Dashboard">
       <div className="space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard title="My Children" value={stats.children} icon={Users} color="purple" />
-          <StatCard title="Total Sessions" value={stats.sessions} icon={Video} color="blue" />
-          <StatCard title="Grade Reports" value={stats.grades} icon={BarChart3} color="green" />
-          <StatCard title="Schedules" value={stats.schedules} icon={Calendar} color="orange" />
+          <StatCard title="My Children" value={loading ? '...' : stats.children} icon={Users} color="purple" />
+          <StatCard title="Total Sessions" value={loading ? '...' : stats.sessions} icon={Video} color="blue" />
+          <StatCard title="Grade Reports" value={loading ? '...' : stats.grades} icon={BarChart3} color="green" />
+          <StatCard title="Schedules" value={loading ? '...' : stats.schedules} icon={Calendar} color="orange" />
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">

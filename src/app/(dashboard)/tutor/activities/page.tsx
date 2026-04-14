@@ -51,7 +51,7 @@ export default function TutorActivitiesPage() {
       const [actData, sesData] = await Promise.all([actRes.json(), sesRes.json()]);
       setActivities(actData.activities || []);
       setSessions(sesData.sessions || []);
-    } catch { ''; }
+    } catch { toast.error('Failed to load data'); }
     setLoading(false);
   }, [user?.user_id]);
 

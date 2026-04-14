@@ -141,8 +141,11 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
       <nav className="flex-1 overflow-y-auto py-2 px-2">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || 
-            (item.href !== `/${role}` && pathname.startsWith(item.href));
+          // Use the first nav item's href as the "root" for this role to avoid
+          // the super_admin underscore-vs-hyphen mismatch with /${role}.
+          const rootHref = navItems[0]?.href ?? '';
+          const isActive = pathname === item.href ||
+            (item.href !== rootHref && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}

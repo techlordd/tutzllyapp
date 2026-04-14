@@ -6,6 +6,7 @@ import Modal from '@/components/ui/Modal';
 import { Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 
 interface Activity {
   id: number; tutor_firstname: string; tutor_lastname: string; course_name: string;
@@ -26,7 +27,7 @@ export default function StudentActivitiesPage() {
     fetch(`/api/activities?student_id=${user.user_id}`)
       .then(r => r.json())
       .then(d => { setActivities(d.activities || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setLoading(false); toast.error('Failed to load data'); });
   }, [user?.user_id]);
 
   const columns = [

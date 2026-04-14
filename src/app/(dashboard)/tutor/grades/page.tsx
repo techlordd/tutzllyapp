@@ -57,7 +57,7 @@ export default function TutorGradesPage() {
       const [graData, sesData] = await Promise.all([graRes.json(), sesRes.json()]);
       setGrades(graData.grades || []);
       setSessions(sesData.sessions || []);
-    } catch { ''; }
+    } catch { toast.error('Failed to load data'); }
     setLoading(false);
   }, [user?.user_id]);
 

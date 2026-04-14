@@ -39,7 +39,7 @@ export default function MessagesSharedPage() {
       const res = await fetch(`/api/messages/${activeTab}`);
       const data = await res.json();
       setMessages(data.messages || []);
-    } catch { ''; }
+    } catch { toast.error('Failed to load data'); }
     setLoading(false);
   }, [activeTab]);
 

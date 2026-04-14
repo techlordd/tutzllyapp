@@ -37,7 +37,7 @@ export default function SuperAdminPage() {
     <DashboardLayout title="Super Admin">
       <div className="space-y-8 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
               <ShieldCheck size={20} className="text-amber-600" />
@@ -94,6 +94,7 @@ export default function SuperAdminPage() {
               </Link>
             </div>
           ) : (
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
                 <tr>
@@ -122,6 +123,7 @@ export default function SuperAdminPage() {
                 ))}
               </tbody>
             </table>
+          </div>
           )}
         </div>
       </div>

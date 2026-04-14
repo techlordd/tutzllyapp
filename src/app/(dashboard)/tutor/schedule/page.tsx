@@ -5,6 +5,7 @@ import DataTable from '@/components/ui/DataTable';
 import { Video, Calendar } from 'lucide-react';
 import { formatTime } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 
 interface Schedule {
   schedule_id: string; student_name: string; course_name: string;
@@ -23,7 +24,7 @@ export default function TutorSchedulePage() {
     fetch(`/api/schedules?tutor_id=${user.user_id}`)
       .then(r => r.json())
       .then(d => { setSchedules(d.schedules || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setLoading(false); toast.error('Failed to load data'); });
   }, [user?.user_id]);
 
   const columns = [

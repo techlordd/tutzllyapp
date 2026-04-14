@@ -6,6 +6,7 @@ import { statusBadge } from '@/components/ui/Badge';
 import { BookOpen } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 
 interface Enrollment {
   assign_id: string; course_name: string; course_code: string;
@@ -22,7 +23,7 @@ export default function StudentCoursesPage() {
     fetch(`/api/enrollments?student_id=${user.user_id}`)
       .then(r => r.json())
       .then(d => { setEnrollments(d.enrollments || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setLoading(false); toast.error('Failed to load data'); });
   }, [user?.user_id]);
 
   const columns = [
