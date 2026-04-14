@@ -20,6 +20,16 @@ export async function POST(request: Request) {
   }
 
   try {
+    // ── Pre-migration: add academy_id to existing tables before running schema ──
+    // (schema.sql tries to CREATE INDEXes on academy_id; those fail if the column
+    //  doesn't exist on tables that were created by an older schema version)
+    for (const table of ['tutors', 'students', 'parents', 'courses', 'tutor_course_assignments',
+                          'student_enrollments', 'schedules', 'sessions', 'class_activities', 'grade_book']) {
+      try {
+        await query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE`);
+      } catch { /* table doesn't exist yet — schema.sql will create it with the column */ }
+    }
+
     const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);
@@ -130,14 +140,6 @@ export async function POST(request: Request) {
     const defaultAcademyId = academyRows[0]?.id;
 
     if (defaultAcademyId) {
-      // Migration: ensure academy_id column exists on all entity tables (idempotent)
-      for (const table of ['tutors', 'students', 'parents', 'courses', 'tutor_course_assignments',
-                            'student_enrollments', 'schedules', 'sessions', 'class_activities', 'grade_book']) {
-        await query(
-          `ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE`
-        );
-      }
-
       // Backfill entity rows with academy_id
       for (const table of ['tutors', 'students', 'parents', 'courses', 'tutor_course_assignments',
                             'student_enrollments', 'schedules', 'sessions', 'class_activities', 'grade_book']) {
