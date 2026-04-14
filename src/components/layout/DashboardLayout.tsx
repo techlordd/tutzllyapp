@@ -87,13 +87,15 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
           userEmail={user.email}
           isSuperAdmin={is_super_admin}
           academyName={academy?.academy_name}
+          collapsed={sidebarCollapsed}
+          onCollapse={setSidebarCollapsed}
         />
       </div>
 
       {/* Main Content */}
       <div className={cn(
         'flex-1 flex flex-col min-w-0 transition-all duration-300',
-        'md:ml-64'
+        sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
       )}>
         <Header
           title={title}

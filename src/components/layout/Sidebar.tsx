@@ -1,5 +1,4 @@
 'use client';
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -7,7 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
-  School, LogOut, Settings, Bell, Upload, Palette, Building2, ShieldCheck
+  School, LogOut, Upload, Palette, Building2, ShieldCheck
 } from 'lucide-react';
 
 interface NavItem {
@@ -82,10 +81,11 @@ interface SidebarProps {
   userEmail: string;
   isSuperAdmin?: boolean;
   academyName?: string;
+  collapsed?: boolean;
+  onCollapse?: (v: boolean) => void;
 }
 
-export default function Sidebar({ role, userName, userEmail, isSuperAdmin, academyName }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export default function Sidebar({ role, userName, userEmail, isSuperAdmin, academyName, collapsed = false, onCollapse }: SidebarProps) {
   const pathname = usePathname();
   const navItems = navMap[role] || [];
   const { clearUser } = useAuthStore();
@@ -113,7 +113,7 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
           </div>
         )}
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => onCollapse?.(!collapsed)}
           className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors ml-auto"
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
