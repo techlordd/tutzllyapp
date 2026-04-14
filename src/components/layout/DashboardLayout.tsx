@@ -87,8 +87,9 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
           userEmail={user.email}
           isSuperAdmin={is_super_admin}
           academyName={academy?.academy_name}
-          collapsed={sidebarCollapsed}
+          collapsed={mobileSidebarOpen ? false : sidebarCollapsed}
           onCollapse={setSidebarCollapsed}
+          onNavClick={() => setMobileSidebarOpen(false)}
         />
       </div>
 

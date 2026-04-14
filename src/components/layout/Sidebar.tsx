@@ -84,9 +84,10 @@ interface SidebarProps {
   academyName?: string;
   collapsed?: boolean;
   onCollapse?: (v: boolean) => void;
+  onNavClick?: () => void;
 }
 
-export default function Sidebar({ role, userName, userEmail, isSuperAdmin, academyName, collapsed = false, onCollapse }: SidebarProps) {
+export default function Sidebar({ role, userName, userEmail, isSuperAdmin, academyName, collapsed = false, onCollapse, onNavClick }: SidebarProps) {
   const pathname = usePathname();
   const navItems = navMap[role] || [];
   const { clearUser } = useAuthStore();
@@ -150,6 +151,7 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavClick}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-200 group relative',
                 isActive
