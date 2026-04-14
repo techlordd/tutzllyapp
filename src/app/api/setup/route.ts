@@ -130,6 +130,14 @@ export async function POST(request: Request) {
     const defaultAcademyId = academyRows[0]?.id;
 
     if (defaultAcademyId) {
+      // Migration: ensure academy_id column exists on all entity tables (idempotent)
+      for (const table of ['tutors', 'students', 'parents', 'courses', 'tutor_course_assignments',
+                            'student_enrollments', 'schedules', 'sessions', 'class_activities', 'grade_book']) {
+        await query(
+          `ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE`
+        );
+      }
+
       // Backfill entity rows with academy_id
       for (const table of ['tutors', 'students', 'parents', 'courses', 'tutor_course_assignments',
                             'student_enrollments', 'schedules', 'sessions', 'class_activities', 'grade_book']) {
