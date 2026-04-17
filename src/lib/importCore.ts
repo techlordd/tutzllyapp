@@ -97,7 +97,7 @@ export const COLUMN_MAPS: Record<string, Record<string, string>> = {
   assignments: {
     'Tutor Assign ID': 'tutor_assign_id', 'Tutor ID': 'tutor_id',
     'Tutor Name': 'tutor_username', 'Tutor Sex': 'tutor_sex', 'Tutor Email': 'tutor_email',
-    'Assign Course': 'course_name', 'Course Code': 'course_code', 'Course ID': 'course_id',
+    'Assign Course': 'course_name', 'Course Code': 'course_code',
     'Entry Status': 'entry_status', 'IP': 'ip', 'Created By': 'created_by', 'Updated By': 'updated_by',
   },
   enrollments: {
@@ -105,7 +105,6 @@ export const COLUMN_MAPS: Record<string, Record<string, string>> = {
     'Confirm Student Sex': 'student_sex', 'TUTOR ID': 'tutor_id', 'Tutor Name': 'tutor_name',
     'Confirm Tutor Username': 'tutor_username', 'Confirm Tutor Sex': 'tutor_sex',
     'Tutor Email': 'tutor_email', 'COURSE': 'course_name', 'Course Code': 'course_code',
-    'Course ID': 'course_id',
     'Entry Status': 'entry_status', 'IP': 'ip', 'Created By': 'created_by', 'Updated By': 'updated_by',
   },
   schedules: {
