@@ -279,6 +279,7 @@ export async function runImport(
     skip_empty_lines: true,
     trim: true,
     bom: true,
+    relax_quotes: true,
   }) as Record<string, string>[];
 
   let inserted = 0;

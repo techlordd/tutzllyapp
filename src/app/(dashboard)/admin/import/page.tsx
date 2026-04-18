@@ -32,6 +32,40 @@ interface ImportResult {
   defaultPassword?: string;
 }
 
+/**
+ * Splits CSV text into individual record strings while respecting quoted fields
+ * that may contain embedded newlines. Returns [headerRow, ...dataRows].
+ */
+function splitCsvRecords(text: string): string[] {
+  const rows: string[] = [];
+  let cur = '';
+  let inQuote = false;
+  const n = text.length;
+  for (let i = 0; i < n; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      // Handle escaped quote ("")
+      if (inQuote && text[i + 1] === '"') {
+        cur += '""';
+        i++;
+      } else {
+        inQuote = !inQuote;
+        cur += ch;
+      }
+    } else if (!inQuote && ch === '\n') {
+      const row = cur.endsWith('\r') ? cur.slice(0, -1) : cur;
+      rows.push(row);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  // Flush last record
+  const last = cur.endsWith('\r') ? cur.slice(0, -1) : cur;
+  if (last.trim()) rows.push(last);
+  return rows;
+}
+
 export default function ImportPage() {
   const [entityType, setEntityType] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -68,14 +102,14 @@ export default function ImportPage() {
     setShowLog(false);
     try {
       const text = await file.text();
-      const lines = text.split('\n').map(l => l.replace(/\r$/, ''));
-      const header = lines[0];
-      const dataLines = lines.slice(1).filter(l => l.trim() !== '');
+      const allRows = splitCsvRecords(text);
+      const header = allRows[0];
+      const dataRows = allRows.slice(1).filter(r => r.trim() !== '');
 
       const CHUNK_SIZE = 500;
       const chunks: string[][] = [];
-      for (let i = 0; i < dataLines.length; i += CHUNK_SIZE) {
-        chunks.push(dataLines.slice(i, i + CHUNK_SIZE));
+      for (let i = 0; i < dataRows.length; i += CHUNK_SIZE) {
+        chunks.push(dataRows.slice(i, i + CHUNK_SIZE));
       }
       if (chunks.length === 0) { toast.error('CSV file is empty'); return; }
 
