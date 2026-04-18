@@ -468,6 +468,12 @@ export async function runImport(
         if (dbCol && val !== '' && val != null) {
           if (boolCols?.has(dbCol)) {
             dbRow[dbCol] = /^(yes|true|1)$/i.test(val);
+          } else if (DATE_COLUMNS.has(dbCol)) {
+            // DATE column: validate before passing to avoid type errors (e.g. "0")
+            dbRow[dbCol] = isValidDate(val) ? val : null;
+          } else if (TIME_COLUMNS.has(dbCol)) {
+            // TIME column: validate before passing to avoid type errors (e.g. "0")
+            dbRow[dbCol] = isValidTime(val) ? val : null;
           } else if (intCols?.has(dbCol) && /^-?\d+(\.\d+)?$/.test(val)) {
             // INTEGER column: convert fractional hours to whole minutes (e.g. 1.5 → 90)
             dbRow[dbCol] = Math.round(parseFloat(val) * 60);
@@ -477,10 +483,6 @@ export async function runImport(
           } else if (varcharLimits?.[dbCol] && typeof val === 'string' && val.length > varcharLimits[dbCol]) {
             // Truncate strings that exceed the known VARCHAR column limit
             dbRow[dbCol] = val.slice(0, varcharLimits[dbCol]);
-          } else if (DATE_COLUMNS.has(dbCol)) {
-            dbRow[dbCol] = isValidDate(val) ? val : null;
-          } else if (TIME_COLUMNS.has(dbCol)) {
-            dbRow[dbCol] = isValidTime(val) ? val : null;
           } else {
             dbRow[dbCol] = val;
           }
