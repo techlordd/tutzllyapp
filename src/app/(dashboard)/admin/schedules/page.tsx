@@ -6,9 +6,10 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Input, Select } from '@/components/ui/FormField';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Video, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Video, Eye, CalendarDays } from 'lucide-react';
 import { DAYS_OF_WEEK, TIMEZONES, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import TimetableDrawer from '@/components/layout/TimetableDrawer';
 
 interface Schedule {
   schedule_id: string; student_name: string; student_id: string;
@@ -42,6 +43,7 @@ export default function SchedulesPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [tutorAssignments, setTutorAssignments] = useState<TutorAssignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [timetableOpen, setTimetableOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -171,7 +173,10 @@ export default function SchedulesPage() {
             <h2 className="text-2xl font-bold text-gray-900">Schedules</h2>
             <p className="text-gray-500 text-sm mt-0.5">{schedules.length} schedules</p>
           </div>
-          <Button icon={Plus} onClick={openCreate}>Create Schedule</Button>
+          <div className="flex gap-2">
+            <Button icon={CalendarDays} variant="secondary" onClick={() => setTimetableOpen(true)}>Timetable</Button>
+            <Button icon={Plus} onClick={openCreate}>Create Schedule</Button>
+          </div>
         </div>
 
         <DataTable data={schedules} columns={columns} loading={loading}
@@ -190,6 +195,12 @@ export default function SchedulesPage() {
           )}
         />
       </div>
+
+      <TimetableDrawer
+        open={timetableOpen}
+        onClose={() => setTimetableOpen(false)}
+        schedules={schedules}
+      />
 
       <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditingSchedule(null); setForm(emptyForm); }}
         title={editingSchedule ? 'Edit Schedule' : 'Create Schedule'} size="2xl">
