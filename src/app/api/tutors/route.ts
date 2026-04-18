@@ -68,13 +68,29 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const academyId = getAcademyId(request);
-    const deleted = await query<{ tutor_id: string }>(
-      `UPDATE tutors SET entry_status='deleted', updated_at=NOW()
-       WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)
-       RETURNING tutor_id`,
+
+    // Collect user_ids before deleting so we can clean up auth accounts
+    const tutorRows = await query<{ user_id: number; tutor_id: string }>(
+      `SELECT user_id, tutor_id FROM tutors WHERE (academy_id = $1 OR $1 = 0)`,
       [academyId]
     );
-    return NextResponse.json({ deleted: deleted.length });
+
+    // Hard-delete tutor records so UNIQUE constraints are freed for re-import
+    await query(
+      `DELETE FROM tutors WHERE (academy_id = $1 OR $1 = 0)`,
+      [academyId]
+    );
+
+    // Hard-delete the associated user accounts (tutor role only, not admins)
+    const userIds = tutorRows.map(r => r.user_id).filter(Boolean);
+    if (userIds.length > 0) {
+      await query(
+        `DELETE FROM users WHERE id = ANY($1) AND role = 'tutor'`,
+        [userIds]
+      );
+    }
+
+    return NextResponse.json({ deleted: tutorRows.length });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to delete tutors' }, { status: 500 });
