@@ -52,6 +52,45 @@ export async function POST(request: Request) {
       await query(`ALTER TABLE sessions ALTER COLUMN session_duration TYPE NUMERIC(5,2)`);
     } catch { /* column doesn't exist yet */ }
 
+    // Widen sessions VARCHAR columns that were too narrow for real data
+    const sessionAlterations: string[] = [
+      `ALTER TABLE sessions ALTER COLUMN ssid TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN schedule_id TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN tutor_id TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN tutor_firstname TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN tutor_lastname TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN student_id TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN student_name TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN student_email TYPE TEXT`,
+      `ALTER TABLE sessions ALTER COLUMN course_name TYPE TEXT`,
+      `ALTER TABLE sessions ALTER COLUMN meeting_id TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN meeting_passcode TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN session_code_status TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN mothers_email TYPE TEXT`,
+      `ALTER TABLE sessions ALTER COLUMN fathers_email TYPE TEXT`,
+      `ALTER TABLE sessions ALTER COLUMN missed_session_id1 TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_schedule_id1 TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_tutor_id1 TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_tutor_firstname1 TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_tutor_lastname1 TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_student_name1 TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_course1 TYPE TEXT`,
+      `ALTER TABLE sessions ALTER COLUMN missed_session_code_status1 TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_session_id2 TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_schedule_id2 TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_tutor_id2 TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_tutor_firstname2 TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_tutor_lastname2 TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_student_name2 TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN missed_course2 TYPE TEXT`,
+      `ALTER TABLE sessions ALTER COLUMN missed_session_code_status2 TYPE VARCHAR(100)`,
+      `ALTER TABLE sessions ALTER COLUMN created_by TYPE VARCHAR(255)`,
+      `ALTER TABLE sessions ALTER COLUMN updated_by TYPE VARCHAR(255)`,
+    ];
+    for (const sql of sessionAlterations) {
+      try { await query(sql); } catch { /* column may not exist yet */ }
+    }
+
     const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);
