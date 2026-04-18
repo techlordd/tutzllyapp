@@ -3,6 +3,8 @@ import { pool } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 import { runImport, ENTITY_CONFIG, COLUMN_MAPS } from '@/lib/importCore';
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

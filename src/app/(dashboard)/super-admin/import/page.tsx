@@ -47,6 +47,7 @@ export default function SuperAdminImportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState('');
   const [result, setResult] = useState<ImportResult | null>(null);
   const [showLog, setShowLog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,18 +80,46 @@ export default function SuperAdminImportPage() {
     if (!file) { toast.error('Select a CSV file'); return; }
     setLoading(true); setResult(null); setShowLog(false);
     try {
-      const form = new FormData();
-      form.append('type', entityType);
-      form.append('file', file);
-      form.append('academy_id', selectedAcademyId);
-      const res = await fetch('/api/super-admin/import', { method: 'POST', body: form });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Import failed'); return; }
-      setResult(data);
-      if (data.inserted > 0) toast.success(`${data.inserted} record${data.inserted !== 1 ? 's' : ''} imported`);
-      else if (data.errors.length === 0) toast.success('Import complete — all records already existed');
+      const text = await file.text();
+      const lines = text.split('\n').map(l => l.replace(/\r$/, ''));
+      const header = lines[0];
+      const dataLines = lines.slice(1).filter(l => l.trim() !== '');
+
+      const CHUNK_SIZE = 500;
+      const chunks: string[][] = [];
+      for (let i = 0; i < dataLines.length; i += CHUNK_SIZE) {
+        chunks.push(dataLines.slice(i, i + CHUNK_SIZE));
+      }
+      if (chunks.length === 0) { toast.error('CSV file is empty'); return; }
+
+      const aggregated: ImportResult = { inserted: 0, skipped: 0, errors: [], log: [], total: 0 };
+
+      for (let i = 0; i < chunks.length; i++) {
+        setProgress(`Sending batch ${i + 1} of ${chunks.length}…`);
+        const chunkCsv = [header, ...chunks[i]].join('\n');
+        const blob = new Blob([chunkCsv], { type: 'text/csv' });
+        const form = new FormData();
+        form.append('type', entityType);
+        form.append('file', blob, file.name);
+        form.append('academy_id', selectedAcademyId);
+
+        const res = await fetch('/api/super-admin/import', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.error || 'Import failed'); return; }
+
+        aggregated.inserted += data.inserted;
+        aggregated.skipped += data.skipped;
+        aggregated.errors.push(...(data.errors ?? []));
+        aggregated.total += data.total;
+        if (data.log) aggregated.log!.push(...data.log);
+        if (data.defaultPassword) aggregated.defaultPassword = data.defaultPassword;
+      }
+
+      setResult(aggregated);
+      if (aggregated.inserted > 0) toast.success(`${aggregated.inserted} record${aggregated.inserted !== 1 ? 's' : ''} imported`);
+      else if (aggregated.errors.length === 0) toast.success('Import complete — all records already existed');
     } catch { toast.error('Network error during import'); }
-    finally { setLoading(false); }
+    finally { setLoading(false); setProgress(''); }
   };
 
   const selectedAcademy = academies.find(a => String(a.id) === selectedAcademyId);
@@ -213,7 +242,7 @@ export default function SuperAdminImportPage() {
 
           <Button type="submit" disabled={loading || !selectedAcademyId || !entityType || !file} className="w-full">
             {loading
-              ? 'Importing…'
+              ? (progress || 'Importing…')
               : `Import${entityLabel ? ` ${entityLabel}` : ''}${selectedAcademy ? ` → ${selectedAcademy.academy_name}` : ''}`}
           </Button>
         </form>
