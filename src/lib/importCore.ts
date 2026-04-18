@@ -386,6 +386,16 @@ export async function runImport(
         }
       }
 
+      // Skip blank rows produced by relax_column_count (e.g. continuation lines of multi-line bodies)
+      const SYSTEM_ONLY = new Set(['academy_id', 'entry_status', 'created_at', 'updated_at', 'ip']);
+      const meaningfulCount = Object.keys(dbRow).filter(k => !SYSTEM_ONLY.has(k)).length;
+      if (meaningfulCount === 0) {
+        skipped++;
+        log.push(`[SKIP] Row ${i + 1} — empty/continuation line, no mapped fields`);
+        await client.query('RELEASE SAVEPOINT sp');
+        continue;
+      }
+
       if (config.idField && config.idPrefix && !dbRow[config.idField]) {
         dbRow[config.idField] = generateId(config.idPrefix);
       }
