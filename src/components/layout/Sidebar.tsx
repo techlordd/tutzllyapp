@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import {
-  LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, Video, ClipboardList,
+  LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, CalendarDays, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
   School, LogOut, Upload, Palette, Building2, ShieldCheck
 } from 'lucide-react';
@@ -25,6 +25,7 @@ const adminNav: NavItem[] = [
   { label: 'Assign Courses', href: '/admin/assign-courses', icon: BookMarked },
   { label: 'Enroll Students', href: '/admin/enrollments', icon: School },
   { label: 'Schedules', href: '/admin/schedules', icon: Calendar },
+  { label: 'Timetable', href: '/admin/timetable', icon: CalendarDays },
   { label: 'Sessions', href: '/admin/sessions', icon: Video },
   { label: 'Class Activities', href: '/admin/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/admin/grades', icon: BarChart3 },
