@@ -19,33 +19,52 @@ interface Schedule {
   time_zone: string; assign_status: string; year: string;
 }
 
+interface Enrollment {
+  assign_id: string; student_id: string; student_name: string;
+  tutor_id: string; tutor_name: string; tutor_email: string;
+  course_id: number; course_name: string; course_code: string;
+}
+
+const emptyForm = {
+  student_id: '', student_name: '', tutor_id: '', tutor_name: '', tutor_email: '',
+  course_id: '', course_name: '', course_code: '', year: new Date().getFullYear().toString(),
+  day: '', duration: '60', session_start_time: '', session_end_time: '',
+  time_zone: 'WAT (Africa/Lagos)', zoom_link: '', meeting_id: '', meeting_passcode: '',
+};
+
 export default function SchedulesPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [students, setStudents] = useState<{student_id: string; firstname: string; surname: string; email: string}[]>([]);
-  const [tutors, setTutors] = useState<{tutor_id: string; firstname: string; surname: string; email: string}[]>([]);
-  const [courses, setCourses] = useState<{id: number; course_name: string; course_code: string}[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    student_id: '', student_name: '', tutor_id: '', tutor_name: '', tutor_email: '',
-    course_id: '', course_name: '', course_code: '', year: new Date().getFullYear().toString(),
-    day: '', duration: '60', session_start_time: '', session_end_time: '',
-    time_zone: 'WAT (Africa/Lagos)', zoom_link: '', meeting_id: '', meeting_passcode: '',
-  });
+  const [form, setForm] = useState(emptyForm);
+
+  // Unique enrolled students
+  const enrolledStudents = [...new Map(enrollments.map(e => [e.student_id, e])).values()];
+
+  // Tutors teaching the selected student
+  const studentTutors = [
+    ...new Map(
+      enrollments.filter(e => e.student_id === form.student_id).map(e => [e.tutor_id, e])
+    ).values(),
+  ];
+
+  // Courses the selected tutor teaches the selected student
+  const tutorCourses = enrollments.filter(
+    e => e.student_id === form.student_id && e.tutor_id === form.tutor_id
+  );
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [schRes, stuRes, tutRes, courRes] = await Promise.all([
-        fetch('/api/schedules'), fetch('/api/students'), fetch('/api/tutors'), fetch('/api/courses')
+      const [schRes, enrRes] = await Promise.all([
+        fetch('/api/schedules'), fetch('/api/enrollments'),
       ]);
-      const [schData, stuData, tutData, courData] = await Promise.all([schRes.json(), stuRes.json(), tutRes.json(), courRes.json()]);
+      const [schData, enrData] = await Promise.all([schRes.json(), enrRes.json()]);
       setSchedules(schData.schedules || []);
-      setStudents(stuData.students || []);
-      setTutors(tutData.tutors || []);
-      setCourses(courData.courses || []);
+      setEnrollments(enrData.enrollments || []);
     } catch { toast.error('Failed to load data'); }
     setLoading(false);
   }, []);
@@ -53,18 +72,32 @@ export default function SchedulesPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleStudentChange = (studentId: string) => {
-    const s = students.find(s => s.student_id === studentId);
-    setForm(f => ({ ...f, student_id: studentId, student_name: s ? `${s.firstname} ${s.surname}` : '' }));
+    const e = enrollments.find(e => e.student_id === studentId);
+    setForm(f => ({
+      ...f,
+      student_id: studentId,
+      student_name: e?.student_name || '',
+      // Reset downstream selections
+      tutor_id: '', tutor_name: '', tutor_email: '',
+      course_id: '', course_name: '', course_code: '',
+    }));
   };
 
   const handleTutorChange = (tutorId: string) => {
-    const t = tutors.find(t => t.tutor_id === tutorId);
-    setForm(f => ({ ...f, tutor_id: tutorId, tutor_name: t ? `${t.firstname} ${t.surname}` : '', tutor_email: t?.email || '' }));
+    const e = enrollments.find(e => e.student_id === form.student_id && e.tutor_id === tutorId);
+    setForm(f => ({
+      ...f,
+      tutor_id: tutorId,
+      tutor_name: e?.tutor_name || '',
+      tutor_email: e?.tutor_email || '',
+      // Reset course when tutor changes
+      course_id: '', course_name: '', course_code: '',
+    }));
   };
 
   const handleCourseChange = (courseId: string) => {
-    const c = courses.find(c => c.id === parseInt(courseId));
-    setForm(f => ({ ...f, course_id: courseId, course_name: c?.course_name || '', course_code: c?.course_code || '' }));
+    const e = tutorCourses.find(e => String(e.course_id) === courseId);
+    setForm(f => ({ ...f, course_id: courseId, course_name: e?.course_name || '', course_code: e?.course_code || '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,6 +110,8 @@ export default function SchedulesPage() {
       if (!res.ok) throw new Error();
       toast.success(editingSchedule ? 'Schedule updated!' : 'Schedule created!');
       setModalOpen(false);
+      setEditingSchedule(null);
+      setForm(emptyForm);
       fetchData();
     } catch { toast.error('Failed to save schedule'); }
     setSubmitting(false);
@@ -89,6 +124,18 @@ export default function SchedulesPage() {
       toast.success('Schedule deleted');
       fetchData();
     } catch { toast.error('Failed to delete'); }
+  };
+
+  const openCreate = () => {
+    setEditingSchedule(null);
+    setForm(emptyForm);
+    setModalOpen(true);
+  };
+
+  const openEdit = (row: Schedule) => {
+    setEditingSchedule(row);
+    setForm({ ...emptyForm, ...row, course_id: String(row.course_id), duration: String(row.duration) });
+    setModalOpen(true);
   };
 
   const columns = [
@@ -118,9 +165,7 @@ export default function SchedulesPage() {
             <h2 className="text-2xl font-bold text-gray-900">Schedules</h2>
             <p className="text-gray-500 text-sm mt-0.5">{schedules.length} schedules</p>
           </div>
-          <Button icon={Plus} onClick={() => { setEditingSchedule(null); setModalOpen(true); }}>
-            Create Schedule
-          </Button>
+          <Button icon={Plus} onClick={openCreate}>Create Schedule</Button>
         </div>
 
         <DataTable data={schedules} columns={columns} loading={loading}
@@ -131,7 +176,7 @@ export default function SchedulesPage() {
               <Link href={`/admin/schedules/${row.schedule_id}`}>
                 <span className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors inline-flex"><Eye size={15} /></span>
               </Link>
-              <button onClick={() => { setEditingSchedule(row); setForm({...form, ...row, course_id: String(row.course_id), duration: String(row.duration) }); setModalOpen(true); }}
+              <button onClick={() => openEdit(row)}
                 className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-600 transition-colors"><Edit size={15} /></button>
               <button onClick={() => handleDelete(row.schedule_id)}
                 className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors"><Trash2 size={15} /></button>
@@ -140,27 +185,51 @@ export default function SchedulesPage() {
         />
       </div>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingSchedule ? 'Edit Schedule' : 'Create Schedule'} size="2xl">
+      <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditingSchedule(null); setForm(emptyForm); }}
+        title={editingSchedule ? 'Edit Schedule' : 'Create Schedule'} size="2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            {/* Student — enrolled students only */}
             <FormField label="Student" required>
               <Select value={form.student_id} onChange={e => handleStudentChange(e.target.value)} required>
                 <option value="">Select Student</option>
-                {students.map(s => <option key={s.student_id} value={s.student_id}>{s.firstname} {s.surname}</option>)}
+                {enrolledStudents.map(e => (
+                  <option key={e.student_id} value={e.student_id}>{e.student_name}</option>
+                ))}
               </Select>
             </FormField>
+
+            {/* Tutor — only tutors assigned to the selected student */}
             <FormField label="Tutor" required>
-              <Select value={form.tutor_id} onChange={e => handleTutorChange(e.target.value)} required>
-                <option value="">Select Tutor</option>
-                {tutors.map(t => <option key={t.tutor_id} value={t.tutor_id}>{t.firstname} {t.surname}</option>)}
+              <Select
+                value={form.tutor_id}
+                onChange={e => handleTutorChange(e.target.value)}
+                required
+                disabled={!form.student_id}
+              >
+                <option value="">{form.student_id ? 'Select Tutor' : 'Select a student first'}</option>
+                {studentTutors.map(e => (
+                  <option key={e.tutor_id} value={e.tutor_id}>{e.tutor_name}</option>
+                ))}
               </Select>
             </FormField>
+
+            {/* Course — only courses the selected tutor teaches the selected student */}
             <FormField label="Course" required>
-              <Select value={form.course_id} onChange={e => handleCourseChange(e.target.value)} required>
-                <option value="">Select Course</option>
-                {courses.map(c => <option key={c.id} value={c.id}>{c.course_name} ({c.course_code})</option>)}
+              <Select
+                value={form.course_id}
+                onChange={e => handleCourseChange(e.target.value)}
+                required
+                disabled={!form.tutor_id}
+              >
+                <option value="">{form.tutor_id ? 'Select Course' : 'Select a tutor first'}</option>
+                {tutorCourses.map(e => (
+                  <option key={e.assign_id} value={e.course_id}>{e.course_name} ({e.course_code})</option>
+                ))}
               </Select>
             </FormField>
+
             <FormField label="Year">
               <Input value={form.year} onChange={e => setForm({...form, year: e.target.value})} />
             </FormField>
@@ -185,6 +254,7 @@ export default function SchedulesPage() {
               </Select>
             </FormField>
           </div>
+
           <div className="border-t pt-4">
             <h4 className="font-semibold text-sm text-gray-700 mb-3">Zoom Details</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -199,8 +269,9 @@ export default function SchedulesPage() {
               </FormField>
             </div>
           </div>
+
           <div className="flex gap-3 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={() => { setModalOpen(false); setEditingSchedule(null); setForm(emptyForm); }}>Cancel</Button>
             <Button type="submit" loading={submitting}>{editingSchedule ? 'Update' : 'Create Schedule'}</Button>
           </div>
         </form>
