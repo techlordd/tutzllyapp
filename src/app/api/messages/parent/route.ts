@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     let sql = `SELECT * FROM messages_parent WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (userId) { params.push(userId); sql += ` AND user_id = $${params.length}`; }
-    sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY message_date DESC, message_time DESC, created_at DESC';
     const messages = await query(sql, params);
     return NextResponse.json({ messages });
   } catch (error) {
