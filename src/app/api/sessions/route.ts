@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
 import { generateId } from '@/lib/utils';
 import { getAcademyId } from '@/lib/request-context';
+import { verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,5 +64,29 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const token = request.cookies.get('token')?.value;
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const payload = verifyToken(token);
+    if (!payload || payload.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
+    }
+    const academyId = getAcademyId(request);
+    if (!academyId) return NextResponse.json({ error: 'No academy context' }, { status: 400 });
+
+    const result = await query<{ count: string }>(
+      `WITH deleted AS (DELETE FROM sessions WHERE academy_id = $1 RETURNING id)
+       SELECT COUNT(*) AS count FROM deleted`,
+      [academyId]
+    );
+    const deleted = parseInt(result[0]?.count ?? '0', 10);
+    return NextResponse.json({ deleted });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to clear sessions' }, { status: 500 });
   }
 }
