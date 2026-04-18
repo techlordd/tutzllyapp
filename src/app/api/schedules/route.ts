@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const tutorId = searchParams.get('tutor_id');
     const parentId = searchParams.get('parent_id');
     const academyId = getAcademyId(request);
-    let sql = `SELECT s.*, c.course_name FROM schedules s LEFT JOIN courses c ON s.course_id = c.id WHERE s.entry_status != 'deleted' AND (s.academy_id = $1 OR $1 = 0)`;
+    let sql = `SELECT * FROM schedules s WHERE s.entry_status != 'deleted' AND (s.academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (studentId) { params.push(studentId); sql += ` AND s.student_id = $${params.length}`; }
     if (tutorId) { params.push(tutorId); sql += ` AND s.tutor_id = $${params.length}`; }
