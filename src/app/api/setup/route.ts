@@ -175,6 +175,14 @@ export async function POST(request: Request) {
       try { await query(sql); } catch { /* column may not exist yet */ }
     }
 
+        // Add academy_id to messages tables if missing (created before column was added)
+    const messageTables = ['messages_admin', 'messages_parent', 'messages_student', 'messages_tutor'];
+    for (const tbl of messageTables) {
+      try {
+        await query(`ALTER TABLE ${tbl} ADD COLUMN IF NOT EXISTS academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE`);
+      } catch { /* ignore */ }
+    }
+
         const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);
