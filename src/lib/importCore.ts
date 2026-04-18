@@ -308,6 +308,7 @@ export async function runImport(
   for (let i = 0; i < records.length; i++) {
     const record = records[i];
     try {
+      await client.query('SAVEPOINT sp');
       const dbRow: Record<string, unknown> = {};
       const boolCols = BOOLEAN_FIELDS[type];
 
@@ -376,7 +377,9 @@ export async function runImport(
           );
         }
       }
+      await client.query('RELEASE SAVEPOINT sp');
     } catch (err) {
+      try { await client.query('ROLLBACK TO SAVEPOINT sp'); } catch { /* ignore */ }
       const errMsg = err instanceof Error ? err.message : String(err);
       errors.push(`Row ${i + 1}: ${errMsg}`);
       log.push(`[ERR]  Row ${i + 1} | ${errMsg}`);

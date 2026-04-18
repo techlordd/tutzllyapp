@@ -91,7 +91,11 @@ export default function ImportPage() {
 
         const res = await fetch('/api/import', { method: 'POST', body: form });
         const data = await res.json();
-        if (!res.ok) { toast.error(data.error || 'Import failed'); return; }
+        if (!res.ok) {
+          const msg = data.details ? `${data.error}: ${data.details}` : (data.error || 'Import failed');
+          toast.error(msg, { duration: 8000 });
+          return;
+        }
 
         aggregated.inserted += data.inserted;
         aggregated.skipped += data.skipped;
