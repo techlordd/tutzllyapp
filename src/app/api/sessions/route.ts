@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     if (countOnly) {
       const result = await queryOne<{ total: string }>(
-        `SELECT COUNT(student_id) AS total FROM sessions
+        `SELECT COUNT(*) AS total FROM sessions
          WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`,
         [academyId]
       );
