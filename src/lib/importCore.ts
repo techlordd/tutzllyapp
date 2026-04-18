@@ -80,6 +80,47 @@ function isValidTime(val: string): boolean {
   return /^\d{1,2}:\d{2}(:\d{2})?(\s?(AM|PM))?$/i.test(val.trim());
 }
 
+
+/**
+ * Returns true if all quoted fields in the string are closed (quote count is balanced).
+ * Used to detect incomplete rows caused by unquoted newlines inside field values.
+ */
+function isQuoteBalanced(s: string): boolean {
+  let inQuote = false;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '"') {
+      if (inQuote && s[i + 1] === '"') {
+        i++; // skip escaped quote ""
+      } else {
+        inQuote = !inQuote;
+      }
+    }
+  }
+  return !inQuote;
+}
+
+/**
+ * Pre-processes raw CSV text by merging continuation lines that belong to
+ * an open quoted field (e.g. multi-line message bodies, code pasted into a cell).
+ * Without this, csv-parse with relax_column_count treats each physical line as a
+ * separate row, producing hundreds of blank records.
+ */
+function preprocessCsv(rawText: string): string {
+  const lines = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const output: string[] = [];
+  let buffer = '';
+
+  for (const line of lines) {
+    buffer = buffer === '' ? line : buffer + '\n' + line;
+    if (isQuoteBalanced(buffer)) {
+      output.push(buffer);
+      buffer = '';
+    }
+  }
+  if (buffer) output.push(buffer);
+  return output.join('\n');
+}
+
 export const COLUMN_MAPS: Record<string, Record<string, string>> = {
   tutors: {
     'Tutor ID': 'tutor_id', 'Tutor Username': 'username', 'Tutor Email': 'email',
@@ -318,7 +359,8 @@ export async function runImport(
   const columnMap = COLUMN_MAPS[type];
 
   const text = await file.text();
-  const records = parse(text, {
+  const cleanedText = preprocessCsv(text);
+  const records = parse(cleanedText, {
     columns: deduplicateColumns,
     skip_empty_lines: true,
     trim: true,
