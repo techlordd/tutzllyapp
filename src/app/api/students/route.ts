@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const academyId = getAcademyId(request);
     const studentId = generateId('STU');
-    const enrollmentId = generateId('ENR');
+    const enrollmentId = data.enrollment_id || generateId('ENR');
     const userId_str = generateId('USR');
     const passwordHash = await hashPassword(data.password || 'Tutzlly@123');
 

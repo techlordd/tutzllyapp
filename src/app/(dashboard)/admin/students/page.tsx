@@ -27,7 +27,7 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    firstname: '', surname: '', email: '', password: '', phone_no: '', sex: '',
+    enrollment_id: '', firstname: '', surname: '', email: '', password: '', phone_no: '', sex: '',
     grade: '', school: '', date_of_birth: '', mothers_name: '', mothers_email: '',
     fathers_name: '', fathers_email: '', address_line1: '', address_line2: '',
     address_city: '', address_state: '', address_zip: '', address_country: '',
@@ -72,7 +72,7 @@ export default function StudentsPage() {
   };
 
   const resetForm = () => {
-    setForm({ firstname: '', surname: '', email: '', password: '', phone_no: '', sex: '',
+    setForm({ enrollment_id: '', firstname: '', surname: '', email: '', password: '', phone_no: '', sex: '',
       grade: '', school: '', date_of_birth: '', mothers_name: '', mothers_email: '',
       fathers_name: '', fathers_email: '', address_line1: '', address_line2: '',
       address_city: '', address_state: '', address_zip: '', address_country: '',
@@ -82,8 +82,8 @@ export default function StudentsPage() {
 
   const openEdit = (s: Student) => {
     setEditingStudent(s);
-    setForm({ ...form, firstname: s.firstname || '', surname: s.surname || '',
-      email: s.email || '', phone_no: s.phone_no || '', sex: s.sex || '',
+    setForm({ ...form, enrollment_id: s.enrollment_id || '', firstname: s.firstname || '',
+      surname: s.surname || '', email: s.email || '', phone_no: s.phone_no || '', sex: s.sex || '',
       grade: s.grade || '', school: s.school || '', status: s.status || 'active',
       mothers_name: s.mothers_name || '', mothers_email: s.mothers_email || '',
       fathers_name: s.fathers_name || '', fathers_email: s.fathers_email || '',
@@ -100,6 +100,9 @@ export default function StudentsPage() {
           <p className="text-xs text-gray-400">{row.student_id}</p>
         </div>
       </div>
+    )},
+    { key: 'enrollment_id', label: 'Student ID', render: (v: unknown) => (
+      <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">{(v as string) || '—'}</span>
     )},
     { key: 'email', label: 'Email' },
     { key: 'grade', label: 'Grade' },
@@ -149,6 +152,7 @@ export default function StudentsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="First Name" required><Input value={form.firstname} onChange={e => setForm({...form, firstname: e.target.value})} required /></FormField>
             <FormField label="Surname" required><Input value={form.surname} onChange={e => setForm({...form, surname: e.target.value})} required /></FormField>
+            <FormField label="Student ID / Enrollment No."><Input value={form.enrollment_id} onChange={e => setForm({...form, enrollment_id: e.target.value})} placeholder="e.g. 2024-001" /></FormField>
             <FormField label="Email" required><Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required /></FormField>
             {!editingStudent && <FormField label="Password" required><Input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required /></FormField>}
             <FormField label="Phone"><Input value={form.phone_no} onChange={e => setForm({...form, phone_no: e.target.value})} /></FormField>
@@ -187,8 +191,9 @@ export default function StudentsPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              {[['Email', selectedStudent.email], ['Phone', selectedStudent.phone_no],
-                ['Grade', selectedStudent.grade], ['School', selectedStudent.school],
+              {[['Student ID', selectedStudent.enrollment_id], ['Email', selectedStudent.email],
+                ['Phone', selectedStudent.phone_no], ['Grade', selectedStudent.grade],
+                ['School', selectedStudent.school],
                 ['Mother', selectedStudent.mothers_name], ['Mother Email', selectedStudent.mothers_email],
                 ['Father', selectedStudent.fathers_name], ['Joined', formatDate(selectedStudent.created_at)],
               ].map(([label, value]) => (
