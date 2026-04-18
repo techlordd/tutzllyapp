@@ -79,21 +79,17 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
       )}
 
       {/* Sidebar */}
-      <div className={cn(
-        'fixed md:relative z-40 transition-transform duration-300',
-        mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-      )}>
-        <Sidebar
-          role={user.role}
-          userName={user.username}
-          userEmail={user.email}
-          isSuperAdmin={is_super_admin}
-          academyName={academy?.academy_name}
-          collapsed={mobileSidebarOpen ? false : sidebarCollapsed}
-          onCollapse={setSidebarCollapsed}
-          onNavClick={() => setMobileSidebarOpen(false)}
-        />
-      </div>
+      <Sidebar
+        role={user.role}
+        userName={user.username}
+        userEmail={user.email}
+        isSuperAdmin={is_super_admin}
+        academyName={academy?.academy_name}
+        collapsed={mobileSidebarOpen ? false : sidebarCollapsed}
+        onCollapse={setSidebarCollapsed}
+        onNavClick={() => setMobileSidebarOpen(false)}
+        mobileOpen={mobileSidebarOpen}
+      />
 
       {/* Main Content */}
       <div className={cn(

@@ -86,9 +86,10 @@ interface SidebarProps {
   collapsed?: boolean;
   onCollapse?: (v: boolean) => void;
   onNavClick?: () => void;
+  mobileOpen?: boolean;
 }
 
-export default function Sidebar({ role, userName, userEmail, isSuperAdmin, academyName, collapsed = false, onCollapse, onNavClick }: SidebarProps) {
+export default function Sidebar({ role, userName, userEmail, isSuperAdmin, academyName, collapsed = false, onCollapse, onNavClick, mobileOpen = false }: SidebarProps) {
   const pathname = usePathname();
   const navItems = navMap[role] || [];
   const { clearUser } = useAuthStore();
@@ -102,7 +103,8 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
   return (
     <aside className={cn(
       'flex flex-col h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-300 ease-in-out fixed top-0 left-0 z-40 shadow-2xl',
-      collapsed ? 'w-16' : 'w-64'
+      collapsed ? 'w-16' : 'w-64',
+      mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     )}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-700">
