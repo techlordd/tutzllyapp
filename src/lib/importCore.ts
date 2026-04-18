@@ -44,6 +44,20 @@ const BOOLEAN_FIELDS: Record<string, Set<string>> = {
   activities: new Set(['assigned_homework_from_prev', 'new_homework_assigned']),
 };
 
+// Columns that must be integers — fractional values (e.g. 1.5 hrs) are converted
+// to whole minutes so existing INTEGER columns don't reject them.
+const INTEGER_FIELDS: Record<string, Set<string>> = {
+  sessions:  new Set(['session_duration']),
+  schedules: new Set(['duration']),
+};
+
+// Hard truncation limits for VARCHAR columns that can receive very long strings.
+// Values exceeding the limit are silently truncated to prevent insert errors.
+const VARCHAR_MAX_LENGTH: Record<string, Record<string, number>> = {
+  sessions:  { zoom_link: 500 },
+  schedules: { zoom_link: 500 },
+};
+
 export const COLUMN_MAPS: Record<string, Record<string, string>> = {
   tutors: {
     'Tutor ID': 'tutor_id', 'Tutor Username': 'username', 'Tutor Email': 'email',
@@ -313,15 +327,23 @@ export async function runImport(
       const dbRow: Record<string, unknown> = {};
       const boolCols = BOOLEAN_FIELDS[type];
 
+      const intCols = INTEGER_FIELDS[type];
+      const varcharLimits = VARCHAR_MAX_LENGTH[type];
+
       for (const [csvCol, val] of Object.entries(record)) {
         const dbCol = columnMap[csvCol];
         if (dbCol && val !== '' && val != null) {
           if (boolCols?.has(dbCol)) {
             dbRow[dbCol] = /^(yes|true|1)$/i.test(val);
+          } else if (intCols?.has(dbCol) && /^-?\d+(\.\d+)?$/.test(val)) {
+            // INTEGER column: convert fractional hours to whole minutes (e.g. 1.5 → 90)
+            dbRow[dbCol] = Math.round(parseFloat(val) * 60);
           } else if (/^-?\d+(\.\d+)?$/.test(val)) {
-            // Coerce numeric strings (e.g. "1.0", "1.5", "60") to JS numbers
-            // so pg sends the correct type rather than quoting as a string
+            // Other numeric strings: pass as JS number so pg infers the correct type
             dbRow[dbCol] = parseFloat(val);
+          } else if (varcharLimits?.[dbCol] && typeof val === 'string' && val.length > varcharLimits[dbCol]) {
+            // Truncate strings that exceed the known VARCHAR column limit
+            dbRow[dbCol] = val.slice(0, varcharLimits[dbCol]);
           } else {
             dbRow[dbCol] = val;
           }
