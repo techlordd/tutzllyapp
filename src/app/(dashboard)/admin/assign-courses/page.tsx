@@ -15,13 +15,22 @@ interface Assignment {
   firstname: string; surname: string; created_at: string;
 }
 
+interface Tutor {
+  tutor_id: string; firstname: string; surname: string; username: string; sex: string; email: string;
+}
+
+interface Course {
+  id: number; course_name: string; course_code: string;
+}
+
 export default function AssignCoursesPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [tutors, setTutors] = useState<{tutor_id: string; firstname: string; surname: string; username: string; sex: string; email: string}[]>([]);
-  const [courses, setCourses] = useState<{id: number; course_name: string; course_code: string}[]>([]);
+  const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState({ tutor_id: '', tutor_username: '', tutor_sex: '', tutor_email: '', course_id: '', course_name: '', course_code: '' });
 
   const fetchData = useCallback(async () => {
@@ -54,14 +63,35 @@ export default function AssignCoursesPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch('/api/tutor-assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-      if (!res.ok) throw new Error();
+      const res = await fetch('/api/tutor-assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to assign course');
+        setSubmitting(false);
+        return;
+      }
       toast.success('Course assigned to tutor!');
       setModalOpen(false);
       setForm({ tutor_id: '', tutor_username: '', tutor_sex: '', tutor_email: '', course_id: '', course_name: '', course_code: '' });
       fetchData();
     } catch { toast.error('Failed to assign course'); }
     setSubmitting(false);
+  };
+
+  const handleDelete = async (assignId: string) => {
+    if (!confirm('Remove this course assignment?')) return;
+    setDeletingId(assignId);
+    try {
+      const res = await fetch(`/api/tutor-assignments/${assignId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      toast.success('Assignment removed');
+      setAssignments(prev => prev.filter(a => a.tutor_assign_id !== assignId));
+    } catch { toast.error('Failed to remove assignment'); }
+    setDeletingId(null);
   };
 
   const columns = [
@@ -79,6 +109,16 @@ export default function AssignCoursesPage() {
     { key: 'course_code', label: 'Code', render: (v: unknown) => (
       <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{v as string}</span>
     )},
+    { key: 'actions', label: '', render: (_: unknown, row: Assignment) => (
+      <button
+        onClick={() => handleDelete(row.tutor_assign_id)}
+        disabled={deletingId === row.tutor_assign_id}
+        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+        title="Remove assignment"
+      >
+        <Trash2 size={15} />
+      </button>
+    )},
   ];
 
   return (
@@ -92,8 +132,11 @@ export default function AssignCoursesPage() {
           <Button icon={Plus} onClick={() => setModalOpen(true)}>Assign Course</Button>
         </div>
 
-        <DataTable data={assignments} columns={columns} loading={loading}
-          searchKeys={['tutor_email', 'course_name', 'course_code']}
+        <DataTable
+          data={assignments}
+          columns={columns}
+          loading={loading}
+          searchKeys={['firstname', 'surname', 'tutor_email', 'course_name', 'course_code']}
           emptyMessage="No course assignments yet"
         />
       </div>
@@ -103,23 +146,36 @@ export default function AssignCoursesPage() {
           <FormField label="Select Tutor" required>
             <Select value={form.tutor_id} onChange={e => handleTutorChange(e.target.value)} required>
               <option value="">Choose a tutor</option>
-              {tutors.map(t => <option key={t.tutor_id} value={t.tutor_id}>{t.firstname} {t.surname} ({t.email})</option>)}
+              {tutors.map(t => (
+                <option key={t.tutor_id} value={t.tutor_id}>
+                  {t.firstname} {t.surname} ({t.email})
+                </option>
+              ))}
             </Select>
           </FormField>
           <FormField label="Select Course" required>
             <Select value={form.course_id} onChange={e => handleCourseChange(e.target.value)} required>
               <option value="">Choose a course</option>
-              {courses.map(c => <option key={c.id} value={c.id}>{c.course_name} ({c.course_code})</option>)}
+              {courses.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.course_name} ({c.course_code})
+                </option>
+              ))}
             </Select>
           </FormField>
           {form.tutor_id && form.course_id && (
             <div className="bg-blue-50 rounded-xl p-3 text-sm text-blue-800">
-              <p>You are assigning <strong>{form.course_name}</strong> ({form.course_code}) to tutor with email <strong>{form.tutor_email}</strong></p>
+              Assigning <strong>{form.course_name}</strong> ({form.course_code}) to{' '}
+              <strong>{tutors.find(t => t.tutor_id === form.tutor_id)?.firstname}{' '}
+              {tutors.find(t => t.tutor_id === form.tutor_id)?.surname}</strong>{' '}
+              &lt;{form.tutor_email}&gt;
             </div>
           )}
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={submitting}>Assign Course</Button>
+            <Button type="submit" loading={submitting} disabled={!form.tutor_id || !form.course_id}>
+              Assign Course
+            </Button>
           </div>
         </form>
       </Modal>

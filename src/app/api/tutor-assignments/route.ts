@@ -27,6 +27,14 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
     const academyId = getAcademyId(request);
+
+    const existing = await queryOne(
+      `SELECT tutor_assign_id FROM tutor_course_assignments
+       WHERE tutor_id=$1 AND course_id=$2 AND entry_status!='deleted' AND (academy_id=$3 OR $3=0)`,
+      [data.tutor_id, data.course_id, academyId]
+    );
+    if (existing) return NextResponse.json({ error: 'This tutor is already assigned to this course' }, { status: 409 });
+
     const assignId = generateId('TCA');
     const assignment = await queryOne(
       `INSERT INTO tutor_course_assignments (academy_id, tutor_assign_id, tutor_id, tutor_username, tutor_sex, tutor_email, course_id, course_name, course_code, entry_status)
