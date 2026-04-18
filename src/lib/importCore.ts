@@ -318,9 +318,10 @@ export async function runImport(
         if (dbCol && val !== '' && val != null) {
           if (boolCols?.has(dbCol)) {
             dbRow[dbCol] = /^(yes|true|1)$/i.test(val);
-          } else if (/^-?\d+\.0+$/.test(val)) {
-            // Coerce float-formatted whole numbers (e.g. "1.0", "60.0") to integers
-            dbRow[dbCol] = parseInt(val, 10);
+          } else if (/^-?\d+(\.\d+)?$/.test(val)) {
+            // Coerce numeric strings (e.g. "1.0", "1.5", "60") to JS numbers
+            // so pg sends the correct type rather than quoting as a string
+            dbRow[dbCol] = parseFloat(val);
           } else {
             dbRow[dbCol] = val;
           }

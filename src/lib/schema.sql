@@ -250,7 +250,7 @@ CREATE TABLE IF NOT EXISTS schedules (
   session_start_time TIME,
   session_end_time TIME,
   time_zone VARCHAR(100),
-  zoom_link VARCHAR(500),
+  zoom_link TEXT,
   meeting_id VARCHAR(100),
   meeting_passcode VARCHAR(100),
   assign_status VARCHAR(20) DEFAULT 'active',
@@ -282,14 +282,14 @@ CREATE TABLE IF NOT EXISTS sessions (
   schedule_start_time TIME,
   schedule_end_time TIME,
   schedule_day VARCHAR(20),
-  zoom_link VARCHAR(500),
+  zoom_link TEXT,
   meeting_id VARCHAR(100),
   meeting_passcode VARCHAR(100),
   start_session_date DATE,
   start_session_time TIME,
   end_session_date DATE,
   end_session_time TIME,
-  session_duration INTEGER, -- in minutes
+  session_duration NUMERIC(5,2), -- in hours (e.g. 1.5 = 1.5 hrs)
   reschedule_to DATE,
   reschedule_time TIME,
   status VARCHAR(30) DEFAULT 'scheduled', -- scheduled, started, ended, rescheduled, missed

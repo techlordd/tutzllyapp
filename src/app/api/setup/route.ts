@@ -41,6 +41,17 @@ export async function POST(request: Request) {
       await query(`CREATE UNIQUE INDEX IF NOT EXISTS academies_custom_domain_key ON academies (custom_domain) WHERE custom_domain IS NOT NULL`);
     } catch { /* academies table doesn't exist yet — schema.sql will create it */ }
 
+    // Widen zoom_link to TEXT and session_duration to NUMERIC(5,2) for existing DBs
+    try {
+      await query(`ALTER TABLE schedules ALTER COLUMN zoom_link TYPE TEXT`);
+    } catch { /* column doesn't exist yet */ }
+    try {
+      await query(`ALTER TABLE sessions ALTER COLUMN zoom_link TYPE TEXT`);
+    } catch { /* column doesn't exist yet */ }
+    try {
+      await query(`ALTER TABLE sessions ALTER COLUMN session_duration TYPE NUMERIC(5,2)`);
+    } catch { /* column doesn't exist yet */ }
+
     const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);
