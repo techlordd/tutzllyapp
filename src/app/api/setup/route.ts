@@ -106,7 +106,17 @@ export async function POST(request: Request) {
     } catch { /* ignore */ }
     // Drop unique constraint on ssid — sessions can have duplicate SSIDs (row count matters)
     try {
-      await query(`ALTER TABLE sessions DROP CONSTRAINT IF EXISTS sessions_ssid_key`);
+      await query(`
+        DO $$ DECLARE r RECORD;
+        BEGIN
+          FOR r IN SELECT constraint_name FROM information_schema.table_constraints
+            WHERE table_name = 'sessions' AND constraint_type = 'UNIQUE'
+              AND constraint_name ILIKE '%ssid%'
+          LOOP
+            EXECUTE 'ALTER TABLE sessions DROP CONSTRAINT IF EXISTS "' || r.constraint_name || '"';
+          END LOOP;
+        END $$;
+      `);
     } catch { /* ignore */ }
 
     const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');

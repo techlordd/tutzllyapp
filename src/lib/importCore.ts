@@ -264,7 +264,8 @@ export interface EntityConfig {
   idPrefix: string | null;
   createUser: boolean;
   userRole?: string;
-  upsertOn?: string; // column name for ON CONFLICT (...) DO UPDATE
+  upsertOn?: string;         // column name for ON CONFLICT (...) DO UPDATE
+  allowDuplicates?: boolean; // plain INSERT, no ON CONFLICT clause — all rows inserted
 }
 
 export const ENTITY_CONFIG: Record<string, EntityConfig> = {
@@ -275,7 +276,7 @@ export const ENTITY_CONFIG: Record<string, EntityConfig> = {
   assignments:      { table: 'tutor_course_assignments', idField: 'tutor_assign_id', idPrefix: 'ASN', createUser: false },
   enrollments:      { table: 'student_enrollments',      idField: 'assign_id',       idPrefix: 'ENR', createUser: false },
   schedules:        { table: 'schedules',                idField: 'schedule_id',     idPrefix: 'SCH', createUser: false },
-  sessions:         { table: 'sessions',                 idField: null,              idPrefix: null,  createUser: false },
+  sessions:         { table: 'sessions',                 idField: null,              idPrefix: null,  createUser: false, allowDuplicates: true },
   activities:       { table: 'class_activities',         idField: null,              idPrefix: null,  createUser: false },
   grades:           { table: 'grade_book',               idField: null,              idPrefix: null,  createUser: false },
   messages_admin:   { table: 'messages_admin',           idField: null,              idPrefix: null,  createUser: false },
@@ -401,6 +402,8 @@ export async function runImport(
           .map(c => `${c} = EXCLUDED.${c}`)
           .join(', ');
         sql = `INSERT INTO ${config.table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT (${config.upsertOn}) DO UPDATE SET ${updateSet}`;
+      } else if (config.allowDuplicates) {
+        sql = `INSERT INTO ${config.table} (${cols.join(', ')}) VALUES (${ph})`;
       } else {
         sql = `INSERT INTO ${config.table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT DO NOTHING`;
       }
