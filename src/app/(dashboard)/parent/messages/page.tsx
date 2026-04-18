@@ -6,7 +6,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Send, Eye, MessageSquare } from 'lucide-react';
+import { Send, Eye, MessageSquare, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
@@ -48,6 +48,9 @@ export default function MessagesSharedPage() {
   const [viewOpen, setViewOpen] = useState(false);
   const [selected, setSelected] = useState<Message | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({ role: '', sender: '', user_role: '', subject: '', body: '', user_id: '' });
   const [userRole, setUserRole] = useState('');
   const user = useAuthStore(state => state.user);
@@ -67,6 +70,20 @@ export default function MessagesSharedPage() {
   }, [activeTab]);
 
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
+
+  const handleDeleteAll = async () => {
+    if (deleteConfirm !== 'DELETE') return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/messages/${activeTab}`, { method: 'DELETE' });
+      const data = await res.json();
+      toast.success(`Deleted ${data.deleted} messages`);
+      setDeleteOpen(false);
+      setDeleteConfirm('');
+      fetchMessages();
+    } catch { toast.error('Failed to delete messages'); }
+    setDeleting(false);
+  };
 
   const getAvailableTabs = (): MsgType[] => {
     if (userRole === 'tutor') return ['admin', 'student', 'parent'];
@@ -111,7 +128,10 @@ export default function MessagesSharedPage() {
               </button>
             ))}
           </div>
-          <Button icon={Send} onClick={() => setComposeOpen(true)}>Compose</Button>
+          <div className="flex gap-2">
+            <Button variant="danger" icon={Trash2} onClick={() => { setDeleteOpen(true); setDeleteConfirm(''); }}>Delete All</Button>
+            <Button icon={Send} onClick={() => setComposeOpen(true)}>Compose</Button>
+          </div>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <MessageSquare size={16} />
@@ -158,6 +178,24 @@ export default function MessagesSharedPage() {
           </div>
         </Modal>
       )}
+      {/* Delete All Confirmation Modal */}
+      <Modal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete All Messages" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">This will permanently delete all messages in the current tab. This action cannot be undone.</p>
+          <p className="text-sm text-gray-700">Type <strong>DELETE</strong> to confirm:</p>
+          <input
+            type="text"
+            value={deleteConfirm}
+            onChange={e => setDeleteConfirm(e.target.value)}
+            placeholder="Type DELETE"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+          />
+          <div className="flex gap-3 pt-1">
+            <Button type="button" variant="secondary" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+            <Button variant="danger" loading={deleting} onClick={handleDeleteAll} disabled={deleteConfirm !== 'DELETE'}>Delete All</Button>
+          </div>
+        </div>
+      </Modal>
     </DashboardLayout>
   );
 }
