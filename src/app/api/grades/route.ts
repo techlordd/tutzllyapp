@@ -44,3 +44,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create grade entry' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const academyId = getAcademyId(request);
+    const result = await query<{ count: string }>(
+      `WITH deleted AS (
+        DELETE FROM grade_book WHERE academy_id = $1 OR $1 = 0 RETURNING id
+      ) SELECT COUNT(*) AS count FROM deleted`,
+      [academyId]
+    );
+    const deleted = parseInt(result[0]?.count ?? '0', 10);
+    return NextResponse.json({ deleted });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to delete grade book entries' }, { status: 500 });
+  }
+}
