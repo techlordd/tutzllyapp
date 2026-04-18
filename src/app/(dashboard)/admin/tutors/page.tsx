@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button';
 import Badge, { statusBadge } from '@/components/ui/Badge';
 import Avatar from '@/components/ui/Avatar';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, AlertTriangle } from 'lucide-react';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -33,6 +33,8 @@ export default function TutorsPage() {
   const [editingTutor, setEditingTutor] = useState<Tutor | null>(null);
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [form, setForm] = useState({
     firstname: '', surname: '', email: '', password: '', phone_no: '', sex: '',
     date_of_birth: '', address_line1: '', address_line2: '', address_city: '',
@@ -66,6 +68,19 @@ export default function TutorsPage() {
       fetchTutors();
     } catch { toast.error('Failed to save tutor'); }
     setSubmitting(false);
+  };
+
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      const res = await fetch('/api/tutors', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(`${data.deleted} tutor${data.deleted !== 1 ? 's' : ''} deleted`);
+      setDeleteAllOpen(false);
+      fetchTutors();
+    } catch { toast.error('Failed to delete all tutors'); }
+    setDeletingAll(false);
   };
 
   const handleDelete = async (tutorId: string) => {
@@ -127,9 +142,19 @@ export default function TutorsPage() {
             <h2 className="text-2xl font-bold text-gray-900">Tutors</h2>
             <p className="text-gray-500 text-sm mt-0.5">{tutors.length} registered tutors</p>
           </div>
-          <Button icon={Plus} onClick={() => { resetForm(); setModalOpen(true); }}>
-            Register Tutor
-          </Button>
+          <div className="flex gap-2">
+            {tutors.length > 0 && (
+              <button
+                onClick={() => setDeleteAllOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors"
+              >
+                <Trash2 size={14} /> Delete All
+              </button>
+            )}
+            <Button icon={Plus} onClick={() => { resetForm(); setModalOpen(true); }}>
+              Register Tutor
+            </Button>
+          </div>
         </div>
 
         <DataTable
@@ -268,6 +293,37 @@ export default function TutorsPage() {
           </div>
         </Modal>
       )}
+      {/* Delete All confirmation modal */}
+      <Modal isOpen={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} title="Delete All Tutors" size="sm">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-100">
+            <AlertTriangle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-800">This will delete all {tutors.length} tutor{tutors.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-red-600 mt-1">
+                All tutor records for this academy will be removed. You can re-upload tutors via CSV after this action.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-1">
+            <Button type="button" variant="secondary" onClick={() => setDeleteAllOpen(false)} className="flex-1">
+              Cancel
+            </Button>
+            <button
+              onClick={handleDeleteAll}
+              disabled={deletingAll}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+            >
+              {deletingAll ? (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Trash2 size={14} />
+              )}
+              Delete All {tutors.length} Tutors
+            </button>
+          </div>
+        </div>
+      </Modal>
     </DashboardLayout>
   );
 }

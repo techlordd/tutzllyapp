@@ -64,3 +64,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create tutor' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const academyId = getAcademyId(request);
+    const deleted = await query<{ tutor_id: string }>(
+      `UPDATE tutors SET entry_status='deleted', updated_at=NOW()
+       WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)
+       RETURNING tutor_id`,
+      [academyId]
+    );
+    return NextResponse.json({ deleted: deleted.length });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to delete tutors' }, { status: 500 });
+  }
+}
