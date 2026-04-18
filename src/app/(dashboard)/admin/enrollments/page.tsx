@@ -14,49 +14,80 @@ interface Enrollment {
   tutor_id: string; tutor_name: string; tutor_email: string; course_name: string; course_code: string; created_at: string;
 }
 
+interface Student {
+  student_id: string; firstname: string; surname: string; username: string; email: string; sex: string;
+}
+
+interface TutorAssignment {
+  tutor_assign_id: string; tutor_id: string; tutor_username: string; tutor_sex: string; tutor_email: string;
+  firstname: string; surname: string;
+  course_id: number; course_name: string; course_code: string;
+}
+
+const emptyForm = {
+  student_id: '', student_name: '', student_sex: '',
+  tutor_id: '', tutor_name: '', tutor_username: '', tutor_sex: '', tutor_email: '',
+  course_id: '', course_name: '', course_code: '',
+};
+
 export default function EnrollmentsPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [students, setStudents] = useState<{student_id: string; firstname: string; surname: string; sex: string}[]>([]);
-  const [tutors, setTutors] = useState<{tutor_id: string; firstname: string; surname: string; username: string; sex: string; email: string}[]>([]);
-  const [courses, setCourses] = useState<{id: number; course_name: string; course_code: string}[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [tutorAssignments, setTutorAssignments] = useState<TutorAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    student_id: '', student_name: '', student_sex: '',
-    tutor_id: '', tutor_name: '', tutor_username: '', tutor_sex: '', tutor_email: '',
-    course_id: '', course_name: '', course_code: '',
-  });
+  const [form, setForm] = useState(emptyForm);
+
+  // Unique tutors who have at least one course assigned
+  const assignedTutors = [...new Map(tutorAssignments.map(a => [a.tutor_id, a])).values()];
+
+  // Courses that the currently selected tutor is assigned to teach
+  const tutorCourses = tutorAssignments.filter(a => a.tutor_id === form.tutor_id);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [eRes, sRes, tRes, cRes] = await Promise.all([
-        fetch('/api/enrollments'), fetch('/api/students'), fetch('/api/tutors'), fetch('/api/courses')
+      const [eRes, sRes, taRes] = await Promise.all([
+        fetch('/api/enrollments'), fetch('/api/students'), fetch('/api/tutor-assignments'),
       ]);
-      const [eData, sData, tData, cData] = await Promise.all([eRes.json(), sRes.json(), tRes.json(), cRes.json()]);
+      const [eData, sData, taData] = await Promise.all([eRes.json(), sRes.json(), taRes.json()]);
       setEnrollments(eData.enrollments || []);
       setStudents(sData.students || []);
-      setTutors(tData.tutors || []);
-      setCourses(cData.courses || []);
+      setTutorAssignments(taData.assignments || []);
     } catch { toast.error('Failed to load data'); }
     setLoading(false);
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const studentDisplayName = (s: Student) =>
+    [s.firstname, s.surname].filter(Boolean).join(' ') || s.username || s.email;
+
+  const tutorDisplayName = (a: TutorAssignment) =>
+    [a.firstname, a.surname].filter(Boolean).join(' ') || a.tutor_username || a.tutor_email;
+
   const handleStudentChange = (studentId: string) => {
     const s = students.find(s => s.student_id === studentId);
-    setForm(f => ({ ...f, student_id: studentId, student_name: s ? `${s.firstname} ${s.surname}` : '', student_sex: s?.sex || '' }));
+    setForm(f => ({ ...f, student_id: studentId, student_name: s ? studentDisplayName(s) : '', student_sex: s?.sex || '' }));
   };
 
   const handleTutorChange = (tutorId: string) => {
-    const t = tutors.find(t => t.tutor_id === tutorId);
-    setForm(f => ({ ...f, tutor_id: tutorId, tutor_name: t ? `${t.firstname} ${t.surname}` : '', tutor_username: t?.username || '', tutor_sex: t?.sex || '', tutor_email: t?.email || '' }));
+    const a = tutorAssignments.find(a => a.tutor_id === tutorId);
+    setForm(f => ({
+      ...f,
+      tutor_id: tutorId,
+      tutor_name: a ? tutorDisplayName(a) : '',
+      tutor_username: a?.tutor_username || '',
+      tutor_sex: a?.tutor_sex || '',
+      tutor_email: a?.tutor_email || '',
+      // Reset course when tutor changes
+      course_id: '', course_name: '', course_code: '',
+    }));
   };
 
   const handleCourseChange = (courseId: string) => {
-    const c = courses.find(c => c.id === parseInt(courseId));
+    const c = tutorCourses.find(c => String(c.course_id) === courseId);
     setForm(f => ({ ...f, course_id: courseId, course_name: c?.course_name || '', course_code: c?.course_code || '' }));
   };
 
@@ -64,11 +95,16 @@ export default function EnrollmentsPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch('/api/enrollments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-      if (!res.ok) throw new Error();
+      const res = await fetch('/api/enrollments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Failed to enroll student'); setSubmitting(false); return; }
       toast.success('Student enrolled successfully!');
       setModalOpen(false);
-      setForm({ student_id: '', student_name: '', student_sex: '', tutor_id: '', tutor_name: '', tutor_username: '', tutor_sex: '', tutor_email: '', course_id: '', course_name: '', course_code: '' });
+      setForm(emptyForm);
       fetchData();
     } catch { toast.error('Failed to enroll student'); }
     setSubmitting(false);
@@ -112,24 +148,43 @@ export default function EnrollmentsPage() {
         />
       </div>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Enroll Student & Assign Tutor" size="lg">
+      <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setForm(emptyForm); }} title="Enroll Student & Assign Tutor" size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           <FormField label="Select Student" required>
             <Select value={form.student_id} onChange={e => handleStudentChange(e.target.value)} required>
               <option value="">Choose a student</option>
-              {students.map(s => <option key={s.student_id} value={s.student_id}>{s.firstname} {s.surname}</option>)}
+              {students.map(s => (
+                <option key={s.student_id} value={s.student_id}>
+                  {studentDisplayName(s)} — {s.email}
+                </option>
+              ))}
             </Select>
           </FormField>
+
           <FormField label="Assign Tutor" required>
             <Select value={form.tutor_id} onChange={e => handleTutorChange(e.target.value)} required>
               <option value="">Choose a tutor</option>
-              {tutors.map(t => <option key={t.tutor_id} value={t.tutor_id}>{t.firstname} {t.surname} ({t.email})</option>)}
+              {assignedTutors.map(a => (
+                <option key={a.tutor_id} value={a.tutor_id}>
+                  {tutorDisplayName(a)} — {a.tutor_email}
+                </option>
+              ))}
             </Select>
           </FormField>
+
           <FormField label="Assign Course" required>
-            <Select value={form.course_id} onChange={e => handleCourseChange(e.target.value)} required>
-              <option value="">Choose a course</option>
-              {courses.map(c => <option key={c.id} value={c.id}>{c.course_name} ({c.course_code})</option>)}
+            <Select
+              value={form.course_id}
+              onChange={e => handleCourseChange(e.target.value)}
+              required
+              disabled={!form.tutor_id}
+            >
+              <option value="">{form.tutor_id ? 'Choose a course' : 'Select a tutor first'}</option>
+              {tutorCourses.map(c => (
+                <option key={c.tutor_assign_id} value={c.course_id}>
+                  {c.course_name} ({c.course_code})
+                </option>
+              ))}
             </Select>
           </FormField>
 
@@ -143,8 +198,10 @@ export default function EnrollmentsPage() {
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={submitting}>Enroll Student</Button>
+            <Button type="button" variant="secondary" onClick={() => { setModalOpen(false); setForm(emptyForm); }}>Cancel</Button>
+            <Button type="submit" loading={submitting} disabled={!form.student_id || !form.tutor_id || !form.course_id}>
+              Enroll Student
+            </Button>
           </div>
         </form>
       </Modal>
