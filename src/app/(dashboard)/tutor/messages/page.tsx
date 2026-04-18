@@ -14,9 +14,32 @@ import { useAuthStore } from '@/store/authStore';
 type MsgType = 'admin' | 'parent' | 'student' | 'tutor';
 
 interface Message {
-  id: number; message_date: string; message_time: string; sender: string; subject: string; body: string; status: string;
+  id: number;
+  message_date: string; message_time: string; role: string;
+  subject: string; body: string; status: string;
+  // sender variants
+  sender?: string; sender_admin?: string; sender_tutor_name?: string;
+  sender_student_name?: string; sender_parent_name?: string;
+  tutor_name?: string; student_name?: string; parent_name?: string;
+  // recipient variants
+  recipient_admin?: string; recipient_name?: string;
+  recipient_tutor_name?: string; recipient_name_student?: string;
+  recipient_name_tutor?: string; recipient_name_parent?: string;
+  // extras
+  cc?: string; attach_file?: string; file_upload?: string;
 }
 
+
+function resolveSender(row: Message): string {
+  return row.sender_admin || row.sender_tutor_name || row.sender_student_name ||
+    row.sender_parent_name || row.sender || row.tutor_name || row.student_name ||
+    row.parent_name || '—';
+}
+
+function resolveRecipient(row: Message): string {
+  return row.recipient_tutor_name || row.recipient_name || row.recipient_name_student ||
+    row.recipient_name_tutor || row.recipient_name_parent || row.recipient_admin || '—';
+}
 export default function MessagesSharedPage() {
   const [activeTab, setActiveTab] = useState<MsgType>('admin');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -68,10 +91,11 @@ export default function MessagesSharedPage() {
   const columns = [
     { key: 'message_date', label: 'Date', sortable: true, render: (v: unknown) => formatDate(v as string) },
     { key: 'message_time', label: 'Time' },
-    { key: 'sender', label: 'Sender', sortable: true },
+    { key: 'sender', label: 'Sender', sortable: true, render: (_v: unknown, row: Message) => resolveSender(row) },
     { key: 'subject', label: 'Subject', render: (v: unknown) => (
       <span className="font-medium text-gray-900 truncate max-w-[200px] block">{v as string}</span>
     )},
+    { key: 'recipient_admin', label: 'Recipient', render: (_v: unknown, row: Message) => resolveRecipient(row) },
     { key: 'status', label: 'Status', render: (v: unknown) => statusBadge(v as string) },
   ];
 
@@ -115,10 +139,20 @@ export default function MessagesSharedPage() {
       {selected && (
         <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Message" size="lg">
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="font-semibold">{selected.subject}</p>
-              <p className="text-sm text-gray-500">From: {selected.sender} — {formatDate(selected.message_date)}</p>
-              <div className="mt-1">{statusBadge(selected.status)}</div>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+              <div className="flex items-start justify-between gap-4">
+                <p className="font-semibold text-gray-900 text-base">{selected.subject}</p>
+                {statusBadge(selected.status)}
+              </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                <div><span className="text-gray-400">From:</span> <span className="text-gray-800 font-medium">{resolveSender(selected)}</span></div>
+                <div><span className="text-gray-400">To:</span> <span className="text-gray-800 font-medium">{resolveRecipient(selected)}</span></div>
+                <div><span className="text-gray-400">Date:</span> <span className="text-gray-700">{formatDate(selected.message_date)}</span></div>
+                <div><span className="text-gray-400">Time:</span> <span className="text-gray-700">{selected.message_time || '—'}</span></div>
+                {selected.cc && <div className="col-span-2"><span className="text-gray-400">Cc:</span> <span className="text-gray-700">{selected.cc}</span></div>}
+              </div>
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-4"><div className="mt-1">{statusBadge(selected.status)}</div>
             </div>
             <p className="text-gray-700 whitespace-pre-wrap text-sm">{selected.body}</p>
           </div>
