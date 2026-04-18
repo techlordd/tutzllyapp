@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
+import { getAcademyId } from '@/lib/request-context';
 
 export async function GET(request: NextRequest) {
   try {
