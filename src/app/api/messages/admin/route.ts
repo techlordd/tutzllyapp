@@ -32,3 +32,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const academyId = getAcademyId(request);
+    const result = await query<{ count: string }>(
+      `WITH deleted AS (
+        DELETE FROM messages_admin WHERE academy_id = \$1 OR \$1 = 0 RETURNING id
+      ) SELECT COUNT(*) AS count FROM deleted`,
+      [academyId]
+    );
+    const deleted = parseInt(result[0]?.count ?? '0', 10);
+    return NextResponse.json({ deleted });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to delete messages' }, { status: 500 });
+  }
+}
