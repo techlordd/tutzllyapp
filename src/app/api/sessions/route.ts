@@ -15,12 +15,17 @@ export async function GET(request: NextRequest) {
     const academyId = getAcademyId(request);
 
     if (countOnly) {
-      const result = await queryOne<{ total: string }>(
-        `SELECT COUNT(*) AS total FROM sessions
-         WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`,
+      const result = await queryOne<{ total: string; all_total: string }>(
+        `SELECT
+           COUNT(*) FILTER (WHERE entry_status != 'deleted') AS total,
+           COUNT(*) AS all_total
+         FROM sessions WHERE (academy_id = $1 OR $1 = 0)`,
         [academyId]
       );
-      return NextResponse.json({ count: parseInt(result?.total ?? '0', 10) });
+      return NextResponse.json({
+        count: parseInt(result?.total ?? '0', 10),
+        total_including_deleted: parseInt(result?.all_total ?? '0', 10),
+      });
     }
 
     let sql = `SELECT s.*, c.course_name as course_display FROM sessions s
