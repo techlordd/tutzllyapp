@@ -91,6 +91,20 @@ export async function POST(request: Request) {
       try { await query(sql); } catch { /* column may not exist yet */ }
     }
 
+    // Recreate sessions TEXT column indexes as HASH to avoid B-tree size limits
+    try {
+      await query(`DROP INDEX IF EXISTS idx_sessions_student_id`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_sessions_student_id ON sessions USING HASH (student_id)`);
+    } catch { /* ignore */ }
+    try {
+      await query(`DROP INDEX IF EXISTS idx_sessions_tutor_id`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_sessions_tutor_id ON sessions USING HASH (tutor_id)`);
+    } catch { /* ignore */ }
+    try {
+      await query(`DROP INDEX IF EXISTS idx_sessions_ssid`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_sessions_ssid ON sessions USING HASH (ssid)`);
+    } catch { /* ignore */ }
+
     const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);
