@@ -24,6 +24,8 @@ interface Course {
 }
 
 export default function AssignCoursesPage() {
+  const tutorDisplayName = (t: Tutor) =>
+    [t.firstname, t.surname].filter(Boolean).join(' ') || t.username || t.email;
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -148,7 +150,7 @@ export default function AssignCoursesPage() {
               <option value="">Choose a tutor</option>
               {tutors.map(t => (
                 <option key={t.tutor_id} value={t.tutor_id}>
-                  {t.firstname} {t.surname} ({t.email})
+                  {tutorDisplayName(t)} — {t.email}
                 </option>
               ))}
             </Select>
@@ -166,8 +168,7 @@ export default function AssignCoursesPage() {
           {form.tutor_id && form.course_id && (
             <div className="bg-blue-50 rounded-xl p-3 text-sm text-blue-800">
               Assigning <strong>{form.course_name}</strong> ({form.course_code}) to{' '}
-              <strong>{tutors.find(t => t.tutor_id === form.tutor_id)?.firstname}{' '}
-              {tutors.find(t => t.tutor_id === form.tutor_id)?.surname}</strong>{' '}
+              <strong>{tutorDisplayName(tutors.find(t => t.tutor_id === form.tutor_id)!)}</strong>{' '}
               &lt;{form.tutor_email}&gt;
             </div>
           )}
