@@ -316,7 +316,14 @@ export async function runImport(
       for (const [csvCol, val] of Object.entries(record)) {
         const dbCol = columnMap[csvCol];
         if (dbCol && val !== '' && val != null) {
-          dbRow[dbCol] = boolCols?.has(dbCol) ? /^(yes|true|1)$/i.test(val) : val;
+          if (boolCols?.has(dbCol)) {
+            dbRow[dbCol] = /^(yes|true|1)$/i.test(val);
+          } else if (/^-?\d+\.0+$/.test(val)) {
+            // Coerce float-formatted whole numbers (e.g. "1.0", "60.0") to integers
+            dbRow[dbCol] = parseInt(val, 10);
+          } else {
+            dbRow[dbCol] = val;
+          }
         }
       }
 
