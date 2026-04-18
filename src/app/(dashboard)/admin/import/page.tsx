@@ -44,10 +44,19 @@ function splitCsvRecords(text: string): string[] {
   for (let i = 0; i < n; i++) {
     const ch = text[i];
     if (ch === '"') {
-      // Handle escaped quote ("")
       if (inQuote && text[i + 1] === '"') {
-        cur += '""';
-        i++;
+        const after = text[i + 2];
+        // "" immediately before a record delimiter or EOF → close-quote + stray "
+        // (handles Formidable Forms exporter quirk where every row ends with "value"")
+        if (after === '\n' || after === '\r' || after === undefined || i + 2 >= n) {
+          inQuote = false;
+          cur += '"'; // closing quote
+          i++;        // skip the stray "
+        } else {
+          // "" inside a field → escaped quote
+          cur += '""';
+          i++;
+        }
       } else {
         inQuote = !inQuote;
         cur += ch;
