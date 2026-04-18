@@ -58,6 +58,28 @@ const VARCHAR_MAX_LENGTH: Record<string, Record<string, number>> = {
   schedules: { zoom_link: 500 },
 };
 
+// DB columns that expect a DATE value — non-date strings are coerced to null
+const DATE_COLUMNS = new Set([
+  'entry_date', 'start_session_date', 'end_session_date', 'reschedule_to',
+  'class_activity_date', 'date_of_birth', 'message_date',
+  'created_at', 'updated_at',
+]);
+
+// DB columns that expect a TIME value — non-time strings are coerced to null
+const TIME_COLUMNS = new Set([
+  'schedule_start_time', 'schedule_end_time', 'start_session_time', 'end_session_time',
+  'reschedule_time', 'class_activity_time', 'message_time', 'session_start_time', 'session_end_time',
+]);
+
+function isValidDate(val: string): boolean {
+  if (!/^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}/.test(val)) return false;
+  return !isNaN(Date.parse(val));
+}
+
+function isValidTime(val: string): boolean {
+  return /^\d{1,2}:\d{2}(:\d{2})?(\s?(AM|PM))?$/i.test(val.trim());
+}
+
 export const COLUMN_MAPS: Record<string, Record<string, string>> = {
   tutors: {
     'Tutor ID': 'tutor_id', 'Tutor Username': 'username', 'Tutor Email': 'email',
@@ -353,6 +375,10 @@ export async function runImport(
           } else if (varcharLimits?.[dbCol] && typeof val === 'string' && val.length > varcharLimits[dbCol]) {
             // Truncate strings that exceed the known VARCHAR column limit
             dbRow[dbCol] = val.slice(0, varcharLimits[dbCol]);
+          } else if (DATE_COLUMNS.has(dbCol)) {
+            dbRow[dbCol] = isValidDate(val) ? val : null;
+          } else if (TIME_COLUMNS.has(dbCol)) {
+            dbRow[dbCol] = isValidTime(val) ? val : null;
           } else {
             dbRow[dbCol] = val;
           }
