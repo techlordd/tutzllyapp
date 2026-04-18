@@ -119,7 +119,46 @@ export async function POST(request: Request) {
       `);
     } catch { /* ignore */ }
 
-    const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
+    // Widen class_activities VARCHAR columns → TEXT
+    const activityAlterations: string[] = [
+      `ALTER TABLE class_activities ALTER COLUMN ssid TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN tutor_id TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN tutor_firstname TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN tutor_lastname TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN student_id TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN student_name TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN course_name TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN session_code_status TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN mothers_email TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN fathers_email TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN activity TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN status_of_past_homework_review TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN did_student_complete_prev_homework TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN homework1 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN homework2 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN homework3 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN did_student_join_on_time TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN punctuality1 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN punctuality2 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN is_student_attentive TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN attentiveness1 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN attentiveness2 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN attentiveness3 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN student_engages_in_class TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN class_engagement1 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN class_engagement2 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN class_engagement3 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN helpful_link1 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN helpful_link2 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN helpful_link3 TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN created_by TYPE TEXT`,
+      `ALTER TABLE class_activities ALTER COLUMN updated_by TYPE TEXT`,
+    ];
+    for (const sql of activityAlterations) {
+      try { await query(sql); } catch { /* column may not exist yet */ }
+    }
+
+        const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);
 
