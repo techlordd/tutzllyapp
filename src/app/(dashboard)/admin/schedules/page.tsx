@@ -25,6 +25,11 @@ interface Enrollment {
   course_id: number; course_name: string; course_code: string;
 }
 
+interface TutorAssignment {
+  tutor_assign_id: string; tutor_id: string;
+  course_id: number; course_name: string; course_code: string;
+}
+
 const emptyForm = {
   student_id: '', student_name: '', tutor_id: '', tutor_name: '', tutor_email: '',
   course_id: '', course_name: '', course_code: '', year: new Date().getFullYear().toString(),
@@ -35,6 +40,7 @@ const emptyForm = {
 export default function SchedulesPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [tutorAssignments, setTutorAssignments] = useState<TutorAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
@@ -51,20 +57,20 @@ export default function SchedulesPage() {
     ).values(),
   ];
 
-  // Courses the selected tutor teaches the selected student
-  const tutorCourses = enrollments.filter(
-    e => e.student_id === form.student_id && e.tutor_id === form.tutor_id
-  );
+  // Courses assigned to the selected tutor — sourced from tutor-assignments
+  // (JOINs the courses table, so course_name/code are always accurate)
+  const tutorCourses = tutorAssignments.filter(a => a.tutor_id === form.tutor_id);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [schRes, enrRes] = await Promise.all([
-        fetch('/api/schedules'), fetch('/api/enrollments'),
+      const [schRes, enrRes, taRes] = await Promise.all([
+        fetch('/api/schedules'), fetch('/api/enrollments'), fetch('/api/tutor-assignments'),
       ]);
-      const [schData, enrData] = await Promise.all([schRes.json(), enrRes.json()]);
+      const [schData, enrData, taData] = await Promise.all([schRes.json(), enrRes.json(), taRes.json()]);
       setSchedules(schData.schedules || []);
       setEnrollments(enrData.enrollments || []);
+      setTutorAssignments(taData.assignments || []);
     } catch { toast.error('Failed to load data'); }
     setLoading(false);
   }, []);
@@ -224,8 +230,8 @@ export default function SchedulesPage() {
                 disabled={!form.tutor_id}
               >
                 <option value="">{form.tutor_id ? 'Select Course' : 'Select a tutor first'}</option>
-                {tutorCourses.map(e => (
-                  <option key={e.assign_id} value={e.course_id}>{e.course_name} ({e.course_code})</option>
+                {tutorCourses.map(a => (
+                  <option key={a.tutor_assign_id} value={a.course_id}>{a.course_name} ({a.course_code})</option>
                 ))}
               </Select>
             </FormField>
