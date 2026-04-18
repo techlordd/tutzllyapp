@@ -10,7 +10,18 @@ export async function GET(request: NextRequest) {
     const studentId = searchParams.get('student_id');
     const parentId = searchParams.get('parent_id');
     const status = searchParams.get('status');
+    const countOnly = searchParams.get('count') === 'true';
     const academyId = getAcademyId(request);
+
+    if (countOnly) {
+      const result = await queryOne<{ total: string }>(
+        `SELECT COUNT(student_id) AS total FROM sessions
+         WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`,
+        [academyId]
+      );
+      return NextResponse.json({ count: parseInt(result?.total ?? '0', 10) });
+    }
+
     let sql = `SELECT s.*, c.course_name as course_display FROM sessions s
                LEFT JOIN courses c ON s.course_id = c.id
                WHERE s.entry_status != 'deleted' AND (s.academy_id = $1 OR $1 = 0)`;

@@ -35,7 +35,7 @@ export default function AdminDashboard() {
           fetch('/api/students').then(r => r.json()),
           fetch('/api/parents').then(r => r.json()),
           fetch('/api/courses').then(r => r.json()),
-          fetch('/api/sessions').then(r => r.json()),
+          fetch('/api/sessions?count=true').then(r => r.json()),
           fetch('/api/activities').then(r => r.json()),
         ]);
         setStats({
@@ -43,7 +43,7 @@ export default function AdminDashboard() {
           students: students.students?.length || 0,
           parents: parents.parents?.length || 0,
           courses: courses.courses?.length || 0,
-          sessions: sessions.sessions?.length || 0,
+          sessions: sessions.count || 0,
           activities: activities.activities?.length || 0,
         });
       } catch { toast.error('Failed to load stats'); }
