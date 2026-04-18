@@ -11,7 +11,7 @@ import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Message {
-  id: number; message_date: string; role: string; sender: string;
+  id: number; message_date: string; message_time: string; role: string; sender: string;
   subject: string; body: string; status: string; created_at: string;
 }
 
@@ -60,14 +60,12 @@ export default function MessagesPage() {
   };
 
   const columns = [
-    { key: 'sender', label: 'From', sortable: true },
+    { key: 'message_date', label: 'Date', sortable: true, render: (v: unknown) => formatDate(v as string) },
+    { key: 'message_time', label: 'Time' },
+    { key: 'sender', label: 'Sender', sortable: true },
     { key: 'subject', label: 'Subject', render: (v: unknown) => (
       <span className="font-medium text-gray-900 truncate max-w-[200px] block">{v as string}</span>
     )},
-    { key: 'role', label: 'Role', render: (v: unknown) => (
-      <span className="text-xs capitalize bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">{v as string}</span>
-    )},
-    { key: 'message_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
     { key: 'status', label: 'Status', render: (v: unknown) => statusBadge(v as string) },
   ];
 

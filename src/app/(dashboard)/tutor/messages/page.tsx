@@ -14,7 +14,7 @@ import { useAuthStore } from '@/store/authStore';
 type MsgType = 'admin' | 'parent' | 'student' | 'tutor';
 
 interface Message {
-  id: number; message_date: string; sender: string; subject: string; body: string; status: string;
+  id: number; message_date: string; message_time: string; sender: string; subject: string; body: string; status: string;
 }
 
 export default function MessagesSharedPage() {
@@ -66,9 +66,12 @@ export default function MessagesSharedPage() {
   };
 
   const columns = [
-    { key: 'sender', label: 'From', sortable: true },
-    { key: 'subject', label: 'Subject', render: (v: unknown) => <span className="font-medium truncate max-w-[180px] block">{v as string}</span> },
-    { key: 'message_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
+    { key: 'message_date', label: 'Date', sortable: true, render: (v: unknown) => formatDate(v as string) },
+    { key: 'message_time', label: 'Time' },
+    { key: 'sender', label: 'Sender', sortable: true },
+    { key: 'subject', label: 'Subject', render: (v: unknown) => (
+      <span className="font-medium text-gray-900 truncate max-w-[200px] block">{v as string}</span>
+    )},
     { key: 'status', label: 'Status', render: (v: unknown) => statusBadge(v as string) },
   ];
 
