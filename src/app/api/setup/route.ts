@@ -158,6 +158,23 @@ export async function POST(request: Request) {
       try { await query(sql); } catch { /* column may not exist yet */ }
     }
 
+        // Widen grade_book VARCHAR columns → TEXT
+    const gradeAlterations: string[] = [
+      `ALTER TABLE grade_book ALTER COLUMN tutor_id TYPE TEXT`,
+      `ALTER TABLE grade_book ALTER COLUMN tutor_name TYPE TEXT`,
+      `ALTER TABLE grade_book ALTER COLUMN student_id TYPE TEXT`,
+      `ALTER TABLE grade_book ALTER COLUMN student_name TYPE TEXT`,
+      `ALTER TABLE grade_book ALTER COLUMN course_name TYPE TEXT`,
+      `ALTER TABLE grade_book ALTER COLUMN month TYPE TEXT`,
+      `ALTER TABLE grade_book ALTER COLUMN year TYPE TEXT`,
+      `ALTER TABLE grade_book ALTER COLUMN grade_code_status TYPE TEXT`,
+      `ALTER TABLE grade_book ALTER COLUMN created_by TYPE TEXT`,
+      `ALTER TABLE grade_book ALTER COLUMN updated_by TYPE TEXT`,
+    ];
+    for (const sql of gradeAlterations) {
+      try { await query(sql); } catch { /* column may not exist yet */ }
+    }
+
         const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);
