@@ -5,7 +5,8 @@ import DataTable from '@/components/ui/DataTable';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Input, Select } from '@/components/ui/FormField';
-import { Plus, Edit, Trash2, Video } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, Edit, Trash2, Video, Eye } from 'lucide-react';
 import { DAYS_OF_WEEK, TIMEZONES, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -127,6 +128,9 @@ export default function SchedulesPage() {
           emptyMessage="No schedules created yet"
           actions={(row) => (
             <>
+              <Link href={`/admin/schedules/${row.schedule_id}`}>
+                <span className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors inline-flex"><Eye size={15} /></span>
+              </Link>
               <button onClick={() => { setEditingSchedule(row); setForm({...form, ...row, course_id: String(row.course_id), duration: String(row.duration) }); setModalOpen(true); }}
                 className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-600 transition-colors"><Edit size={15} /></button>
               <button onClick={() => handleDelete(row.schedule_id)}
