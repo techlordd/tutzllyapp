@@ -99,6 +99,65 @@ function isQuoteBalanced(s: string): boolean {
   return !inQuote;
 }
 
+
+/**
+ * Sanitizes unescaped internal quotes inside quoted CSV fields.
+ * Strategy: for each quoted field, scan character by character.
+ * - `""` → properly escaped, keep as-is
+ * - `"` followed by `,` or end-of-row → closing quote, end field
+ * - `"` followed by anything else → unescaped internal quote, escape to `""`
+ * This implements the "first quote opens, last valid quote closes" logic
+ * without needing to know the column count.
+ */
+function sanitizeFieldQuotes(row: string): string {
+  let i = 0;
+  let out = '';
+
+  while (i < row.length) {
+    if (row[i] === '"') {
+      // Quoted field — scan until we find the real closing quote
+      out += '"';
+      i++; // skip opening quote
+
+      while (i < row.length) {
+        if (row[i] === '"') {
+          if (i + 1 < row.length && row[i + 1] === '"') {
+            // Properly escaped "" — keep and advance past both
+            out += '""';
+            i += 2;
+          } else if (i + 1 >= row.length || row[i + 1] === ',' || row[i + 1] === '\n') {
+            // Closing quote — followed by separator, end of row, or newline
+            out += '"';
+            i++;
+            break;
+          } else {
+            // Unescaped internal quote — escape it
+            out += '""';
+            i++;
+          }
+        } else {
+          out += row[i];
+          i++;
+        }
+      }
+
+      // Consume field separator if present
+      if (i < row.length && row[i] === ',') {
+        out += ',';
+        i++;
+      }
+    } else if (row[i] === ',') {
+      out += ',';
+      i++;
+    } else {
+      out += row[i];
+      i++;
+    }
+  }
+
+  return out;
+}
+
 /**
  * Pre-processes raw CSV text by merging continuation lines that belong to
  * an open quoted field (e.g. multi-line message bodies, code pasted into a cell).
@@ -113,11 +172,11 @@ function preprocessCsv(rawText: string): string {
   for (const line of lines) {
     buffer = buffer === '' ? line : buffer + '\n' + line;
     if (isQuoteBalanced(buffer)) {
-      output.push(buffer);
+      output.push(sanitizeFieldQuotes(buffer));
       buffer = '';
     }
   }
-  if (buffer) output.push(buffer);
+  if (buffer) output.push(sanitizeFieldQuotes(buffer));
   return output.join('\n');
 }
 
