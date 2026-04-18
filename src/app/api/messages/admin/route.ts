@@ -6,8 +6,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('user_id');
-    let sql = `SELECT * FROM messages_admin WHERE entry_status != 'deleted'`;
-    const params: string[] = [];
+    const academyId = getAcademyId(request);
+    let sql = `SELECT * FROM messages_admin WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
+    const params: (string | number)[] = [academyId];
     if (userId) { params.push(userId); sql += ` AND user_id = $${params.length}`; }
     sql += ' ORDER BY created_at DESC';
     const messages = await query(sql, params);
