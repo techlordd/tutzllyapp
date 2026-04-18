@@ -275,7 +275,7 @@ export const ENTITY_CONFIG: Record<string, EntityConfig> = {
   assignments:      { table: 'tutor_course_assignments', idField: 'tutor_assign_id', idPrefix: 'ASN', createUser: false },
   enrollments:      { table: 'student_enrollments',      idField: 'assign_id',       idPrefix: 'ENR', createUser: false },
   schedules:        { table: 'schedules',                idField: 'schedule_id',     idPrefix: 'SCH', createUser: false },
-  sessions:         { table: 'sessions',                 idField: 'ssid',            idPrefix: 'SES', createUser: false, upsertOn: 'ssid' },
+  sessions:         { table: 'sessions',                 idField: null,              idPrefix: null,  createUser: false },
   activities:       { table: 'class_activities',         idField: null,              idPrefix: null,  createUser: false },
   grades:           { table: 'grade_book',               idField: null,              idPrefix: null,  createUser: false },
   messages_admin:   { table: 'messages_admin',           idField: null,              idPrefix: null,  createUser: false },

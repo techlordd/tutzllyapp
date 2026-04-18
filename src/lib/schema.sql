@@ -267,7 +267,7 @@ CREATE TABLE IF NOT EXISTS schedules (
 CREATE TABLE IF NOT EXISTS sessions (
   id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
-  ssid TEXT UNIQUE NOT NULL,
+  ssid TEXT NOT NULL,
   schedule_id TEXT,
   tutor_id TEXT,
   tutor_firstname TEXT,

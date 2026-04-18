@@ -104,6 +104,10 @@ export async function POST(request: Request) {
       await query(`DROP INDEX IF EXISTS idx_sessions_ssid`);
       await query(`CREATE INDEX IF NOT EXISTS idx_sessions_ssid ON sessions USING HASH (ssid)`);
     } catch { /* ignore */ }
+    // Drop unique constraint on ssid — sessions can have duplicate SSIDs (row count matters)
+    try {
+      await query(`ALTER TABLE sessions DROP CONSTRAINT IF EXISTS sessions_ssid_key`);
+    } catch { /* ignore */ }
 
     const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
