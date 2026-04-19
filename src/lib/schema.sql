@@ -256,7 +256,7 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
 
 -- Schedules
 CREATE TABLE IF NOT EXISTS schedules (
-  id SERIAL PRIMARY KEY,
+  record_id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   schedule_id VARCHAR(50) UNIQUE NOT NULL,
   student_id VARCHAR(50) NOT NULL,
@@ -270,9 +270,10 @@ CREATE TABLE IF NOT EXISTS schedules (
   year VARCHAR(10),
   day VARCHAR(20),
   sort_id INTEGER,
-  duration INTEGER, -- in minutes
+  duration INTEGER,
   session_start_time TIME,
   session_end_time TIME,
+  time_zone_deprecated VARCHAR(100),
   time_zone VARCHAR(100),
   zoom_link TEXT,
   meeting_id VARCHAR(100),
@@ -283,8 +284,9 @@ CREATE TABLE IF NOT EXISTS schedules (
   ip VARCHAR(45),
   created_by VARCHAR(100),
   updated_by VARCHAR(100),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  record_key VARCHAR(100),
+  timestamp TIMESTAMP DEFAULT NOW(),
+  last_updated TIMESTAMP DEFAULT NOW()
 );
 
 -- Sessions (Start session form)

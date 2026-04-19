@@ -17,7 +17,10 @@ interface Schedule {
   course_id: number; course_code: string;
   day: string; session_start_time: string; session_end_time: string;
   duration: number; zoom_link: string; meeting_id: string; meeting_passcode: string;
-  time_zone: string; assign_status: string; year: string;
+  time_zone: string; time_zone_deprecated: string; assign_status: string;
+  year: string; sort_id: number;
+  entry_status: string; timestamp: string; last_updated: string;
+  created_by: string; updated_by: string; ip: string; record_key: string;
 }
 
 interface Enrollment {
@@ -48,6 +51,8 @@ export default function SchedulesPage() {
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   // Unique enrolled students
   const enrolledStudents = [...new Map(enrollments.map(e => [e.student_id, e])).values()];
@@ -125,6 +130,19 @@ export default function SchedulesPage() {
     setSubmitting(false);
   };
 
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      const res = await fetch('/api/schedules', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Failed to delete schedules'); setDeletingAll(false); return; }
+      toast.success(`Deleted ${data.deleted} schedule${data.deleted !== 1 ? 's' : ''}`);
+      setDeleteAllOpen(false);
+      fetchData();
+    } catch { toast.error('Failed to delete schedules'); }
+    setDeletingAll(false);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this schedule?')) return;
     try {
@@ -147,21 +165,44 @@ export default function SchedulesPage() {
   };
 
   const columns = [
-    { key: 'student_name', label: 'Student', sortable: true },
-    { key: 'tutor_name', label: 'Tutor', sortable: true },
-    { key: 'course_name', label: 'Course' },
+    { key: 'schedule_id', label: 'Schedule ID', render: (v: unknown) => (
+      <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{(v as string)?.slice(0, 14)}…</span>
+    )},
+    { key: 'student_name', label: 'Student Name', sortable: true, render: (_: unknown, row: Schedule) => (
+      <div>
+        <p className="font-medium">{row.student_name || '—'}</p>
+        <p className="text-xs text-gray-400 font-mono">{row.student_id}</p>
+      </div>
+    )},
+    { key: 'sort_id', label: 'Sort ID', render: (v: unknown) => (
+      <span className="text-sm text-gray-600">{v != null ? String(v) : '—'}</span>
+    )},
+    { key: 'year', label: 'Year', render: (v: unknown) => <span className="text-sm">{v as string || '—'}</span> },
     { key: 'day', label: 'Day' },
+    { key: 'tutor_name', label: 'Tutor', sortable: true, render: (_: unknown, row: Schedule) => (
+      <div>
+        <p className="font-medium">{row.tutor_name || '—'}</p>
+        <p className="text-xs text-gray-400 font-mono">{row.tutor_id}</p>
+      </div>
+    )},
+    { key: 'course_name', label: 'Course', render: (_: unknown, row: Schedule) => (
+      <div>
+        <p className="font-medium">{row.course_name || '—'}</p>
+        <span className="font-mono text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{row.course_code}</span>
+      </div>
+    )},
     { key: 'session_start_time', label: 'Time', render: (_: unknown, row: Schedule) =>
       <span className="text-sm">{formatTime(row.session_start_time)} – {formatTime(row.session_end_time)}</span>
     },
-    { key: 'duration', label: 'Duration', render: (v: unknown) => `${v} min` },
+    { key: 'duration', label: 'Duration', render: (v: unknown) => v ? `${v} min` : '—' },
+    { key: 'time_zone', label: 'Time Zone', render: (v: unknown) => <span className="text-xs text-gray-600">{v as string || '—'}</span> },
     { key: 'zoom_link', label: 'Zoom', render: (v: unknown) => v ? (
       <a href={v as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs">
         <Video size={12} /> Join
       </a>
     ) : <span className="text-gray-400 text-xs">—</span> },
     { key: 'assign_status', label: 'Status', render: (v: unknown) =>
-      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${v === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{v as string}</span>
+      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${v === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{v as string || '—'}</span>
     },
   ];
 
@@ -175,6 +216,9 @@ export default function SchedulesPage() {
           </div>
           <div className="flex gap-2">
             <Button icon={CalendarDays} variant="secondary" onClick={() => setTimetableOpen(true)}>Timetable</Button>
+            {schedules.length > 0 && (
+              <Button variant="danger" icon={Trash2} onClick={() => setDeleteAllOpen(true)}>Delete All</Button>
+            )}
             <Button icon={Plus} onClick={openCreate}>Create Schedule</Button>
           </div>
         </div>
@@ -201,6 +245,20 @@ export default function SchedulesPage() {
         onClose={() => setTimetableOpen(false)}
         schedules={schedules}
       />
+
+      {/* Delete All confirmation modal */}
+      <Modal isOpen={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} title="Delete All Schedules" size="sm">
+        <div className="space-y-4">
+          <p className="text-gray-600 text-sm">
+            This will permanently delete all <strong>{schedules.length}</strong> schedule{schedules.length !== 1 ? 's' : ''}.
+            This action cannot be undone.
+          </p>
+          <div className="flex gap-3 pt-1">
+            <Button variant="secondary" onClick={() => setDeleteAllOpen(false)}>Cancel</Button>
+            <Button variant="danger" loading={deletingAll} onClick={handleDeleteAll}>Delete All</Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditingSchedule(null); setForm(emptyForm); }}
         title={editingSchedule ? 'Edit Schedule' : 'Create Schedule'} size="2xl">

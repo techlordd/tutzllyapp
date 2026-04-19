@@ -27,6 +27,21 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const academyId = getAcademyId(request);
+    const rows = await query<{ schedule_id: string }>(
+      `SELECT schedule_id FROM schedules WHERE (academy_id = $1 OR $1 = 0)`,
+      [academyId]
+    );
+    await query(`DELETE FROM schedules WHERE (academy_id = $1 OR $1 = 0)`, [academyId]);
+    return NextResponse.json({ deleted: rows.length });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to delete schedules' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
