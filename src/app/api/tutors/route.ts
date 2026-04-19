@@ -10,12 +10,11 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const academyId = getAcademyId(request);
     const tutors = await query(
-      `SELECT t.*, u.username, u.email FROM tutors t
-       LEFT JOIN users u ON t.user_id = u.id
-       WHERE t.entry_status != 'deleted'
-         AND (t.academy_id = $2 OR $2 = 0)
-         AND (t.firstname ILIKE $1 OR t.surname ILIKE $1 OR t.tutor_id ILIKE $1 OR t.email ILIKE $1)
-       ORDER BY t.timestamp DESC`,
+      `SELECT * FROM tutors
+       WHERE entry_status != 'deleted'
+         AND (academy_id = $2 OR $2 = 0)
+         AND (firstname ILIKE $1 OR surname ILIKE $1 OR tutor_id ILIKE $1 OR email ILIKE $1)
+       ORDER BY timestamp DESC`,
       [`%${search}%`, academyId]
     );
     return NextResponse.json({ tutors });
