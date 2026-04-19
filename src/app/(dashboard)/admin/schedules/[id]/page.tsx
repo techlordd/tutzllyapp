@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Button from '@/components/ui/Button';
 import {
   ArrowLeft, Edit, Trash2, User, GraduationCap, BookOpen,
-  Calendar, Clock, Globe, Video, Copy, CheckCheck,
+  Calendar, Clock, Globe, Video, Copy, CheckCheck, Hash, Key,
 } from 'lucide-react';
 import { formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -16,7 +16,10 @@ interface Schedule {
   course_name: string; course_id: number; course_code: string;
   day: string; session_start_time: string; session_end_time: string;
   duration: number; zoom_link: string; meeting_id: string; meeting_passcode: string;
-  time_zone: string; assign_status: string; year: string; created_at: string;
+  time_zone: string; time_zone_deprecated: string; assign_status: string;
+  year: string; sort_id: string;
+  entry_status: string; timestamp: string; last_updated: string;
+  created_by: string; updated_by: string; ip: string; record_key: string;
 }
 
 function InfoCard({ icon: Icon, label, value, mono = false }: {
@@ -30,11 +33,17 @@ function InfoCard({ icon: Icon, label, value, mono = false }: {
       <div>
         <p className="text-xs text-gray-400 mb-0.5">{label}</p>
         <p className={`text-sm font-medium text-gray-900 ${mono ? 'font-mono' : ''}`}>
-          {value || <span className="text-gray-400 font-normal">—</span>}
+          {value != null && value !== '' ? value : <span className="text-gray-400 font-normal">—</span>}
         </p>
       </div>
     </div>
   );
+}
+
+function formatDate(val?: string | null) {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? val : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function ScheduleDetailPage() {
@@ -110,7 +119,7 @@ export default function ScheduleDetailPage() {
             <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
               isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
             }`}>
-              {schedule.assign_status}
+              {schedule.assign_status || 'active'}
             </span>
             <Button
               icon={Edit}
@@ -134,10 +143,11 @@ export default function ScheduleDetailPage() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Participants</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <InfoCard icon={User} label="Student" value={schedule.student_name} />
-            <InfoCard icon={User} label="Student ID" value={schedule.student_id} mono />
-            <InfoCard icon={GraduationCap} label="Tutor" value={schedule.tutor_name} />
-            <InfoCard icon={GraduationCap} label="Tutor Email" value={schedule.tutor_email} />
+            <InfoCard icon={User}         label="Student Name"  value={schedule.student_name} />
+            <InfoCard icon={Hash}         label="Student ID"    value={schedule.student_id} mono />
+            <InfoCard icon={GraduationCap} label="Tutor Name"   value={schedule.tutor_name} />
+            <InfoCard icon={Hash}         label="Tutor ID"      value={schedule.tutor_id} mono />
+            <InfoCard icon={GraduationCap} label="Tutor Email"  value={schedule.tutor_email} />
           </div>
         </div>
 
@@ -145,16 +155,20 @@ export default function ScheduleDetailPage() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Session Details</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <InfoCard icon={BookOpen} label="Course" value={`${schedule.course_name} (${schedule.course_code})`} />
-            <InfoCard icon={Calendar} label="Day" value={schedule.day} />
-            <InfoCard icon={Clock} label="Time" value={
+            <InfoCard icon={BookOpen} label="Course"    value={`${schedule.course_name || ''}${schedule.course_code ? ` (${schedule.course_code})` : ''}`} />
+            <InfoCard icon={Calendar} label="Year"      value={schedule.year} />
+            <InfoCard icon={Calendar} label="Day"       value={schedule.day} />
+            <InfoCard icon={Hash}     label="Sort ID"   value={schedule.sort_id} />
+            <InfoCard icon={Clock}    label="Time"      value={
               schedule.session_start_time
                 ? `${formatTime(schedule.session_start_time)} – ${formatTime(schedule.session_end_time)}`
                 : undefined
             } />
-            <InfoCard icon={Clock} label="Duration" value={schedule.duration ? `${schedule.duration} minutes` : undefined} />
-            <InfoCard icon={Calendar} label="Year" value={schedule.year} />
-            <InfoCard icon={Globe} label="Time Zone" value={schedule.time_zone} />
+            <InfoCard icon={Clock}    label="Duration"  value={schedule.duration ? `${schedule.duration} minutes` : undefined} />
+            <InfoCard icon={Globe}    label="Time Zone" value={schedule.time_zone} />
+            {schedule.time_zone_deprecated && (
+              <InfoCard icon={Globe}  label="Time Zone (Deprecated)" value={schedule.time_zone_deprecated} />
+            )}
           </div>
         </div>
 
@@ -225,10 +239,21 @@ export default function ScheduleDetailPage() {
           </div>
         </div>
 
-        {/* Footer */}
-        <p className="text-xs text-gray-400 text-center pb-2">
-          Created {schedule.created_at ? new Date(schedule.created_at).toLocaleString() : '—'}
-        </p>
+        {/* Record Info */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Record Info</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <InfoCard icon={Hash}     label="Schedule ID"   value={schedule.schedule_id} mono />
+            <InfoCard icon={Globe}    label="Entry Status"  value={schedule.entry_status} />
+            <InfoCard icon={Calendar} label="Created"       value={formatDate(schedule.timestamp)} />
+            <InfoCard icon={Calendar} label="Last Updated"  value={formatDate(schedule.last_updated)} />
+            <InfoCard icon={User}     label="Created By"    value={schedule.created_by} />
+            <InfoCard icon={User}     label="Updated By"    value={schedule.updated_by} />
+            <InfoCard icon={Globe}    label="IP"            value={schedule.ip} />
+            <InfoCard icon={Key}      label="Key"           value={schedule.record_key} mono />
+          </div>
+        </div>
+
       </div>
     </DashboardLayout>
   );
