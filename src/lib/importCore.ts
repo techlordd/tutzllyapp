@@ -59,19 +59,21 @@ const VARCHAR_MAX_LENGTH: Record<string, Record<string, number>> = {
 };
 
 // DB columns that expect a DATE or TIMESTAMP value — non-date strings are coerced to null.
-// Includes both legacy names (created_at/updated_at used by most tables) and the tutors
-// table names (timestamp/last_updated) introduced in migration 002.
+// Includes both legacy names (created_at/updated_at used by most tables) and the renamed
+// timestamp columns (timestamp/last_updated) introduced in migrations 002-003.
 const DATE_COLUMNS = new Set([
   'entry_date', 'start_session_date', 'end_session_date', 'reschedule_to',
   'class_activity_date', 'date_of_birth', 'message_date',
   'created_at', 'updated_at',
   'timestamp', 'last_updated',
+  'date',
 ]);
 
 // DB columns that expect a TIME value — non-time strings are coerced to null
 const TIME_COLUMNS = new Set([
   'schedule_start_time', 'schedule_end_time', 'start_session_time', 'end_session_time',
   'reschedule_time', 'class_activity_time', 'message_time', 'session_start_time', 'session_end_time',
+  'time',
 ]);
 
 function isValidDate(val: string): boolean {
@@ -202,17 +204,26 @@ export const COLUMN_MAPS: Record<string, Record<string, string>> = {
   },
   students: {
     'StudentID': 'student_id', 'Enrollment ID': 'enrollment_id',
-    'Student Username': 'username', 'Student Email': 'email',
-    'Firstname': 'firstname', 'Surname': 'surname', 'Phone no': 'phone_no',
-    'Sex': 'sex', 'Grade': 'grade', 'School': 'school',
+    'User Role': 'user_role',
+    'Student Username': 'username',
+    'Student Email': 'email', 'Email': 'email',
+    'Student Password': 'password',
+    'Firstname': 'firstname', 'Surname': 'surname',
+    'Student Full Name (i4y29) - First Name': 'full_name_first_name',
+    'Student Full Name (i4y29) - Last Name': 'full_name_last_name',
+    'Phone no': 'phone_no', 'Sex': 'sex', 'Grade': 'grade', 'School': 'school',
     'Date of Birth': 'date_of_birth',
     "Mother's name": 'mothers_name', "Mother's email": 'mothers_email',
     "Father's name": 'fathers_name', "Father's email": 'fathers_email',
-    'Address - Line 1': 'address_line1', 'Address - Line 2': 'address_line2',
-    'Address - City': 'address_city', 'Address - State/Province': 'address_state',
-    'Address - Zip/Postal': 'address_zip', 'Address - Country': 'address_country',
+    'Address': 'address',
+    'Address - Line 1': 'address_line_1', 'Address - Line 2': 'address_line_2',
+    'Address - City': 'address_city', 'Address - State/Province': 'address_state_province',
+    'Address - Zip/Postal': 'address_zip_postal', 'Address - Country': 'address_country',
     'Short Bio': 'short_bio', 'Profile Image': 'profile_image',
     'Status': 'status', 'Reason for Inactive': 'reason_for_inactive',
+    'Timestamp': 'timestamp', 'Last Updated': 'last_updated',
+    'Date': 'date', 'Time': 'time',
+    'Key': 'record_key',
     'Entry Status': 'entry_status', 'IP': 'ip', 'Created By': 'created_by', 'Updated By': 'updated_by',
   },
   parents: {

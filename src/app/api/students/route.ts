@@ -10,11 +10,16 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const academyId = getAcademyId(request);
     const students = await query(
-      `SELECT * FROM students
-       WHERE entry_status != 'deleted'
-         AND (academy_id = $2 OR $2 = 0)
-         AND (firstname ILIKE $1 OR surname ILIKE $1 OR student_id ILIKE $1 OR email ILIKE $1)
-       ORDER BY created_at DESC`,
+      `SELECT s.*,
+              COALESCE(NULLIF(s.email, ''), u.email) AS email,
+              COALESCE(NULLIF(s.username, ''), u.username) AS username
+       FROM students s
+       LEFT JOIN users u ON s.user_id = u.id
+       WHERE s.entry_status != 'deleted'
+         AND (s.academy_id = $2 OR $2 = 0)
+         AND (s.firstname ILIKE $1 OR s.surname ILIKE $1 OR s.student_id ILIKE $1
+              OR s.email ILIKE $1 OR u.email ILIKE $1)
+       ORDER BY s.timestamp DESC`,
       [`%${search}%`, academyId]
     );
     return NextResponse.json({ students });
@@ -47,21 +52,46 @@ export async function POST(request: NextRequest) {
     }
 
     const student = await queryOne(
-      `INSERT INTO students (academy_id, student_id, enrollment_id, user_id, username, email, firstname, surname,
-       fullname_first, fullname_last, phone_no, sex, grade, school, date_of_birth, mothers_name,
-       mothers_email, fathers_name, fathers_email, address_line1, address_line2, address_city,
-       address_state, address_zip, address_country, short_bio, status, entry_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,'active','active')
+      `INSERT INTO students (academy_id, student_id, enrollment_id, user_role, user_id, username, email,
+       firstname, surname, full_name_first_name, full_name_last_name, phone_no, sex, grade, school,
+       date_of_birth, mothers_name, mothers_email, fathers_name, fathers_email,
+       address, address_line_1, address_line_2, address_city, address_state_province, address_zip_postal,
+       address_country, short_bio, status, entry_status)
+       VALUES ($1,$2,$3,'student',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,'active','active')
        RETURNING *`,
-      [academyId || null, studentId, enrollmentId, user?.id, data.username, data.email, data.firstname, data.surname,
-       data.firstname, data.surname, data.phone_no, data.sex, data.grade, data.school, data.date_of_birth,
+      [academyId || null, studentId, enrollmentId, user?.id, data.username, data.email,
+       data.firstname, data.surname, data.firstname, data.surname,
+       data.phone_no, data.sex, data.grade, data.school, data.date_of_birth,
        data.mothers_name, data.mothers_email, data.fathers_name, data.fathers_email,
-       data.address_line1, data.address_line2, data.address_city, data.address_state,
-       data.address_zip, data.address_country, data.short_bio]
+       data.address, data.address_line1, data.address_line2, data.address_city,
+       data.address_state, data.address_zip, data.address_country, data.short_bio]
     );
     return NextResponse.json({ student }, { status: 201 });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to create student' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const academyId = getAcademyId(request);
+
+    const studentRows = await query<{ user_id: number; student_id: string }>(
+      `SELECT user_id, student_id FROM students WHERE (academy_id = $1 OR $1 = 0)`,
+      [academyId]
+    );
+
+    await query(`DELETE FROM students WHERE (academy_id = $1 OR $1 = 0)`, [academyId]);
+
+    const userIds = studentRows.map(r => r.user_id).filter(Boolean);
+    if (userIds.length > 0) {
+      await query(`DELETE FROM users WHERE id = ANY($1) AND role = 'student'`, [userIds]);
+    }
+
+    return NextResponse.json({ deleted: studentRows.length });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to delete students' }, { status: 500 });
   }
 }
