@@ -18,7 +18,7 @@ interface Schedule {
   day: string; session_start_time: string; session_end_time: string;
   duration: number; zoom_link: string; meeting_id: string; meeting_passcode: string;
   time_zone: string; time_zone_deprecated: string; assign_status: string;
-  year: string; sort_id: number;
+  year: string; sort_id: string;
   entry_status: string; timestamp: string; last_updated: string;
   created_by: string; updated_by: string; ip: string; record_key: string;
 }

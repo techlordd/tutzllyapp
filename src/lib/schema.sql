@@ -269,7 +269,7 @@ CREATE TABLE IF NOT EXISTS schedules (
   course_code VARCHAR(50),
   year VARCHAR(10),
   day VARCHAR(20),
-  sort_id INTEGER,
+  sort_id VARCHAR(50),
   duration INTEGER,
   session_start_time TIME,
   session_end_time TIME,
