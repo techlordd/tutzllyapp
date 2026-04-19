@@ -1,3 +1,11 @@
+// Multi-tenancy pattern (apply to every future table/route):
+//   1. Every table must have `academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE`.
+//   2. This route reads `academy_id` from the verified JWT (`payload.current_academy_id`).
+//   3. runImport injects `dbRow['academy_id'] = academyId` on every inserted row.
+//   4. All GET/PUT/DELETE API routes must scope with `WHERE academy_id = $n OR $n = 0`
+//      (the OR-0 branch allows super-admin queries across all academies).
+//   5. getAcademyId(request) reads the same value from the x-academy-id middleware header.
+
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';

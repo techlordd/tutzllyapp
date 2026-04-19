@@ -58,11 +58,14 @@ const VARCHAR_MAX_LENGTH: Record<string, Record<string, number>> = {
   schedules: { zoom_link: 500 },
 };
 
-// DB columns that expect a DATE value — non-date strings are coerced to null
+// DB columns that expect a DATE or TIMESTAMP value — non-date strings are coerced to null.
+// Includes both legacy names (created_at/updated_at used by most tables) and the tutors
+// table names (timestamp/last_updated) introduced in migration 002.
 const DATE_COLUMNS = new Set([
   'entry_date', 'start_session_date', 'end_session_date', 'reschedule_to',
   'class_activity_date', 'date_of_birth', 'message_date',
   'created_at', 'updated_at',
+  'timestamp', 'last_updated',
 ]);
 
 // DB columns that expect a TIME value — non-time strings are coerced to null
@@ -493,7 +496,9 @@ export async function runImport(
       }
 
       // Skip blank rows produced by relax_column_count (e.g. continuation lines of multi-line bodies)
-      const SYSTEM_ONLY = new Set(['academy_id', 'entry_status', 'created_at', 'updated_at', 'ip']);
+      // Fields that are system-managed; a row with only these is treated as blank.
+      // Includes both legacy timestamp names and the tutors-table names (migration 002).
+      const SYSTEM_ONLY = new Set(['academy_id', 'entry_status', 'created_at', 'updated_at', 'ip', 'timestamp', 'last_updated']);
       const meaningfulCount = Object.keys(dbRow).filter(k => !SYSTEM_ONLY.has(k)).length;
       if (meaningfulCount === 0) {
         skipped++;

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
        WHERE t.entry_status != 'deleted'
          AND (t.academy_id = $2 OR $2 = 0)
          AND (t.firstname ILIKE $1 OR t.surname ILIKE $1 OR t.tutor_id ILIKE $1 OR t.email ILIKE $1)
-       ORDER BY t.created_at DESC`,
+       ORDER BY t.timestamp DESC`,
       [`%${search}%`, academyId]
     );
     return NextResponse.json({ tutors });
