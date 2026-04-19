@@ -185,7 +185,8 @@ function preprocessCsv(rawText: string): string {
 
 export const COLUMN_MAPS: Record<string, Record<string, string>> = {
   tutors: {
-    'Tutor ID': 'tutor_id', 'Tutor Username': 'username', 'Tutor Email': 'email',
+    'Tutor ID': 'tutor_id', 'Tutor Username': 'username',
+    'Tutor Email': 'email', 'Email': 'email',
     'Firstname': 'firstname', 'Surname': 'surname', 'Phone no': 'phone_no',
     'Sex': 'sex', 'Date of Birth': 'date_of_birth',
     'Address': 'address',
