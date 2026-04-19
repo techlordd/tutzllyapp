@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS tutor_course_assignments (
 
 -- Student enrollments (assign tutor + course to student)
 CREATE TABLE IF NOT EXISTS student_enrollments (
-  id SERIAL PRIMARY KEY,
+  record_id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   assign_id VARCHAR(50) UNIQUE NOT NULL,
   student_id VARCHAR(50) NOT NULL,
@@ -239,13 +239,19 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
   course_id INTEGER REFERENCES courses(id),
   course_name VARCHAR(255),
   course_code VARCHAR(50),
+  course_name_deprecated VARCHAR(255),
+  course_name_2 VARCHAR(255),
+  course_code_2 VARCHAR(50),
+  course_id_ref_2 VARCHAR(50),
+  course_name_deprecated_2 VARCHAR(255),
   user_id INTEGER REFERENCES users(id),
   entry_status VARCHAR(20) DEFAULT 'active',
   ip VARCHAR(45),
   created_by VARCHAR(100),
   updated_by VARCHAR(100),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  record_key VARCHAR(100),
+  timestamp TIMESTAMP DEFAULT NOW(),
+  last_updated TIMESTAMP DEFAULT NOW()
 );
 
 -- Schedules
