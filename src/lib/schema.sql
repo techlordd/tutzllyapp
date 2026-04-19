@@ -139,22 +139,24 @@ CREATE TABLE IF NOT EXISTS students (
 
 -- Parents table
 CREATE TABLE IF NOT EXISTS parents (
-  id SERIAL PRIMARY KEY,
+  record_id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   parent_id VARCHAR(50) UNIQUE NOT NULL,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   username VARCHAR(100),
   email VARCHAR(255),
-  fullname_first VARCHAR(100),
-  fullname_last VARCHAR(100),
+  password VARCHAR(255),
+  full_name_first_name VARCHAR(100),
+  full_name_last_name VARCHAR(100),
   phone_no VARCHAR(30),
   sex VARCHAR(10),
   date_of_birth DATE,
-  address_line1 VARCHAR(255),
-  address_line2 VARCHAR(255),
+  address TEXT,
+  address_line_1 VARCHAR(255),
+  address_line_2 VARCHAR(255),
   address_city VARCHAR(100),
-  address_state VARCHAR(100),
-  address_zip VARCHAR(20),
+  address_state_province VARCHAR(100),
+  address_zip_postal VARCHAR(20),
   address_country VARCHAR(100),
   short_bio TEXT,
   no_of_students INTEGER DEFAULT 0,
@@ -173,8 +175,9 @@ CREATE TABLE IF NOT EXISTS parents (
   ip VARCHAR(45),
   created_by VARCHAR(100),
   updated_by VARCHAR(100),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  record_key VARCHAR(100),
+  timestamp TIMESTAMP DEFAULT NOW(),
+  last_updated TIMESTAMP DEFAULT NOW()
 );
 
 -- Courses table
