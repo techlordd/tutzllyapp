@@ -111,14 +111,16 @@ export default function TutorsPage() {
 
   const columns = [
     {
-      key: 'fullname', label: 'Tutor', render: (_: unknown, row: Tutor) => (
+      key: 'fullname', label: 'Name', render: (_: unknown, row: Tutor) => (
         <div className="flex items-center gap-3">
           <Avatar name={`${row.firstname} ${row.surname}`} size="sm" />
-          <div>
-            <p className="font-medium text-gray-900">{row.firstname} {row.surname}</p>
-            <p className="text-xs text-gray-400">{row.tutor_id}</p>
-          </div>
+          <p className="font-medium text-gray-900">{row.firstname} {row.surname}</p>
         </div>
+      )
+    },
+    {
+      key: 'tutor_id', label: 'Tutor ID', render: (v: unknown) => (
+        <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{v as string}</span>
       )
     },
     { key: 'email', label: 'Email' },
