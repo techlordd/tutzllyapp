@@ -20,7 +20,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const session = await queryOne(
       `UPDATE sessions SET status=$1, start_session_date=$2, start_session_time=$3,
        end_session_date=$4, end_session_time=$5, session_duration=$6, reschedule_to=$7,
-       reschedule_time=$8, status_admin=$9, session_code_status=$10, updated_at=NOW()
+       reschedule_time=$8, status_admin=$9, session_code_status=$10, last_updated=NOW()
        WHERE ssid=$11 RETURNING *`,
       [data.status, data.start_session_date, data.start_session_time, data.end_session_date,
        data.end_session_time, data.session_duration, data.reschedule_to, data.reschedule_time,

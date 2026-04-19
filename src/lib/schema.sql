@@ -291,7 +291,7 @@ CREATE TABLE IF NOT EXISTS schedules (
 
 -- Sessions (Start session form)
 CREATE TABLE IF NOT EXISTS sessions (
-  id SERIAL PRIMARY KEY,
+  record_id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   ssid TEXT NOT NULL,
   schedule_id TEXT,
@@ -301,8 +301,11 @@ CREATE TABLE IF NOT EXISTS sessions (
   student_id TEXT,
   student_name TEXT,
   student_email TEXT,
+  email_lookup_student_id TEXT,
+  confirmation TEXT,
   course_name TEXT,
   course_id INTEGER REFERENCES courses(id),
+  course_id_ref TEXT,
   entry_date DATE,
   day VARCHAR(20),
   schedule_start_time TIME,
@@ -313,17 +316,19 @@ CREATE TABLE IF NOT EXISTS sessions (
   meeting_passcode TEXT,
   start_session_date DATE,
   start_session_time TIME,
+  start_session_confirmation TEXT,
   end_session_date DATE,
   end_session_time TIME,
-  session_duration NUMERIC(5,2), -- in hours (e.g. 1.5 = 1.5 hrs)
+  end_session_confirmation TEXT,
+  session_duration NUMERIC(5,2),
   reschedule_to DATE,
   reschedule_time TIME,
-  status VARCHAR(30) DEFAULT 'scheduled', -- scheduled, started, ended, rescheduled, missed
+  status VARCHAR(30) DEFAULT 'scheduled',
   status_admin VARCHAR(30),
   session_code_status TEXT,
   mothers_email TEXT,
   fathers_email TEXT,
-  -- Missed session repeater fields (up to 3)
+  -- Missed session repeater fields (up to 2)
   missed_session_id1 TEXT,
   missed_schedule_id1 TEXT,
   missed_status1 VARCHAR(30),
@@ -332,7 +337,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   missed_tutor_lastname1 TEXT,
   missed_student_name1 TEXT,
   missed_course1 TEXT,
-  missed_course_id1 INTEGER,
+  missed_course_id1 TEXT,
   missed_session_code_status1 TEXT,
   missed_session_id2 TEXT,
   missed_schedule_id2 TEXT,
@@ -342,15 +347,16 @@ CREATE TABLE IF NOT EXISTS sessions (
   missed_tutor_lastname2 TEXT,
   missed_student_name2 TEXT,
   missed_course2 TEXT,
-  missed_course_id2 INTEGER,
+  missed_course_id2 TEXT,
   missed_session_code_status2 TEXT,
   user_id INTEGER REFERENCES users(id),
   entry_status VARCHAR(20) DEFAULT 'active',
   ip VARCHAR(45),
   created_by TEXT,
   updated_by TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  record_key TEXT,
+  timestamp TIMESTAMP DEFAULT NOW(),
+  last_updated TIMESTAMP DEFAULT NOW()
 );
 
 -- Class activities

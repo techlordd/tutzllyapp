@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
 import { generateId } from '@/lib/utils';
 import { getAcademyId } from '@/lib/request-context';
-import { verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +27,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    let sql = `SELECT s.*, c.course_name as course_display FROM sessions s
+    let sql = `SELECT s.*, COALESCE(s.course_name, c.course_name) AS course_display
+               FROM sessions s
                LEFT JOIN courses c ON s.course_id = c.id
                WHERE s.entry_status != 'deleted' AND (s.academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       sql += ` AND s.student_id IN (SELECT sid FROM (SELECT unnest(ARRAY[p.student_id1,p.student_id2,p.student_id3,p.student_id4,p.student_id5]) AS sid FROM parents p JOIN users u ON p.user_id = u.id WHERE u.user_id = $${params.length}) sub WHERE sid IS NOT NULL)`;
     }
     if (status) { params.push(status); sql += ` AND s.status = $${params.length}`; }
-    sql += ' ORDER BY s.created_at DESC';
+    sql += ' ORDER BY s.timestamp DESC';
     const sessions = await query(sql, params);
     return NextResponse.json({ sessions });
   } catch (error) {
@@ -74,24 +74,15 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value;
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const payload = verifyToken(token);
-    if (!payload || payload.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
-    }
     const academyId = getAcademyId(request);
-    if (!academyId) return NextResponse.json({ error: 'No academy context' }, { status: 400 });
-
-    const result = await query<{ count: string }>(
-      `WITH deleted AS (DELETE FROM sessions WHERE academy_id = $1 RETURNING id)
-       SELECT COUNT(*) AS count FROM deleted`,
+    const rows = await query<{ ssid: string }>(
+      `SELECT ssid FROM sessions WHERE (academy_id = $1 OR $1 = 0)`,
       [academyId]
     );
-    const deleted = parseInt(result[0]?.count ?? '0', 10);
-    return NextResponse.json({ deleted });
+    await query(`DELETE FROM sessions WHERE (academy_id = $1 OR $1 = 0)`, [academyId]);
+    return NextResponse.json({ deleted: rows.length });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: 'Failed to clear sessions' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete sessions' }, { status: 500 });
   }
 }
