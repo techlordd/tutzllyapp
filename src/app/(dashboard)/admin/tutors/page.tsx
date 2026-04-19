@@ -22,7 +22,7 @@ interface Tutor {
   payrate_per_hour: number;
   salary: number;
   entry_status: string;
-  created_at: string;
+  timestamp: string;
 }
 
 export default function TutorsPage() {
@@ -280,7 +280,7 @@ export default function TutorsPage() {
                 ['Pay Category', selectedTutor.pay_category],
                 ['Rate/Hr', formatCurrency(selectedTutor.payrate_per_hour)],
                 ['Salary', formatCurrency(selectedTutor.salary)],
-                ['Joined', formatDate(selectedTutor.created_at)],
+                ['Joined', formatDate(selectedTutor.timestamp)],
               ].map(([label, value]) => (
                 <div key={label}>
                   <p className="text-gray-400 text-xs">{label}</p>

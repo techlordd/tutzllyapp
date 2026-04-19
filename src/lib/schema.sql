@@ -55,24 +55,27 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Tutors table
 CREATE TABLE IF NOT EXISTS tutors (
-  id SERIAL PRIMARY KEY,
+  record_id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   tutor_id VARCHAR(50) UNIQUE NOT NULL,
+  user_role VARCHAR(20) DEFAULT 'tutor',
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   username VARCHAR(100),
   email VARCHAR(255),
+  password VARCHAR(255),
   firstname VARCHAR(100),
   surname VARCHAR(100),
-  fullname_first VARCHAR(100),
-  fullname_last VARCHAR(100),
+  full_name_first_name VARCHAR(100),
+  full_name_last_name VARCHAR(100),
   phone_no VARCHAR(30),
   sex VARCHAR(10),
   date_of_birth DATE,
-  address_line1 VARCHAR(255),
-  address_line2 VARCHAR(255),
+  address TEXT,
+  address_line_1 VARCHAR(255),
+  address_line_2 VARCHAR(255),
   address_city VARCHAR(100),
-  address_state VARCHAR(100),
-  address_zip VARCHAR(20),
+  address_state_province VARCHAR(100),
+  address_zip_postal VARCHAR(20),
   address_country VARCHAR(100),
   short_bio TEXT,
   pay_category VARCHAR(50),
@@ -83,8 +86,9 @@ CREATE TABLE IF NOT EXISTS tutors (
   ip VARCHAR(45),
   created_by VARCHAR(100),
   updated_by VARCHAR(100),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  timestamp TIMESTAMP DEFAULT NOW(),
+  last_updated TIMESTAMP DEFAULT NOW(),
+  record_key VARCHAR(100)
 );
 
 -- Students table

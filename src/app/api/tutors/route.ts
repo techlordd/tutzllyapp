@@ -47,16 +47,17 @@ export async function POST(request: NextRequest) {
     }
 
     const tutor = await queryOne(
-      `INSERT INTO tutors (academy_id, tutor_id, user_id, username, email, firstname, surname, fullname_first, fullname_last,
-       phone_no, sex, date_of_birth, address_line1, address_line2, address_city, address_state, address_zip,
+      `INSERT INTO tutors (academy_id, tutor_id, user_role, user_id, username, email, firstname, surname,
+       full_name_first_name, full_name_last_name, phone_no, sex, date_of_birth,
+       address, address_line_1, address_line_2, address_city, address_state_province, address_zip_postal,
        address_country, short_bio, pay_category, salary, payrate_per_hour, entry_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,'active')
+       VALUES ($1,$2,'tutor',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,'active')
        RETURNING *`,
       [academyId || null, tutorId, user?.id, data.username, data.email, data.firstname, data.surname,
        data.firstname, data.surname, data.phone_no, data.sex, data.date_of_birth,
-       data.address_line1, data.address_line2, data.address_city, data.address_state,
-       data.address_zip, data.address_country, data.short_bio, data.pay_category,
-       data.salary, data.payrate_per_hour]
+       data.address, data.address_line1, data.address_line2, data.address_city,
+       data.address_state, data.address_zip, data.address_country, data.short_bio,
+       data.pay_category, data.salary, data.payrate_per_hour]
     );
     return NextResponse.json({ tutor }, { status: 201 });
   } catch (error) {
