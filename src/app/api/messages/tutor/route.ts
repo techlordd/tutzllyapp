@@ -7,9 +7,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('user_id');
     const academyId = getAcademyId(request);
+    const tutorId = searchParams.get('tutor_id');
     let sql = `SELECT * FROM messages_tutor WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
-    if (userId) { params.push(userId); sql += ` AND user_id = $${params.length}`; }
+    if (userId)  { params.push(userId);  sql += ` AND user_id = $${params.length}`; }
+    if (tutorId) { params.push(tutorId); sql += ` AND recipient_tutor_id = $${params.length}`; }
     sql += ' ORDER BY message_date DESC, message_time DESC, created_at DESC';
     const messages = await query(sql, params);
     return NextResponse.json({ messages });

@@ -8,6 +8,7 @@ import Badge, { statusBadge } from '@/components/ui/Badge';
 import Avatar from '@/components/ui/Avatar';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
 import { Plus, Edit, Trash2, Eye, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -165,10 +166,11 @@ export default function TutorsPage() {
           emptyMessage="No tutors registered yet"
           actions={(row) => (
             <>
-              <button onClick={() => { setSelectedTutor(row); setViewModalOpen(true); }}
-                className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="View">
-                <Eye size={15} />
-              </button>
+              <Link href={`/admin/tutors/${row.tutor_id}`}>
+                <span className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors inline-flex" title="View">
+                  <Eye size={15} />
+                </span>
+              </Link>
               <button onClick={() => openEdit(row)}
                 className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-600 transition-colors" title="Edit">
                 <Edit size={15} />
