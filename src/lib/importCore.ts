@@ -66,7 +66,7 @@ const DATE_COLUMNS = new Set([
   'class_activity_date', 'date_of_birth', 'message_date',
   'created_at', 'updated_at',
   'timestamp', 'last_updated',
-  'date',
+  'date', 'assigned_date',
 ]);
 
 // DB columns that expect a TIME value — non-time strings are coerced to null
@@ -256,9 +256,19 @@ export const COLUMN_MAPS: Record<string, Record<string, string>> = {
     'Entry Status': 'entry_status', 'IP': 'ip', 'Created By': 'created_by', 'Updated By': 'updated_by',
   },
   assignments: {
-    'Tutor Assign ID': 'tutor_assign_id', 'Tutor ID': 'tutor_id',
-    'Tutor Name': 'tutor_username', 'Tutor Sex': 'tutor_sex', 'Tutor Email': 'tutor_email',
-    'Assign Course': 'course_name', 'Course Code': 'course_code',
+    'Tutor Assign ID': 'tutor_assign_id',
+    'TutorID': 'tutor_id', 'Tutor ID': 'tutor_id',
+    'CourseID': 'course_id',
+    'Course Name': 'course_name', 'Assign Course': 'course_name',
+    'Tutor Name': 'tutor_name',
+    'Tutor Email': 'tutor_email',
+    'Tutor Username': 'tutor_username',
+    'User ID': 'user_id',
+    'Assigned Date': 'assigned_date',
+    'Status': 'status',
+    'Notes': 'notes',
+    'Timestamp': 'timestamp', 'Last Updated': 'last_updated',
+    'Key': 'record_key', 'ID': 'record_id',
     'Entry Status': 'entry_status', 'IP': 'ip', 'Created By': 'created_by', 'Updated By': 'updated_by',
   },
   enrollments: {
