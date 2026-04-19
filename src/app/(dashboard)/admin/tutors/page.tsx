@@ -143,14 +143,12 @@ export default function TutorsPage() {
             <p className="text-gray-500 text-sm mt-0.5">{tutors.length} registered tutors</p>
           </div>
           <div className="flex gap-2">
-            {tutors.length > 0 && (
-              <button
-                onClick={() => setDeleteAllOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors"
-              >
-                <Trash2 size={14} /> Delete All
-              </button>
-            )}
+            <button
+              onClick={() => setDeleteAllOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors"
+            >
+              <Trash2 size={14} /> Delete All
+            </button>
             <Button icon={Plus} onClick={() => { resetForm(); setModalOpen(true); }}>
               Register Tutor
             </Button>
