@@ -6,7 +6,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Select } from '@/components/ui/FormField';
 import Avatar from '@/components/ui/Avatar';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Eye, User, Mail, Hash, BookOpen, Calendar, Globe, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Enrollment {
@@ -29,6 +29,9 @@ interface Enrollment {
   entry_status: string;
   timestamp: string;
   last_updated: string;
+  created_by: string;
+  updated_by: string;
+  ip: string;
   record_key: string;
 }
 
@@ -40,6 +43,30 @@ interface TutorAssignment {
   tutor_assign_id: string; tutor_id: string; tutor_username: string; tutor_sex: string; tutor_email: string;
   firstname: string; surname: string; tutor_name: string;
   course_id: number; course_name: string; course_code: string;
+}
+
+function InfoRow({ icon: Icon, label, value }: {
+  icon: React.ElementType; label: string; value?: string | number | null;
+}) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
+      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Icon size={13} className="text-slate-500" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] text-gray-400 uppercase tracking-wide">{label}</p>
+        <p className="text-sm font-medium text-gray-900 mt-0.5 break-all">
+          {value || <span className="text-gray-400 font-normal">—</span>}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function formatDate(val?: string | null) {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? val : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 const emptyForm = {
@@ -58,6 +85,8 @@ export default function EnrollmentsPage() {
   const [form, setForm] = useState(emptyForm);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
 
   const assignedTutors = [...new Map(tutorAssignments.map(a => [a.tutor_id, a])).values()];
   const tutorCourses = tutorAssignments.filter(a => a.tutor_id === form.tutor_id);
@@ -139,15 +168,17 @@ export default function EnrollmentsPage() {
     setDeletingAll(false);
   };
 
+  const openView = (row: Enrollment) => { setSelectedEnrollment(row); setViewOpen(true); };
+
   const columns = [
-    { key: 'student_name', label: 'Student', render: (_: unknown, row: Enrollment) => (
+    { key: 'student_name', label: 'Student Name', render: (_: unknown, row: Enrollment) => (
       <div className="flex items-center gap-3">
         <Avatar name={row.student_name} size="sm" />
-        <div>
-          <p className="font-medium">{row.student_name || '—'}</p>
-          <p className="text-xs text-gray-400 font-mono">{row.student_id}</p>
-        </div>
+        <span className="font-medium">{row.student_name || '—'}</span>
       </div>
+    )},
+    { key: 'student_id', label: 'Student ID', render: (v: unknown) => (
+      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
     )},
     { key: 'tutor_name', label: 'Tutor', render: (_: unknown, row: Enrollment) => (
       <div>
@@ -190,6 +221,11 @@ export default function EnrollmentsPage() {
       const cls = s === 'active' ? 'bg-green-100 text-green-700' : s === 'deleted' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600';
       return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>{s || 'active'}</span>;
     }},
+    { key: 'actions', label: '', render: (_: unknown, row: Enrollment) => (
+      <button onClick={() => openView(row)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors" title="View details">
+        <Eye size={15} />
+      </button>
+    )},
   ];
 
   return (
@@ -215,6 +251,49 @@ export default function EnrollmentsPage() {
           emptyMessage="No enrollments yet"
         />
       </div>
+
+      {/* View modal */}
+      {selectedEnrollment && (
+        <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Enrollment Details" size="lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Student</p>
+              <InfoRow icon={User}  label="Student Name"  value={selectedEnrollment.student_name} />
+              <InfoRow icon={Hash}  label="Student ID"    value={selectedEnrollment.student_id} />
+              <InfoRow icon={User}  label="Student Sex"   value={selectedEnrollment.student_sex} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tutor</p>
+              <InfoRow icon={User}  label="Tutor Name"     value={selectedEnrollment.tutor_name} />
+              <InfoRow icon={User}  label="Tutor Username" value={selectedEnrollment.tutor_username} />
+              <InfoRow icon={User}  label="Tutor Sex"      value={selectedEnrollment.tutor_sex} />
+              <InfoRow icon={Mail}  label="Tutor Email"    value={selectedEnrollment.tutor_email} />
+              <InfoRow icon={Hash}  label="Tutor ID"       value={selectedEnrollment.tutor_id} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 mt-4">Course</p>
+              <InfoRow icon={BookOpen} label="Course Name"            value={selectedEnrollment.course_name} />
+              <InfoRow icon={Hash}     label="Course Code"            value={selectedEnrollment.course_code} />
+              <InfoRow icon={BookOpen} label="Course (Deprecated)"    value={selectedEnrollment.course_name_deprecated} />
+              <InfoRow icon={BookOpen} label="Course 2"               value={selectedEnrollment.course_name_2} />
+              <InfoRow icon={Hash}     label="Course Code 2"          value={selectedEnrollment.course_code_2} />
+              <InfoRow icon={Hash}     label="Course ID Ref 2"        value={selectedEnrollment.course_id_ref_2} />
+              <InfoRow icon={BookOpen} label="Course 2 (Deprecated)"  value={selectedEnrollment.course_name_deprecated_2} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 mt-4">Record</p>
+              <InfoRow icon={Hash}     label="Assign ID"    value={selectedEnrollment.assign_id} />
+              <InfoRow icon={Globe}    label="Entry Status" value={selectedEnrollment.entry_status} />
+              <InfoRow icon={Calendar} label="Timestamp"   value={formatDate(selectedEnrollment.timestamp)} />
+              <InfoRow icon={Calendar} label="Last Updated" value={formatDate(selectedEnrollment.last_updated)} />
+              <InfoRow icon={User}     label="Created By"  value={selectedEnrollment.created_by} />
+              <InfoRow icon={User}     label="Updated By"  value={selectedEnrollment.updated_by} />
+              <InfoRow icon={Globe}    label="IP"          value={selectedEnrollment.ip} />
+              <InfoRow icon={Key}      label="Key"         value={selectedEnrollment.record_key} />
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Enroll modal */}
       <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setForm(emptyForm); }} title="Enroll Student & Assign Tutor" size="lg">
