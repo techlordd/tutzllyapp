@@ -7,7 +7,8 @@ import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
 import Avatar from '@/components/ui/Avatar';
-import { Plus, Trash2, X, AlertTriangle, Edit } from 'lucide-react';
+import { Plus, Trash2, X, AlertTriangle, Edit, Eye,
+         User, Mail, BookOpen, Calendar, FileText, Hash, Globe, Key } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -15,8 +16,9 @@ interface Assignment {
   tutor_assign_id: string; tutor_id: string;
   tutor_name: string; tutor_username: string; tutor_email: string;
   course_id: number; course_name: string; course_code: string;
-  assigned_date: string; status: string; notes: string;
-  entry_status: string; timestamp: string;
+  user_id: number; assigned_date: string; status: string; notes: string;
+  entry_status: string; ip: string; created_by: string; updated_by: string;
+  record_key: string; timestamp: string; last_updated: string;
 }
 
 interface Tutor {
@@ -39,6 +41,24 @@ const newRow = (): CourseRow => ({
   assigned_date: '', status: 'active', notes: '',
 });
 
+function InfoRow({ icon: Icon, label, value }: {
+  icon: React.ElementType; label: string; value?: string | number | null;
+}) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
+      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Icon size={13} className="text-slate-500" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] text-gray-400 uppercase tracking-wide">{label}</p>
+        <p className="text-sm font-medium text-gray-900 mt-0.5 break-all">
+          {value || <span className="text-gray-400 font-normal">—</span>}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function AssignCoursesPage() {
   const tutorDisplayName = (t: Tutor) =>
     [t.firstname || t.full_name_first_name, t.surname || t.full_name_last_name]
@@ -49,6 +69,8 @@ export default function AssignCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [selectedAssign, setSelectedAssign] = useState<Assignment | null>(null);
   const [editingAssign, setEditingAssign] = useState<Assignment | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -58,7 +80,6 @@ export default function AssignCoursesPage() {
   const [tutorId, setTutorId] = useState('');
   const [courseRows, setCourseRows] = useState<CourseRow[]>([newRow()]);
 
-  // Edit form state (single row)
   const [editForm, setEditForm] = useState({
     tutor_name: '', tutor_username: '', tutor_email: '',
     course_name: '', course_code: '', assigned_date: '', status: 'active', notes: '',
@@ -111,6 +132,8 @@ export default function AssignCoursesPage() {
     setEditingAssign(null);
   };
 
+  const openView = (a: Assignment) => { setSelectedAssign(a); setViewOpen(true); };
+
   const openEdit = (a: Assignment) => {
     setEditingAssign(a);
     setEditForm({
@@ -125,7 +148,6 @@ export default function AssignCoursesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Edit mode
     if (editingAssign) {
       setSubmitting(true);
       try {
@@ -144,7 +166,6 @@ export default function AssignCoursesPage() {
       return;
     }
 
-    // Create mode
     const validRows = courseRows.filter(r => r.course_id);
     if (!tutorId || validRows.length === 0) {
       toast.error('Select a tutor and at least one course');
@@ -153,10 +174,9 @@ export default function AssignCoursesPage() {
 
     setSubmitting(true);
     const tutor = selectedTutor!;
-    const tutorName = tutorDisplayName(tutor);
     const payload = {
       tutor_id: tutor.tutor_id,
-      tutor_name: tutorName,
+      tutor_name: tutorDisplayName(tutor),
       tutor_username: tutor.username || '',
       tutor_email: tutor.email || '',
     };
@@ -172,9 +192,9 @@ export default function AssignCoursesPage() {
             assigned_date: row.assigned_date || null, status: row.status, notes: row.notes || null,
           }),
         }).then(async r => {
-          const data = await r.json();
-          if (!r.ok) throw new Error(data.error || 'Failed');
-          return data;
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'Failed');
+          return d;
         })
       )
     );
@@ -231,9 +251,9 @@ export default function AssignCoursesPage() {
     { key: 'tutor_email', label: 'Tutor Email' },
     { key: 'course_name', label: 'Course' },
     {
-      key: 'course_code', label: 'Code', render: (v: unknown) => v ? (
-        <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{v as string}</span>
-      ) : <span className="text-gray-300">—</span>
+      key: 'course_code', label: 'Code', render: (v: unknown) => v
+        ? <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{v as string}</span>
+        : <span className="text-gray-300">—</span>
     },
     {
       key: 'assigned_date', label: 'Assigned Date',
@@ -269,6 +289,10 @@ export default function AssignCoursesPage() {
           emptyMessage="No course assignments yet"
           actions={(row) => (
             <>
+              <button onClick={() => openView(row)}
+                className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="View">
+                <Eye size={15} />
+              </button>
               <button onClick={() => openEdit(row)}
                 className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-600 transition-colors" title="Edit">
                 <Edit size={15} />
@@ -277,7 +301,7 @@ export default function AssignCoursesPage() {
                 onClick={() => handleDelete(row.tutor_assign_id)}
                 disabled={deletingId === row.tutor_assign_id}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
-                title="Remove assignment"
+                title="Remove"
               >
                 <Trash2 size={15} />
               </button>
@@ -286,13 +310,85 @@ export default function AssignCoursesPage() {
         />
       </div>
 
-      {/* Add / Edit Modal */}
+      {/* ── View Modal ── */}
+      {selectedAssign && (
+        <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Assignment Details" size="lg">
+          <div className="space-y-5">
+            {/* Header */}
+            <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-xl">
+              <Avatar name={selectedAssign.tutor_name || selectedAssign.tutor_username || ''} size="lg" />
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-900 text-lg">{selectedAssign.tutor_name || selectedAssign.tutor_username || '—'}</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <span className="font-mono text-xs bg-white text-slate-600 px-2 py-0.5 rounded border border-slate-200">{selectedAssign.tutor_id}</span>
+                  {statusBadge(selectedAssign.status || 'active')}
+                  {statusBadge(selectedAssign.entry_status)}
+                </div>
+                <p className="text-sm text-gray-500 mt-1">{selectedAssign.tutor_email}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Tutor Info */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tutor</h4>
+                <InfoRow icon={User}  label="Tutor Name"     value={selectedAssign.tutor_name} />
+                <InfoRow icon={User}  label="Tutor Username" value={selectedAssign.tutor_username} />
+                <InfoRow icon={Mail}  label="Tutor Email"    value={selectedAssign.tutor_email} />
+                <InfoRow icon={Hash}  label="Tutor ID"       value={selectedAssign.tutor_id} />
+              </div>
+
+              {/* Course Info */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Course</h4>
+                <InfoRow icon={BookOpen} label="Course Name" value={selectedAssign.course_name} />
+                <InfoRow icon={Hash}     label="Course Code" value={selectedAssign.course_code} />
+                <InfoRow icon={Hash}     label="Course ID"   value={selectedAssign.course_id} />
+              </div>
+
+              {/* Assignment Details */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Assignment</h4>
+                <InfoRow icon={Hash}     label="Assign ID"     value={selectedAssign.tutor_assign_id} />
+                <InfoRow icon={Calendar} label="Assigned Date" value={formatDate(selectedAssign.assigned_date)} />
+                <InfoRow icon={Globe}    label="Status"        value={selectedAssign.status} />
+                <InfoRow icon={Globe}    label="Entry Status"  value={selectedAssign.entry_status} />
+              </div>
+
+              {/* Record Meta */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Record</h4>
+                <InfoRow icon={Calendar}  label="Created"      value={formatDate(selectedAssign.timestamp)} />
+                <InfoRow icon={Calendar}  label="Last Updated" value={formatDate(selectedAssign.last_updated)} />
+                <InfoRow icon={User}      label="Created By"   value={selectedAssign.created_by} />
+                <InfoRow icon={User}      label="Updated By"   value={selectedAssign.updated_by} />
+                <InfoRow icon={Globe}     label="IP"           value={selectedAssign.ip} />
+                <InfoRow icon={Key}       label="Key"          value={selectedAssign.record_key} />
+              </div>
+            </div>
+
+            {/* Notes */}
+            {selectedAssign.notes && (
+              <div>
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Notes</h4>
+                <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-3 leading-relaxed">{selectedAssign.notes}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <Button type="button" variant="secondary" onClick={() => setViewOpen(false)} className="flex-1">Close</Button>
+              <Button icon={Edit} onClick={() => { setViewOpen(false); openEdit(selectedAssign); }}>Edit</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Add / Edit Modal ── */}
       <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); resetModal(); }}
         title={editingAssign ? 'Edit Assignment' : 'Assign Course to Tutor'} size="md">
         <form onSubmit={handleSubmit} className="space-y-4">
 
           {editingAssign ? (
-            /* Edit form */
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label="Tutor Name">
@@ -326,7 +422,6 @@ export default function AssignCoursesPage() {
               </FormField>
             </div>
           ) : (
-            /* Create form */
             <>
               <FormField label="Select Tutor" required>
                 <Select value={tutorId} onChange={e => { setTutorId(e.target.value); setCourseRows([newRow()]); }} required>
@@ -413,14 +508,14 @@ export default function AssignCoursesPage() {
         </form>
       </Modal>
 
-      {/* Delete All confirmation */}
+      {/* ── Delete All Modal ── */}
       <Modal isOpen={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} title="Delete All Assignments" size="sm">
         <div className="space-y-4">
           <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-100">
             <AlertTriangle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-red-800">This will delete all {assignments.length} assignment{assignments.length !== 1 ? 's' : ''}</p>
-              <p className="text-xs text-red-600 mt-1">All tutor course assignments will be removed. You can re-upload via CSV after this action.</p>
+              <p className="text-xs text-red-600 mt-1">All records will be removed. You can re-upload via CSV after this action.</p>
             </div>
           </div>
           <div className="flex gap-3 pt-1">
