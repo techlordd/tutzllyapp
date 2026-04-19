@@ -14,6 +14,9 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tutor_course_assignments' AND column_name='tutor_name') THEN
     ALTER TABLE tutor_course_assignments ADD COLUMN tutor_name VARCHAR(200);
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tutor_course_assignments' AND column_name='tutor_sex') THEN
+    ALTER TABLE tutor_course_assignments ADD COLUMN tutor_sex VARCHAR(10);
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tutor_course_assignments' AND column_name='assigned_date') THEN
     ALTER TABLE tutor_course_assignments ADD COLUMN assigned_date DATE;
   END IF;

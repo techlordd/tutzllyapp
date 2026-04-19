@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 
 interface Assignment {
   tutor_assign_id: string; tutor_id: string;
-  tutor_name: string; tutor_username: string; tutor_email: string;
+  tutor_name: string; tutor_username: string; tutor_sex: string; tutor_email: string;
   course_id: number; course_name: string; course_code: string;
   user_id: number; assigned_date: string; status: string; notes: string;
   entry_status: string; ip: string; created_by: string; updated_by: string;
@@ -236,30 +236,33 @@ export default function AssignCoursesPage() {
 
   const columns = [
     {
-      key: 'tutor', label: 'Tutor', render: (_: unknown, row: Assignment) => (
+      key: 'tutor_name', label: 'Tutor Name', render: (_: unknown, row: Assignment) => (
         <div className="flex items-center gap-3">
           <Avatar name={row.tutor_name || row.tutor_username || ''} size="sm" />
           <p className="font-medium text-gray-900">{row.tutor_name || row.tutor_username || '—'}</p>
         </div>
       )
     },
+    { key: 'course_name', label: 'Assign Course' },
+    {
+      key: 'course_code', label: 'Course ID / Code', render: (v: unknown) => v
+        ? <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{v as string}</span>
+        : <span className="text-gray-300">—</span>
+    },
     {
       key: 'tutor_id', label: 'Tutor ID', render: (v: unknown) => (
         <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">{v as string}</span>
       )
     },
+    { key: 'tutor_username', label: 'Tutor Username' },
+    { key: 'tutor_sex', label: 'Sex' },
     { key: 'tutor_email', label: 'Tutor Email' },
-    { key: 'course_name', label: 'Course' },
     {
-      key: 'course_code', label: 'Code', render: (v: unknown) => v
-        ? <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{v as string}</span>
-        : <span className="text-gray-300">—</span>
+      key: 'tutor_assign_id', label: 'Tutor Assign ID', render: (v: unknown) => (
+        <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{v as string}</span>
+      )
     },
-    {
-      key: 'assigned_date', label: 'Assigned Date',
-      render: (v: unknown) => <span className="text-gray-600 text-sm">{v ? formatDate(v as string) : '—'}</span>
-    },
-    { key: 'status', label: 'Status', render: (v: unknown) => statusBadge((v as string) || 'active') },
+    { key: 'entry_status', label: 'Status', render: (v: unknown) => statusBadge((v as string) || 'active') },
   ];
 
   return (
@@ -285,7 +288,7 @@ export default function AssignCoursesPage() {
           data={assignments}
           columns={columns}
           loading={loading}
-          searchKeys={['tutor_name', 'tutor_username', 'tutor_email', 'tutor_id', 'course_name', 'course_code']}
+          searchKeys={['tutor_name', 'tutor_username', 'tutor_email', 'tutor_id', 'tutor_assign_id', 'course_name', 'course_code']}
           emptyMessage="No course assignments yet"
           actions={(row) => (
             <>
@@ -334,6 +337,7 @@ export default function AssignCoursesPage() {
                 <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tutor</h4>
                 <InfoRow icon={User}  label="Tutor Name"     value={selectedAssign.tutor_name} />
                 <InfoRow icon={User}  label="Tutor Username" value={selectedAssign.tutor_username} />
+                <InfoRow icon={User}  label="Tutor Sex"      value={selectedAssign.tutor_sex} />
                 <InfoRow icon={Mail}  label="Tutor Email"    value={selectedAssign.tutor_email} />
                 <InfoRow icon={Hash}  label="Tutor ID"       value={selectedAssign.tutor_id} />
               </div>

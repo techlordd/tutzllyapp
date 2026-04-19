@@ -205,6 +205,7 @@ CREATE TABLE IF NOT EXISTS tutor_course_assignments (
   tutor_id VARCHAR(50) NOT NULL,
   tutor_name VARCHAR(200),
   tutor_username VARCHAR(100),
+  tutor_sex VARCHAR(10),
   tutor_email VARCHAR(255),
   course_id INTEGER REFERENCES courses(id),
   course_name VARCHAR(255),
