@@ -39,14 +39,15 @@ interface Parent {
 }
 
 interface StudentProfile {
-  student_id: string; enrollment_id: string; firstname: string; surname: string;
+  student_id: string; enrollment_id: string;
+  firstname: string; surname: string;
+  full_name_first_name: string; full_name_last_name: string;
   email: string; phone_no: string; sex: string; grade: string; school: string;
   status: string; date_of_birth: string;
   mothers_name: string; mothers_email: string; fathers_name: string; fathers_email: string;
   address_line_1: string; address_line_2: string; address_city: string;
   address_state_province: string; address_zip_postal: string; address_country: string;
   short_bio: string; timestamp: string;
-  sessionCount?: number; courseCount?: number;
 }
 
 interface Session {
@@ -104,7 +105,10 @@ function sessionStatusBadge(status: string) {
 
 function StudentCard({ student }: { student: StudentProfile }) {
   const [expanded, setExpanded] = useState(false);
-  const fullName = `${student.firstname} ${student.surname}`.trim();
+  const fullName = [
+    student.firstname || student.full_name_first_name,
+    student.surname   || student.full_name_last_name,
+  ].filter(Boolean).join(' ') || student.email || student.student_id;
   const addressParts = [student.address_line_1, student.address_line_2, student.address_city,
     student.address_state_province, student.address_zip_postal, student.address_country].filter(Boolean);
 
@@ -225,10 +229,13 @@ export default function ParentDetailPage() {
           .filter(Boolean);
         const profiles = await Promise.all(
           ids.map(sid =>
-            fetch(`/api/students/${sid}`).then(r => r.json()).then(d => d.student as StudentProfile)
+            fetch(`/api/students/${sid}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(d => d?.student ?? null)
+              .catch(() => null)
           )
         );
-        setChildren(profiles.filter(Boolean));
+        setChildren(profiles.filter((p): p is StudentProfile => p != null && Boolean(p.student_id)));
 
       } else if (t === 'sessions') {
         // Fetch sessions for all children in parallel
@@ -403,7 +410,7 @@ export default function ParentDetailPage() {
                 {linkedChildren.length === 0 ? (
                   <EmptyState message="No children linked to this parent" />
                 ) : children.length === 0 ? (
-                  <EmptyState message="Loading student profiles…" />
+                  <EmptyState message="Student profiles could not be loaded" />
                 ) : (
                   <>
                     <p className="text-sm text-gray-500">{children.length} linked student{children.length !== 1 ? 's' : ''} — expand each card to see their full details or open their profile page</p>
