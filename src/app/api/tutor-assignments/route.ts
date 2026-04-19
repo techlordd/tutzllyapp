@@ -54,3 +54,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to assign course' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const academyId = getAcademyId(request);
+    const rows = await query<{ tutor_assign_id: string }>(
+      `SELECT tutor_assign_id FROM tutor_course_assignments WHERE (academy_id = $1 OR $1 = 0)`,
+      [academyId]
+    );
+    await query(`DELETE FROM tutor_course_assignments WHERE (academy_id = $1 OR $1 = 0)`, [academyId]);
+    return NextResponse.json({ deleted: rows.length });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to delete assignments' }, { status: 500 });
+  }
+}
+
