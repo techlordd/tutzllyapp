@@ -169,21 +169,23 @@ export default function SchedulesPage() {
       <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{(v as string)?.slice(0, 14)}…</span>
     )},
     { key: 'student_name', label: 'Student Name', sortable: true, render: (_: unknown, row: Schedule) => (
-      <div>
-        <p className="font-medium">{row.student_name || '—'}</p>
-        <p className="text-xs text-gray-400 font-mono">{row.student_id}</p>
+      <div className="flex items-center gap-2">
+        <span className="font-medium">{row.student_name || '—'}</span>
       </div>
+    )},
+    { key: 'student_id', label: 'Student ID', render: (v: unknown) => (
+      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
     )},
     { key: 'sort_id', label: 'Sort ID', render: (v: unknown) => (
       <span className="text-sm text-gray-600">{v != null ? String(v) : '—'}</span>
     )},
     { key: 'year', label: 'Year', render: (v: unknown) => <span className="text-sm">{v as string || '—'}</span> },
     { key: 'day', label: 'Day' },
-    { key: 'tutor_name', label: 'Tutor', sortable: true, render: (_: unknown, row: Schedule) => (
-      <div>
-        <p className="font-medium">{row.tutor_name || '—'}</p>
-        <p className="text-xs text-gray-400 font-mono">{row.tutor_id}</p>
-      </div>
+    { key: 'tutor_name', label: 'Tutor Name', sortable: true, render: (v: unknown) => (
+      <span className="font-medium">{v as string || '—'}</span>
+    )},
+    { key: 'tutor_id', label: 'Tutor ID', render: (v: unknown) => (
+      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
     )},
     { key: 'course_name', label: 'Course', render: (_: unknown, row: Schedule) => (
       <div>
