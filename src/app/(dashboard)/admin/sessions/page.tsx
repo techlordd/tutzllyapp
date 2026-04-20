@@ -187,9 +187,7 @@ export default function SessionsPage() {
             <p className="text-gray-500 text-sm mt-0.5">{sessions.length} session{sessions.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex gap-2">
-            {sessions.length > 0 && (
-              <Button variant="danger" icon={Trash2} onClick={() => setDeleteAllOpen(true)}>Delete All</Button>
-            )}
+            <Button variant="danger" icon={Trash2} onClick={() => setDeleteAllOpen(true)}>Delete All</Button>
             <Button icon={Plus} onClick={() => setModalOpen(true)}>Start Session</Button>
           </div>
         </div>
