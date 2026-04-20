@@ -104,7 +104,9 @@ export default function GradeDetailPage() {
 
   if (!grade) return null;
 
-  const scores = [grade.punctuality, grade.attentiveness, grade.engagement, grade.homework, grade.test_score].filter(v => v != null && v !== 0);
+  const scores = [grade.punctuality, grade.attentiveness, grade.engagement, grade.homework, grade.test_score]
+    .map(v => parseFloat(String(v ?? '')))
+    .filter(v => !isNaN(v) && v > 0);
   const avg = scores.length ? parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)) : 0;
   const gradeLetter = getGradeLetter(avg);
 

@@ -87,7 +87,9 @@ export default function GradesPage() {
   };
 
   const getAverage = (g: Grade) => {
-    const scores = [g.punctuality, g.attentiveness, g.engagement, g.homework, g.test_score].filter(v => v != null && v !== 0);
+    const scores = [g.punctuality, g.attentiveness, g.engagement, g.homework, g.test_score]
+      .map(v => parseFloat(String(v ?? '')))
+      .filter(v => !isNaN(v) && v > 0);
     if (!scores.length) return 0;
     return parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1));
   };
