@@ -604,7 +604,11 @@ export async function runImport(
       for (const [csvCol, val] of Object.entries(record)) {
         const dbCol = columnMap[csvCol];
         if (dbCol && val !== '' && val != null) {
-          if (boolCols?.has(dbCol)) {
+          if (dbCol === 'record_id' && !/^\d+$/.test(val)) {
+            // record_id is a SERIAL (integer) PK — skip non-integer CSV values (e.g. 'oz0kt')
+            // and let PostgreSQL auto-generate the sequence value instead
+            continue;
+          } else if (boolCols?.has(dbCol)) {
             dbRow[dbCol] = /^(yes|true|1)$/i.test(val);
           } else if (DATE_COLUMNS.has(dbCol)) {
             // DATE column: validate before passing to avoid type errors (e.g. "0")
