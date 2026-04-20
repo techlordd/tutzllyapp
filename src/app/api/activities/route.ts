@@ -57,14 +57,12 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const academyId = getAcademyId(request);
-    const result = await query<{ count: string }>(
-      `WITH deleted AS (
-        DELETE FROM class_activities WHERE academy_id = $1 OR $1 = 0 RETURNING id
-      ) SELECT COUNT(*) AS count FROM deleted`,
+    const rows = await query<{ record_id: number }>(
+      `SELECT record_id FROM class_activities WHERE (academy_id = $1 OR $1 = 0)`,
       [academyId]
     );
-    const deleted = parseInt(result[0]?.count ?? '0', 10);
-    return NextResponse.json({ deleted });
+    await query(`DELETE FROM class_activities WHERE (academy_id = $1 OR $1 = 0)`, [academyId]);
+    return NextResponse.json({ deleted: rows.length });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to delete activities' }, { status: 500 });

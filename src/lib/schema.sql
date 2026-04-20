@@ -361,7 +361,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 -- Class activities
 CREATE TABLE IF NOT EXISTS class_activities (
-  id SERIAL PRIMARY KEY,
+  record_id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   ssid TEXT,
   tutor_id TEXT,
@@ -371,6 +371,7 @@ CREATE TABLE IF NOT EXISTS class_activities (
   student_name TEXT,
   course_name TEXT,
   course_id INTEGER REFERENCES courses(id),
+  course_id_ref TEXT,
   session_code_status TEXT,
   mothers_email TEXT,
   fathers_email TEXT,
@@ -378,9 +379,7 @@ CREATE TABLE IF NOT EXISTS class_activities (
   class_activity_time TIME,
   topic_taught TEXT,
   details_of_class_activity TEXT,
-  -- Activity
   activity TEXT,
-  -- Homework
   assigned_homework_from_prev BOOLEAN DEFAULT false,
   status_of_past_homework_review TEXT,
   new_homework_assigned BOOLEAN DEFAULT false,
@@ -391,22 +390,18 @@ CREATE TABLE IF NOT EXISTS class_activities (
   homework2 TEXT,
   homework3 TEXT,
   student_reason_for_not_completing TEXT,
-  -- Punctuality
   did_student_join_on_time TEXT,
   punctuality1 TEXT,
   punctuality2 TEXT,
   student_reason_for_late TEXT,
-  -- Attentiveness
   is_student_attentive TEXT,
   attentiveness1 TEXT,
   attentiveness2 TEXT,
   attentiveness3 TEXT,
-  -- Engagement
   student_engages_in_class TEXT,
   class_engagement1 TEXT,
   class_engagement2 TEXT,
   class_engagement3 TEXT,
-  -- General
   tutors_general_observation TEXT,
   tutors_intervention TEXT,
   helpful_link1 TEXT,
@@ -417,8 +412,9 @@ CREATE TABLE IF NOT EXISTS class_activities (
   ip VARCHAR(45),
   created_by TEXT,
   updated_by TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  record_key TEXT,
+  timestamp TIMESTAMP DEFAULT NOW(),
+  last_updated TIMESTAMP DEFAULT NOW()
 );
 
 -- Grade book

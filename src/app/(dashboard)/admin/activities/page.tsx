@@ -1,31 +1,44 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DataTable from '@/components/ui/DataTable';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
 import Avatar from '@/components/ui/Avatar';
-import { Plus, Eye } from 'lucide-react';
+import { Plus, Eye, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Activity {
-  id: number; ssid: string; tutor_id: string; tutor_firstname: string; tutor_lastname: string;
-  student_id: string; student_name: string; course_name: string; class_activity_date: string;
-  topic_taught: string; activity: string; did_student_join_on_time: string;
-  is_student_attentive: string; student_engages_in_class: string;
-  tutors_general_observation: string;
+  record_id: number; ssid: string; tutor_id: string; tutor_firstname: string; tutor_lastname: string;
+  student_id: string; student_name: string; course_name: string; course_id_ref: string;
+  class_activity_date: string; class_activity_time: string;
+  topic_taught: string; details_of_class_activity: string; activity: string;
+  session_code_status: string; mothers_email: string; fathers_email: string;
+  assigned_homework_from_prev: boolean; status_of_past_homework_review: string;
+  new_homework_assigned: boolean; topic_of_homework: string; no_homework_why: string;
+  did_student_complete_prev_homework: string; homework1: string; homework2: string; homework3: string;
+  student_reason_for_not_completing: string;
+  did_student_join_on_time: string; punctuality1: string; punctuality2: string; student_reason_for_late: string;
+  is_student_attentive: string; attentiveness1: string; attentiveness2: string; attentiveness3: string;
+  student_engages_in_class: string; class_engagement1: string; class_engagement2: string; class_engagement3: string;
+  tutors_general_observation: string; tutors_intervention: string;
+  helpful_link1: string; helpful_link2: string; helpful_link3: string;
+  entry_status: string; timestamp: string; last_updated: string;
+  created_by: string; updated_by: string; ip: string; record_key: string;
 }
 
 export default function ActivitiesPage() {
+  const router = useRouter();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [sessions, setSessions] = useState<{ssid: string; tutor_id: string; tutor_firstname: string; tutor_lastname: string; student_id: string; student_name: string; course_name: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selected, setSelected] = useState<Activity | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [form, setForm] = useState({
     ssid: '', tutor_id: '', tutor_firstname: '', tutor_lastname: '',
     student_id: '', student_name: '', course_name: '', course_id: '',
@@ -85,25 +98,58 @@ export default function ActivitiesPage() {
     setSubmitting(false);
   };
 
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      const res = await fetch('/api/activities', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Failed to delete activities'); setDeletingAll(false); return; }
+      toast.success(`Deleted ${data.deleted} activit${data.deleted !== 1 ? 'ies' : 'y'}`);
+      setDeleteAllOpen(false);
+      fetchData();
+    } catch { toast.error('Failed to delete activities'); }
+    setDeletingAll(false);
+  };
+
   const columns = [
-    { key: 'student_name', label: 'Student', sortable: true, render: (_: unknown, row: Activity) => (
+    { key: 'student_name', label: 'Student Name', sortable: true, render: (_: unknown, row: Activity) => (
       <div className="flex items-center gap-2">
         <Avatar name={row.student_name || 'S'} size="sm" />
-        <span>{row.student_name}</span>
+        <span className="font-medium">{row.student_name || '—'}</span>
       </div>
     )},
-    { key: 'tutor_firstname', label: 'Tutor', render: (_: unknown, row: Activity) => `${row.tutor_firstname} ${row.tutor_lastname}` },
+    { key: 'student_id', label: 'Student ID', render: (v: unknown) => (
+      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
+    )},
+    { key: 'tutor_firstname', label: 'Tutor Name', render: (_: unknown, row: Activity) => (
+      <span className="font-medium">{[row.tutor_firstname, row.tutor_lastname].filter(Boolean).join(' ') || '—'}</span>
+    )},
+    { key: 'tutor_id', label: 'Tutor ID', render: (v: unknown) => (
+      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
+    )},
     { key: 'course_name', label: 'Course' },
     { key: 'class_activity_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
     { key: 'topic_taught', label: 'Topic', render: (v: unknown) => (
       <span className="truncate max-w-[150px] block" title={v as string}>{v as string || '—'}</span>
     )},
-    { key: 'did_student_join_on_time', label: 'On Time?', render: (v: unknown) => (
-      <span className={`text-xs px-1.5 py-0.5 rounded ${v === 'Yes' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{v as string || '—'}</span>
+    { key: 'ssid', label: 'SSID', render: (v: unknown) => (
+      <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{(v as string)?.slice(0, 10)}…</span>
     )},
-    { key: 'is_student_attentive', label: 'Attentive?', render: (v: unknown) => (
-      <span className={`text-xs px-1.5 py-0.5 rounded ${v === 'Yes' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{v as string || '—'}</span>
-    )},
+    { key: 'did_student_join_on_time', label: 'On Time?', render: (v: unknown) => {
+      const s = v as string;
+      const cls = s === 'Yes' ? 'bg-green-100 text-green-700' : s === 'No' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500';
+      return <span className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>{s || '—'}</span>;
+    }},
+    { key: 'is_student_attentive', label: 'Attentive?', render: (v: unknown) => {
+      const s = v as string;
+      const cls = s === 'Yes' ? 'bg-green-100 text-green-700' : s === 'No' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
+      return <span className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>{s || '—'}</span>;
+    }},
+    { key: 'student_engages_in_class', label: 'Engaged?', render: (v: unknown) => {
+      const s = v as string;
+      const cls = s === 'Yes' ? 'bg-green-100 text-green-700' : s === 'No' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
+      return <span className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>{s || '—'}</span>;
+    }},
   ];
 
   return (
@@ -112,25 +158,45 @@ export default function ActivitiesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Class Activities</h2>
-            <p className="text-gray-500 text-sm mt-0.5">{activities.length} activity records</p>
+            <p className="text-gray-500 text-sm mt-0.5">{activities.length} activity record{activities.length !== 1 ? 's' : ''}</p>
           </div>
-          <Button icon={Plus} onClick={() => setModalOpen(true)}>Record Activity</Button>
+          <div className="flex gap-2">
+            {activities.length > 0 && (
+              <Button variant="danger" icon={Trash2} onClick={() => setDeleteAllOpen(true)}>Delete All</Button>
+            )}
+            <Button icon={Plus} onClick={() => setModalOpen(true)}>Record Activity</Button>
+          </div>
         </div>
 
         <DataTable data={activities} columns={columns} loading={loading}
-          searchKeys={['student_name', 'tutor_firstname', 'course_name', 'topic_taught']}
+          searchKeys={['student_name', 'student_id', 'tutor_firstname', 'course_name', 'topic_taught', 'ssid']}
           emptyMessage="No class activities recorded yet"
           actions={(row) => (
-            <button onClick={() => { setSelected(row); setViewModalOpen(true); }}
-              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"><Eye size={15} /></button>
+            <button onClick={() => router.push(`/admin/activities/${row.record_id}`)}
+              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="View details">
+              <Eye size={15} />
+            </button>
           )}
         />
       </div>
 
+      {/* Delete All modal */}
+      <Modal isOpen={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} title="Delete All Activities" size="sm">
+        <div className="space-y-4">
+          <p className="text-gray-600 text-sm">
+            This will permanently delete all <strong>{activities.length}</strong> activity record{activities.length !== 1 ? 's' : ''}.
+            This action cannot be undone.
+          </p>
+          <div className="flex gap-3 pt-1">
+            <Button variant="secondary" onClick={() => setDeleteAllOpen(false)}>Cancel</Button>
+            <Button variant="danger" loading={deletingAll} onClick={handleDeleteAll}>Delete All</Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Add Activity Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Record Class Activity" size="2xl">
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Session selection */}
           <FormField label="Session (SSID)" required>
             <Select value={form.ssid} onChange={e => handleSessionChange(e.target.value)} required>
               <option value="">Select Session</option>
@@ -233,54 +299,6 @@ export default function ActivitiesPage() {
           </div>
         </form>
       </Modal>
-
-      {/* View Activity Modal */}
-      {selected && (
-        <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} title="Class Activity Details" size="xl">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-blue-50 p-3 rounded-xl">
-                <p className="text-xs text-blue-500 font-medium">Student</p>
-                <p className="font-semibold text-blue-900">{selected.student_name}</p>
-              </div>
-              <div className="bg-purple-50 p-3 rounded-xl">
-                <p className="text-xs text-purple-500 font-medium">Tutor</p>
-                <p className="font-semibold text-purple-900">{selected.tutor_firstname} {selected.tutor_lastname}</p>
-              </div>
-              <div className="bg-green-50 p-3 rounded-xl">
-                <p className="text-xs text-green-500 font-medium">Course</p>
-                <p className="font-semibold text-green-900">{selected.course_name}</p>
-              </div>
-              <div className="bg-orange-50 p-3 rounded-xl">
-                <p className="text-xs text-orange-500 font-medium">Date</p>
-                <p className="font-semibold text-orange-900">{formatDate(selected.class_activity_date)}</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400 mb-1">Topic Taught</p>
-              <p className="font-medium">{selected.topic_taught || '—'}</p>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                ['On Time?', selected.did_student_join_on_time],
-                ['Attentive?', selected.is_student_attentive],
-                ['Engaged?', selected.student_engages_in_class],
-              ].map(([label, value]) => (
-                <div key={label} className="text-center p-3 bg-gray-50 rounded-xl">
-                  <p className="text-xs text-gray-400">{label}</p>
-                  <p className={`font-bold mt-1 ${value === 'Yes' ? 'text-green-600' : value === 'No' ? 'text-red-600' : 'text-amber-600'}`}>{value || '—'}</p>
-                </div>
-              ))}
-            </div>
-            {selected.tutors_general_observation && (
-              <div>
-                <p className="text-xs text-gray-400 mb-1">General Observation</p>
-                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl">{selected.tutors_general_observation}</p>
-              </div>
-            )}
-          </div>
-        </Modal>
-      )}
     </DashboardLayout>
   );
 }
