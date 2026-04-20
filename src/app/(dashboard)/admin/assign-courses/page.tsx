@@ -38,7 +38,7 @@ interface CourseRow {
 
 const newRow = (): CourseRow => ({
   rowId: crypto.randomUUID(), course_id: '', course_name: '', course_code: '',
-  assigned_date: '', status: 'active', notes: '',
+  assigned_date: new Date().toISOString().split('T')[0], status: 'active', notes: '',
 });
 
 function InfoRow({ icon: Icon, label, value }: {
@@ -432,7 +432,7 @@ export default function AssignCoursesPage() {
                   <option value="">Choose a tutor</option>
                   {tutors.map(t => (
                     <option key={t.tutor_id} value={t.tutor_id}>
-                      {tutorDisplayName(t)} — {t.email}
+                      {tutorDisplayName(t)}
                     </option>
                   ))}
                 </Select>
@@ -468,6 +468,12 @@ export default function AssignCoursesPage() {
                           </button>
                         )}
                       </div>
+                      {row.course_code && (
+                        <div className="flex items-center gap-2 px-1">
+                          <span className="text-xs text-gray-400">Course Code:</span>
+                          <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{row.course_code}</span>
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 gap-2">
                         <FormField label="Assigned Date">
                           <Input type="date" value={row.assigned_date}
