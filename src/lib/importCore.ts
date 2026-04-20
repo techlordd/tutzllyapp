@@ -507,6 +507,16 @@ export const ENTITY_CONFIG: Record<string, EntityConfig> = {
   messages_tutor:   { table: 'messages_tutor',           idField: null,              idPrefix: null,  createUser: false },
 };
 
+function detectDelimiter(text: string): string {
+  const firstLine = text.split('\n')[0] ?? '';
+  const tabs     = (firstLine.match(/\t/g)     ?? []).length;
+  const commas   = (firstLine.match(/,/g)      ?? []).length;
+  const semis    = (firstLine.match(/;/g)      ?? []).length;
+  if (tabs > commas && tabs > semis) return '\t';
+  if (semis > commas) return ';';
+  return ',';
+}
+
 export async function runImport(
   client: PoolClient,
   academyId: number,
@@ -518,6 +528,7 @@ export async function runImport(
 
   const text = await file.text();
   const cleanedText = preprocessCsv(text);
+  const delimiter = detectDelimiter(cleanedText);
   const records = parse(cleanedText, {
     columns: deduplicateColumns,
     skip_empty_lines: true,
@@ -526,6 +537,7 @@ export async function runImport(
     relax_quotes: true,
     relax_column_count: true,
     skip_records_with_error: true,
+    delimiter,
   }) as Record<string, string>[];
 
   let inserted = 0;
@@ -541,7 +553,7 @@ export async function runImport(
   const csvHeaders = Object.keys(records[0]);
   const mappedHeaders = csvHeaders.filter(h => columnMap[h]);
   const unmappedHeaders = csvHeaders.filter(h => !columnMap[h]);
-  log.push(`[INFO] Entity: ${type}  |  table: ${config.table}  |  rows: ${records.length}`);
+  log.push(`[INFO] Entity: ${type}  |  table: ${config.table}  |  rows: ${records.length}  |  delimiter: ${delimiter === '\t' ? 'TAB' : delimiter}`);
   log.push(`[INFO] CSV columns: ${csvHeaders.length} total — ${mappedHeaders.length} mapped, ${unmappedHeaders.length} ignored`);
   if (unmappedHeaders.length > 0) {
     log.push(`[WARN] Ignored columns: ${unmappedHeaders.join(' | ')}`);
