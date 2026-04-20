@@ -15,8 +15,8 @@ interface Activity {
   class_activity_date: string; class_activity_time: string;
   topic_taught: string; details_of_class_activity: string; activity: string;
   session_code_status: string; mothers_email: string; fathers_email: string;
-  assigned_homework_from_prev: boolean; status_of_past_homework_review: string;
-  new_homework_assigned: boolean; topic_of_homework: string; no_homework_why: string;
+  assigned_homework_from_prev: string; status_of_past_homework_review: string;
+  new_homework_assigned: string; topic_of_homework: string; no_homework_why: string;
   did_student_complete_prev_homework: string; homework1: string; homework2: string; homework3: string;
   student_reason_for_not_completing: string;
   did_student_join_on_time: string; punctuality1: string; punctuality2: string; student_reason_for_late: string;
@@ -185,11 +185,11 @@ export default function ActivityDetailPage() {
         <Card>
           <SectionTitle>Homework</SectionTitle>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <InfoCard icon={FileText} label="Assigned Homework from Previous?" value={activity.assigned_homework_from_prev ? 'Yes' : 'No'} />
+            <InfoCard icon={FileText} label="Assigned Homework from Previous?" value={activity.assigned_homework_from_prev} />
             <InfoCard icon={FileText} label="Status of Past Homework Review"   value={activity.status_of_past_homework_review} />
             <InfoCard icon={FileText} label="Did Student Complete Prev. Homework?" value={activity.did_student_complete_prev_homework} />
             <InfoCard icon={FileText} label="Student Reason for Not Completing"   value={activity.student_reason_for_not_completing} />
-            <InfoCard icon={FileText} label="New Homework Assigned?"     value={activity.new_homework_assigned ? 'Yes' : 'No'} />
+            <InfoCard icon={FileText} label="New Homework Assigned?"     value={activity.new_homework_assigned} />
             <InfoCard icon={FileText} label="No Homework — Why?"         value={activity.no_homework_why} />
             <InfoCard icon={FileText} label="Topic of Homework"          value={activity.topic_of_homework} />
             <div className="space-y-2">

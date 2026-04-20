@@ -17,8 +17,8 @@ interface Activity {
   class_activity_date: string; class_activity_time: string;
   topic_taught: string; details_of_class_activity: string; activity: string;
   session_code_status: string; mothers_email: string; fathers_email: string;
-  assigned_homework_from_prev: boolean; status_of_past_homework_review: string;
-  new_homework_assigned: boolean; topic_of_homework: string; no_homework_why: string;
+  assigned_homework_from_prev: string; status_of_past_homework_review: string;
+  new_homework_assigned: string; topic_of_homework: string; no_homework_why: string;
   did_student_complete_prev_homework: string; homework1: string; homework2: string; homework3: string;
   student_reason_for_not_completing: string;
   did_student_join_on_time: string; punctuality1: string; punctuality2: string; student_reason_for_late: string;
@@ -46,8 +46,8 @@ export default function ActivitiesPage() {
     class_activity_date: new Date().toISOString().split('T')[0],
     class_activity_time: new Date().toTimeString().slice(0, 5),
     topic_taught: '', details_of_class_activity: '', activity: '',
-    assigned_homework_from_prev: false, status_of_past_homework_review: '',
-    new_homework_assigned: false, topic_of_homework: '', no_homework_why: '',
+    assigned_homework_from_prev: '', status_of_past_homework_review: '',
+    new_homework_assigned: '', topic_of_homework: '', no_homework_why: '',
     did_student_complete_prev_homework: '', homework1: '', homework2: '', homework3: '',
     student_reason_for_not_completing: '', did_student_join_on_time: '',
     punctuality1: '', punctuality2: '', student_reason_for_late: '',
@@ -245,11 +245,11 @@ export default function ActivitiesPage() {
                 </Select>
               </FormField>
               <FormField label="New Homework Assigned?">
-                <Select value={form.new_homework_assigned ? 'true' : 'false'} onChange={e => setForm({...form, new_homework_assigned: e.target.value === 'true'})}>
-                  <option value="false">No</option><option value="true">Yes</option>
+                <Select value={form.new_homework_assigned} onChange={e => setForm({...form, new_homework_assigned: e.target.value})}>
+                  <option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option>
                 </Select>
               </FormField>
-              {form.new_homework_assigned && (
+              {form.new_homework_assigned === 'Yes' && (
                 <FormField label="Topic of Homework" className="sm:col-span-2">
                   <Input value={form.topic_of_homework} onChange={e => setForm({...form, topic_of_homework: e.target.value})} />
                 </FormField>
