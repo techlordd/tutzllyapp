@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const params: (string | number)[] = [academyId];
     if (userId)  { params.push(userId);  sql += ` AND user_id = $${params.length}`; }
     if (tutorId) { params.push(tutorId); sql += ` AND recipient_tutor_id = $${params.length}`; }
-    sql += ' ORDER BY message_date DESC, message_time DESC, created_at DESC';
+    sql += ' ORDER BY message_date DESC, message_time DESC, timestamp DESC';
     const messages = await query(sql, params);
     return NextResponse.json({ messages });
   } catch (error) {
@@ -40,14 +40,12 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const academyId = getAcademyId(request);
-    const result = await query<{ count: string }>(
-      `WITH deleted AS (
-        DELETE FROM messages_tutor WHERE academy_id = \$1 OR \$1 = 0 RETURNING id
-      ) SELECT COUNT(*) AS count FROM deleted`,
+    const rows = await query<{ record_id: number }>(
+      `SELECT record_id FROM messages_tutor WHERE (academy_id = $1 OR $1 = 0)`,
       [academyId]
     );
-    const deleted = parseInt(result[0]?.count ?? '0', 10);
-    return NextResponse.json({ deleted });
+    await query(`DELETE FROM messages_tutor WHERE (academy_id = $1 OR $1 = 0)`, [academyId]);
+    return NextResponse.json({ deleted: rows.length });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to delete messages' }, { status: 500 });
