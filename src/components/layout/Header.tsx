@@ -1,6 +1,7 @@
 'use client';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, LogOut } from 'lucide-react';
 import { useState } from 'react';
+import { useAuthStore } from '@/store/authStore';
 
 interface HeaderProps {
   title: string;
@@ -12,6 +13,13 @@ interface HeaderProps {
 
 export default function Header({ title, userName, role, onMenuClick }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const { clearUser } = useAuthStore();
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    clearUser();
+    window.location.href = '/login';
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
@@ -47,6 +55,13 @@ export default function Header({ title, userName, role, onMenuClick }: HeaderPro
             <p className="text-xs text-gray-500 capitalize">{role}</p>
           </div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors ml-1"
+          title="Logout"
+        >
+          <LogOut size={18} />
+        </button>
       </div>
     </header>
   );
