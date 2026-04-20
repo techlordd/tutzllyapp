@@ -449,7 +449,7 @@ CREATE TABLE IF NOT EXISTS grade_book (
 
 -- Messages - chat with admin
 CREATE TABLE IF NOT EXISTS messages_admin (
-  id SERIAL PRIMARY KEY,
+  record_id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   message_date DATE,
   message_time TIME,
@@ -469,13 +469,14 @@ CREATE TABLE IF NOT EXISTS messages_admin (
   body TEXT,
   file_upload TEXT,
   status VARCHAR(20) DEFAULT 'unread',
-  user_id INTEGER REFERENCES users(id),
+  user_id TEXT,
   entry_status VARCHAR(20) DEFAULT 'active',
   ip VARCHAR(45),
   created_by TEXT,
   updated_by TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  record_key TEXT,
+  timestamp TIMESTAMP DEFAULT NOW(),
+  last_updated TIMESTAMP DEFAULT NOW()
 );
 
 -- Messages - chat with parent

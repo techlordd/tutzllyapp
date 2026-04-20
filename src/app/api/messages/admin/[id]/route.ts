@@ -1,0 +1,26 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { queryOne } from '@/lib/db';
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const message = await queryOne('SELECT * FROM messages_admin WHERE record_id = $1', [Number(id)]);
+  if (!message) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (message.status === 'unread') {
+    await queryOne(
+      `UPDATE messages_admin SET status='read', last_updated=NOW() WHERE record_id=$1 RETURNING record_id`,
+      [Number(id)]
+    );
+    message.status = 'read';
+  }
+  return NextResponse.json({ message });
+}
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { status } = await req.json();
+  const result = await queryOne(
+    `UPDATE messages_admin SET status=$1, last_updated=NOW() WHERE record_id=$2 RETURNING *`,
+    [status, Number(id)]
+  );
+  return NextResponse.json({ message: result });
+}
