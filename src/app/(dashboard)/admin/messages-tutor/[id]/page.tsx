@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 interface TutorMessage {
   record_id: number;
   message_date: string; message_time: string; role: string;
-  sender_email: string; user_role: string; user_role2: string;
+  sender: string; sender_email: string; user_role: string; user_role2: string;
   sender_admin: string; sender_student_name: string; sender_student_id: string;
   lookup_student_id: string; sender_parent_name: string; sender_parent_id: string;
   recipient_tutor_name: string; recipient_tutor_id: string; recipient_email: string;
@@ -52,13 +52,14 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 function resolveSender(msg: TutorMessage) {
-  return msg.sender_admin || msg.sender_student_name || msg.sender_parent_name || null;
+  return msg.sender_admin || msg.sender_student_name || msg.sender_parent_name || msg.sender || null;
 }
 
 function resolveSenderLabel(msg: TutorMessage) {
   if (msg.sender_admin) return 'Admin';
   if (msg.sender_student_name) return 'Student';
   if (msg.sender_parent_name) return 'Parent';
+  if (msg.sender) return msg.role || 'Sender';
   return msg.role || 'Unknown';
 }
 
@@ -164,6 +165,9 @@ export default function MessageTutorDetailPage() {
                 {message.sender_student_id && <InfoCard icon={Hash} label="Student ID" value={message.sender_student_id} mono />}
                 {message.sender_parent_name && <InfoCard icon={User} label="Sender (Parent)" value={message.sender_parent_name} />}
                 {message.sender_parent_id && <InfoCard icon={Hash} label="Parent ID" value={message.sender_parent_id} mono />}
+                {!message.sender_admin && !message.sender_student_name && !message.sender_parent_name && message.sender && (
+                  <InfoCard icon={User} label="Sender" value={message.sender} />
+                )}
                 {message.sender_email && <InfoCard icon={Mail} label="Sender Email" value={message.sender_email} />}
                 {message.user_role && <InfoCard icon={Globe} label="User Role" value={message.user_role} />}
               </div>

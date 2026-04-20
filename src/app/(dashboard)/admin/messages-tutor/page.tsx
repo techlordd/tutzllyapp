@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 interface TutorMessage {
   record_id: number;
   message_date: string; message_time: string; role: string;
-  sender_email: string; user_role: string; user_role2: string;
+  sender: string; sender_email: string; user_role: string; user_role2: string;
   sender_admin: string; sender_student_name: string; sender_student_id: string;
   lookup_student_id: string; sender_parent_name: string; sender_parent_id: string;
   recipient_tutor_name: string; recipient_tutor_id: string; recipient_email: string;
@@ -25,7 +25,7 @@ interface TutorMessage {
 }
 
 function resolveSender(row: TutorMessage): string {
-  return row.sender_admin || row.sender_student_name || row.sender_parent_name || '—';
+  return row.sender_admin || row.sender_student_name || row.sender_parent_name || row.sender || '—';
 }
 
 export default function MessagesTutorPage() {
