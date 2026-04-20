@@ -11,11 +11,12 @@ function requireSuperAdmin(request: NextRequest) {
 }
 
 // GET: list admin users for an academy
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const payload = requireSuperAdmin(request);
   if (!payload) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const academyId = Number(params.id);
+  const { id } = await params;
+  const academyId = Number(id);
   const admins = await query(
     `SELECT u.id, u.user_id, u.username, u.email, u.is_active
      FROM users u
@@ -28,11 +29,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // POST: reset password for an admin of an academy
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const payload = requireSuperAdmin(request);
   if (!payload) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const academyId = Number(params.id);
+  const { id } = await params;
+  const academyId = Number(id);
   const { user_id, new_password } = await request.json();
   if (!user_id || !new_password) {
     return NextResponse.json({ error: 'user_id and new_password are required' }, { status: 400 });
