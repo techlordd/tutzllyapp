@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Building2, Plus, RefreshCw, X, CheckCircle2, Copy, KeyRound } from 'lucide-react';
+import { Building2, Plus, RefreshCw, X, CheckCircle2, Copy, KeyRound, ShieldAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Academy {
@@ -34,6 +34,14 @@ interface CreatedAdmin {
   password: string;
 }
 
+interface AdminUser {
+  id: number;
+  user_id: string;
+  username: string;
+  email: string;
+  is_active: boolean;
+}
+
 export default function AcademiesPage() {
   const [academies, setAcademies] = useState<Academy[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +49,11 @@ export default function AcademiesPage() {
   const [creating, setCreating] = useState(false);
   const [switching, setSwitching] = useState<number | null>(null);
   const [createdAdmin, setCreatedAdmin] = useState<CreatedAdmin | null>(null);
+  const [resetTarget, setResetTarget] = useState<Academy | null>(null);
+  const [resetAdmins, setResetAdmins] = useState<AdminUser[]>([]);
+  const [resetForm, setResetForm] = useState({ user_id: '', new_password: '' });
+  const [resetting, setResetting] = useState(false);
+  const [resetDone, setResetDone] = useState<CreatedAdmin | null>(null);
   const [form, setForm] = useState<CreateForm>({
     academy_name: '', academy_email: '', academy_description: '', subdomain: '', custom_domain: '',
     admin_email: '', admin_username: '', admin_password: '',
@@ -97,6 +110,35 @@ export default function AcademiesPage() {
       toast.error(err instanceof Error ? err.message : 'Switch failed');
     } finally {
       setSwitching(null);
+    }
+  };
+
+  const openReset = async (a: Academy) => {
+    setResetTarget(a);
+    setResetForm({ user_id: '', new_password: '' });
+    setResetDone(null);
+    const res = await fetch(`/api/super-admin/academies/${a.id}/admins`);
+    const data = await res.json();
+    setResetAdmins(data.admins || []);
+  };
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetTarget || !resetForm.user_id || !resetForm.new_password) return;
+    setResetting(true);
+    try {
+      const res = await fetch(`/api/super-admin/academies/${resetTarget.id}/admins`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resetForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Reset failed');
+      setResetDone({ email: data.email, username: data.username, password: resetForm.new_password });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Reset failed');
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -353,24 +395,121 @@ export default function AcademiesPage() {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => switchAcademy(a.id, a.academy_name)}
-                    disabled={switching === a.id}
-                    className="flex items-center gap-1.5 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 font-medium whitespace-nowrap"
-                  >
-                    {switching === a.id ? (
-                      <RefreshCw size={12} className="animate-spin" />
-                    ) : (
-                      <CheckCircle2 size={12} />
-                    )}
-                    Switch to
-                  </button>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => openReset(a)}
+                      className="flex items-center gap-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors font-medium whitespace-nowrap"
+                      title="Reset admin password"
+                    >
+                      <KeyRound size={12} /> Reset Password
+                    </button>
+                    <button
+                      onClick={() => switchAcademy(a.id, a.academy_name)}
+                      disabled={switching === a.id}
+                      className="flex items-center gap-1.5 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 font-medium whitespace-nowrap"
+                    >
+                      {switching === a.id ? <RefreshCw size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                      Switch to
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* Reset Password Modal */}
+      {resetTarget && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <ShieldAlert size={16} className="text-amber-500" /> Reset Admin Password
+              </h2>
+              <button onClick={() => { setResetTarget(null); setResetDone(null); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+
+            {resetDone ? (
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-gray-500">Password reset successfully. Share these updated credentials:</p>
+                {[
+                  { label: 'Email', value: resetDone.email },
+                  { label: 'Username', value: resetDone.username },
+                  { label: 'New Password', value: resetDone.password },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1">{label}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-mono text-sm font-medium text-gray-900 break-all">{value}</p>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(value); toast.success(`${label} copied!`); }}
+                        className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button onClick={() => { setResetTarget(null); setResetDone(null); }}
+                  className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleReset} className="p-6 space-y-4">
+                <p className="text-sm text-gray-500">
+                  Resetting password for <strong>{resetTarget.academy_name}</strong>
+                </p>
+                {resetAdmins.length === 0 ? (
+                  <div className="bg-amber-50 text-amber-700 rounded-xl p-3 text-sm">
+                    No admin accounts found for this academy. Create one when adding the academy.
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Admin</label>
+                      <select
+                        value={resetForm.user_id}
+                        onChange={e => setResetForm(f => ({ ...f, user_id: e.target.value }))}
+                        required
+                        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Choose admin account</option>
+                        {resetAdmins.map(u => (
+                          <option key={u.id} value={u.id}>{u.username} — {u.email}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
+                      <input
+                        type="text"
+                        value={resetForm.new_password}
+                        onChange={e => setResetForm(f => ({ ...f, new_password: e.target.value }))}
+                        required
+                        placeholder="Enter new password"
+                        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex gap-3 pt-1">
+                      <button type="button" onClick={() => { setResetTarget(null); setResetDone(null); }}
+                        className="flex-1 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={resetting}
+                        className="flex-1 bg-amber-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                        {resetting && <RefreshCw size={14} className="animate-spin" />}
+                        {resetting ? 'Resetting…' : 'Reset Password'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
