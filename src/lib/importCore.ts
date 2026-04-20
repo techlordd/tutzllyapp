@@ -41,7 +41,7 @@ function deduplicateColumns(headers: string[]): string[] {
 }
 
 const BOOLEAN_FIELDS: Record<string, Set<string>> = {
-  activities: new Set(['assigned_homework_from_prev', 'new_homework_assigned']),
+  // activities uses TEXT columns (post-migration 016), no boolean coercion needed
 };
 
 // Columns that must be integers — fractional values (e.g. 1.5 hrs) are converted
@@ -61,18 +61,20 @@ const VARCHAR_MAX_LENGTH: Record<string, Record<string, number>> = {
 // DB columns that expect a DATE or TIMESTAMP value — non-date strings are coerced to null.
 // Includes both legacy names (created_at/updated_at used by most tables) and the renamed
 // timestamp columns (timestamp/last_updated) introduced in migrations 002-003.
+// NOTE: class_activity_date was converted to TEXT in migration 016 — excluded here.
 const DATE_COLUMNS = new Set([
   'entry_date', 'start_session_date', 'end_session_date', 'reschedule_to',
-  'class_activity_date', 'date_of_birth', 'message_date',
+  'date_of_birth', 'message_date',
   'created_at', 'updated_at',
   'timestamp', 'last_updated',
   'date', 'assigned_date',
 ]);
 
 // DB columns that expect a TIME value — non-time strings are coerced to null
+// NOTE: class_activity_time was converted to TEXT in migration 016 — excluded here.
 const TIME_COLUMNS = new Set([
   'schedule_start_time', 'schedule_end_time', 'start_session_time', 'end_session_time',
-  'reschedule_time', 'class_activity_time', 'message_time', 'session_start_time', 'session_end_time',
+  'reschedule_time', 'message_time', 'session_start_time', 'session_end_time',
   'time',
 ]);
 

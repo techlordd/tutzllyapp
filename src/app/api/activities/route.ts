@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const academyId = getAcademyId(request);
     const activity = await queryOne(
       `INSERT INTO class_activities (academy_id, ssid, tutor_id, tutor_firstname, tutor_lastname, student_id, student_name,
-       course_name, course_id, session_code_status, mothers_email, fathers_email, class_activity_date, class_activity_time,
+       course_name, course_id_ref, session_code_status, mothers_email, fathers_email, class_activity_date, class_activity_time,
        topic_taught, details_of_class_activity, activity, assigned_homework_from_prev, status_of_past_homework_review,
        new_homework_assigned, topic_of_homework, no_homework_why, did_student_complete_prev_homework, homework1, homework2, homework3,
        student_reason_for_not_completing, did_student_join_on_time, punctuality1, punctuality2, student_reason_for_late,
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,'active')
        RETURNING *`,
       [academyId || null, d.ssid,d.tutor_id,d.tutor_firstname,d.tutor_lastname,d.student_id,d.student_name,
-       d.course_name,d.course_id,d.session_code_status,d.mothers_email,d.fathers_email,
+       d.course_name,d.course_id_ref,d.session_code_status,d.mothers_email,d.fathers_email,
        d.class_activity_date,d.class_activity_time,d.topic_taught,d.details_of_class_activity,
        d.activity,d.assigned_homework_from_prev,d.status_of_past_homework_review,
        d.new_homework_assigned,d.topic_of_homework,d.no_homework_why,d.did_student_complete_prev_homework,
