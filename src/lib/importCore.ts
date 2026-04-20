@@ -508,12 +508,14 @@ export const ENTITY_CONFIG: Record<string, EntityConfig> = {
 };
 
 function detectDelimiter(text: string): string {
-  // Check first few non-empty lines to find the most likely delimiter
-  const lines = text.split('\n').filter(l => l.trim());
-  const sample = lines.slice(0, 3).join('\n');
-  const tabs   = (sample.match(/\t/g)  ?? []).length;
-  const commas = (sample.match(/,/g)   ?? []).length;
-  const semis  = (sample.match(/;/g)   ?? []).length;
+  // Use only the header line (first non-empty line) to detect the delimiter.
+  // Data rows can contain many commas inside quoted fields (email addresses,
+  // message bodies, etc.) which would skew a multi-line sample toward ',' even
+  // when the actual delimiter is ';' or '\t'.
+  const headerLine = text.split('\n').find(l => l.trim()) ?? '';
+  const tabs   = (headerLine.match(/\t/g)  ?? []).length;
+  const commas = (headerLine.match(/,/g)   ?? []).length;
+  const semis  = (headerLine.match(/;/g)   ?? []).length;
   if (tabs > commas && tabs > semis) return '\t';
   if (semis > commas) return ';';
   return ',';
