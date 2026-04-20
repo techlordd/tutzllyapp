@@ -446,8 +446,10 @@ export const COLUMN_MAPS: Record<string, Record<string, string>> = {
     'Recipient ID (Parent)': 'recipient_id_parent',
     'Recipient (Admin)': 'recipient_admin',
     'Subject': 'subject', 'Body': 'body', 'Attach File (Optional)': 'attach_file',
-    'Status': 'status', 'Entry Status': 'entry_status',
-    'IP': 'ip', 'Created By': 'created_by', 'Updated By': 'updated_by',
+    'Status': 'status', 'User ID': 'user_id',
+    'Timestamp': 'timestamp', 'Last Updated': 'last_updated',
+    'Created By': 'created_by', 'Updated By': 'updated_by',
+    'Entry Status': 'entry_status', 'IP': 'ip', 'ID': 'record_id', 'Key': 'record_key',
   },
   messages_tutor: {
     'Date': 'message_date', 'Time': 'message_time', 'Roles': 'role',

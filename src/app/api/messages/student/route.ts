@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     let sql = `SELECT * FROM messages_student WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (userId) { params.push(userId); sql += ` AND user_id = $${params.length}`; }
-    sql += ' ORDER BY message_date DESC, message_time DESC, created_at DESC';
+    sql += ' ORDER BY message_date DESC, message_time DESC, timestamp DESC';
     const messages = await query(sql, params);
     return NextResponse.json({ messages });
   } catch (error) {
@@ -23,10 +23,17 @@ export async function POST(request: NextRequest) {
   try {
     const d = await request.json();
     const message = await queryOne(
-      `INSERT INTO messages_student (message_date, message_time, role, sender, user_role,
-       subject, body, attach_file, status, user_id, entry_status)
-       VALUES (NOW()::date, NOW()::time, $1, $2, $3, $4, $5, $6, 'unread', $7, 'active') RETURNING *`,
-      [d.role, d.sender, d.user_role, d.subject, d.body, d.attach_file, d.user_id]
+      `INSERT INTO messages_student (message_date, message_time, role, sender, sender_email, user_role,
+       message_to, tutor_name, tutor_id, student_name, student_id,
+       recipient_name_student, recipient_id_student, recipient_email,
+       recipient_name_tutor, recipient_id_tutor, recipient_name_parent, recipient_id_parent,
+       recipient_admin, cc, subject, body, attach_file, status, user_id, entry_status)
+       VALUES (NOW()::date, NOW()::time, $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,'unread',$22,'active') RETURNING *`,
+      [d.role, d.sender, d.sender_email, d.user_role, d.message_to,
+       d.tutor_name, d.tutor_id, d.student_name, d.student_id,
+       d.recipient_name_student, d.recipient_id_student, d.recipient_email,
+       d.recipient_name_tutor, d.recipient_id_tutor, d.recipient_name_parent, d.recipient_id_parent,
+       d.recipient_admin, d.cc, d.subject, d.body, d.attach_file, d.user_id]
     );
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
@@ -38,14 +45,12 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const academyId = getAcademyId(request);
-    const result = await query<{ count: string }>(
-      `WITH deleted AS (
-        DELETE FROM messages_student WHERE academy_id = \$1 OR \$1 = 0 RETURNING id
-      ) SELECT COUNT(*) AS count FROM deleted`,
+    const rows = await query<{ record_id: number }>(
+      `SELECT record_id FROM messages_student WHERE (academy_id = $1 OR $1 = 0)`,
       [academyId]
     );
-    const deleted = parseInt(result[0]?.count ?? '0', 10);
-    return NextResponse.json({ deleted });
+    await query(`DELETE FROM messages_student WHERE (academy_id = $1 OR $1 = 0)`, [academyId]);
+    return NextResponse.json({ deleted: rows.length });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to delete messages' }, { status: 500 });
