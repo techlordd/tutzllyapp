@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Building2, Plus, RefreshCw, X, CheckCircle2 } from 'lucide-react';
+import { Building2, Plus, RefreshCw, X, CheckCircle2, Copy, KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Academy {
@@ -23,6 +23,15 @@ interface CreateForm {
   academy_description: string;
   subdomain: string;
   custom_domain: string;
+  admin_email: string;
+  admin_username: string;
+  admin_password: string;
+}
+
+interface CreatedAdmin {
+  email: string;
+  username: string;
+  password: string;
 }
 
 export default function AcademiesPage() {
@@ -31,7 +40,11 @@ export default function AcademiesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [switching, setSwitching] = useState<number | null>(null);
-  const [form, setForm] = useState<CreateForm>({ academy_name: '', academy_email: '', academy_description: '', subdomain: '', custom_domain: '' });
+  const [createdAdmin, setCreatedAdmin] = useState<CreatedAdmin | null>(null);
+  const [form, setForm] = useState<CreateForm>({
+    academy_name: '', academy_email: '', academy_description: '', subdomain: '', custom_domain: '',
+    admin_email: '', admin_username: '', admin_password: '',
+  });
 
   const load = () => {
     setLoading(true);
@@ -58,7 +71,8 @@ export default function AcademiesPage() {
       if (!res.ok) throw new Error(data.error || 'Create failed');
       toast.success(`Academy "${data.academy.academy_name}" created!`);
       setShowCreate(false);
-      setForm({ academy_name: '', academy_email: '', academy_description: '', subdomain: '', custom_domain: '' });
+      setForm({ academy_name: '', academy_email: '', academy_description: '', subdomain: '', custom_domain: '', admin_email: '', admin_username: '', admin_password: '' });
+      if (data.adminUser) setCreatedAdmin(data.adminUser);
       load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Create failed');
@@ -177,6 +191,45 @@ export default function AcademiesPage() {
                     <p className="text-xs text-gray-400 mt-1">Academy adds <span className="font-mono">CNAME → cname.vercel-dns.com</span>, you add domain in Vercel</p>
                   </div>
                 </div>
+                {/* Admin Account */}
+                <div className="border-t border-gray-100 pt-4 space-y-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                    <KeyRound size={12} /> Admin Login <span className="font-normal normal-case text-gray-400">(optional — creates admin account)</span>
+                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Admin Email</label>
+                    <input
+                      type="email"
+                      value={form.admin_email}
+                      onChange={e => setForm(f => ({ ...f, admin_email: e.target.value }))}
+                      placeholder="admin@academy.com"
+                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+                      <input
+                        type="text"
+                        value={form.admin_username}
+                        onChange={e => setForm(f => ({ ...f, admin_username: e.target.value }))}
+                        placeholder="auto from email"
+                        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+                      <input
+                        type="text"
+                        value={form.admin_password}
+                        onChange={e => setForm(f => ({ ...f, admin_password: e.target.value }))}
+                        placeholder="Tutzlly@123"
+                        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
@@ -195,6 +248,47 @@ export default function AcademiesPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Admin credentials reveal */}
+        {createdAdmin && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
+            <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <KeyRound size={16} className="text-green-600" /> Admin Credentials Created
+                </h2>
+                <button onClick={() => setCreatedAdmin(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-gray-500">Share these credentials with the academy admin. The password can be changed after first login.</p>
+                {[
+                  { label: 'Email', value: createdAdmin.email },
+                  { label: 'Username', value: createdAdmin.username },
+                  { label: 'Password', value: createdAdmin.password },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1">{label}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-mono text-sm font-medium text-gray-900 break-all">{value}</p>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(value); toast.success(`${label} copied!`); }}
+                        className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  onClick={() => setCreatedAdmin(null)}
+                  className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors mt-2"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         )}

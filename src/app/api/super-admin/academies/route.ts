@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken, hashPassword } from '@/lib/auth';
 import { query, queryOne } from '@/lib/db';
+import { generateId } from '@/lib/utils';
 
 function requireSuperAdmin(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest) {
     if (!payload) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await request.json();
-    const { academy_name, academy_email, academy_description, subdomain, custom_domain } = body;
+    const { academy_name, academy_email, academy_description, subdomain, custom_domain,
+            admin_email, admin_username, admin_password } = body;
     if (!academy_name) return NextResponse.json({ error: 'academy_name is required' }, { status: 400 });
 
     // Auto-generate a unique slug; retry once on collision
@@ -56,7 +58,41 @@ export async function POST(request: NextRequest) {
     }
 
     if (!academy) return NextResponse.json({ error: 'Failed to generate unique academy ID, please try again' }, { status: 409 });
-    return NextResponse.json({ academy }, { status: 201 });
+
+    // Create admin user if credentials provided
+    let adminUser = null;
+    if (admin_email) {
+      const password = admin_password || 'Tutzlly@123';
+      const username = admin_username || admin_email.split('@')[0];
+      const hash = await hashPassword(password);
+      const userId = generateId('USR');
+
+      // Upsert user (in case email already exists globally)
+      const existing = await queryOne<{ id: number }>(
+        'SELECT id FROM users WHERE email = $1', [admin_email]
+      );
+      let dbUserId: number;
+      if (existing) {
+        dbUserId = existing.id;
+      } else {
+        const newUser = await queryOne<{ id: number }>(
+          `INSERT INTO users (user_id, username, email, password_hash, role, is_active)
+           VALUES ($1, $2, $3, $4, 'admin', true) RETURNING id`,
+          [userId, username, admin_email, hash]
+        );
+        dbUserId = newUser!.id;
+      }
+
+      await query(
+        `INSERT INTO user_academy_roles (user_id, academy_id, role)
+         VALUES ($1, $2, 'admin') ON CONFLICT DO NOTHING`,
+        [dbUserId, academy.id]
+      );
+
+      adminUser = { email: admin_email, username, password };
+    }
+
+    return NextResponse.json({ academy, adminUser }, { status: 201 });
   } catch (error) {
     console.error('POST /api/super-admin/academies error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
