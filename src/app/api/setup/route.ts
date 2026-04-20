@@ -358,6 +358,21 @@ export async function POST(request: Request) {
       try { await query(sql); } catch { /* column may not exist */ }
     }
 
+    // ── Migration 012-015: Rename created_at→timestamp, updated_at→last_updated (idempotent) ──
+    for (const tbl of ['messages_admin', 'messages_parent', 'messages_student', 'messages_tutor']) {
+      await query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='${tbl}' AND column_name='created_at') THEN
+            ALTER TABLE ${tbl} RENAME COLUMN created_at TO timestamp;
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='${tbl}' AND column_name='updated_at') THEN
+            ALTER TABLE ${tbl} RENAME COLUMN updated_at TO last_updated;
+          END IF;
+        END $$;
+      `);
+    }
+
         const schemaPath = join(process.cwd(), 'src', 'lib', 'schema.sql');
     const schema = readFileSync(schemaPath, 'utf8');
     await query(schema);
@@ -415,7 +430,7 @@ export async function POST(request: Request) {
     );
     if (tutorRows[0]) {
       await query(
-        `INSERT INTO tutors (tutor_id, user_id, username, email, firstname, surname, fullname_first, fullname_last, entry_status)
+        `INSERT INTO tutors (tutor_id, user_id, username, email, firstname, surname, full_name_first_name, full_name_last_name, entry_status)
          VALUES ('TUT-DEMO-001', $1, 'demo_tutor', 'demo.tutor@tutzllyacademy.com', 'Demo', 'Tutor', 'Demo', 'Tutor', 'active')
          ON CONFLICT (tutor_id) DO NOTHING`,
         [tutorRows[0].id]
@@ -432,7 +447,7 @@ export async function POST(request: Request) {
     if (studentRows[0]) {
       await query(
         `INSERT INTO students (student_id, enrollment_id, user_id, username, email, firstname, surname,
-         fullname_first, fullname_last, status, entry_status)
+         full_name_first_name, full_name_last_name, status, entry_status)
          VALUES ('STU-DEMO-001', 'ENR-DEMO-001', $1, 'demo_student', 'demo.student@tutzllyacademy.com',
          'Demo', 'Student', 'Demo', 'Student', 'active', 'active')
          ON CONFLICT (student_id) DO NOTHING`,
@@ -449,7 +464,7 @@ export async function POST(request: Request) {
     );
     if (parentRows[0]) {
       await query(
-        `INSERT INTO parents (parent_id, user_id, username, email, fullname_first, fullname_last, entry_status)
+        `INSERT INTO parents (parent_id, user_id, username, email, full_name_first_name, full_name_last_name, entry_status)
          VALUES ('PAR-DEMO-001', $1, 'demo_parent', 'demo.parent@tutzllyacademy.com', 'Demo', 'Parent', 'active')
          ON CONFLICT (parent_id) DO NOTHING`,
         [parentRows[0].id]
