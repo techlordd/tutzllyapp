@@ -162,15 +162,15 @@ export default function AcademiesPage() {
 
         {/* Create Modal */}
         {showCreate && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-6">
+            <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
                 <h2 className="font-semibold text-gray-900">Create New Academy</h2>
                 <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600">
                   <X size={20} />
                 </button>
               </div>
-              <form onSubmit={handleCreate} className="p-6 space-y-4">
+              <form onSubmit={handleCreate} className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Academy Name *</label>
                   <input
@@ -197,7 +197,7 @@ export default function AcademiesPage() {
                   <textarea
                     value={form.academy_description}
                     onChange={e => setForm(f => ({ ...f, academy_description: e.target.value }))}
-                    rows={3}
+                    rows={2}
                     placeholder="Brief description..."
                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
@@ -213,13 +213,13 @@ export default function AcademiesPage() {
                         value={form.subdomain}
                         onChange={e => setForm(f => ({ ...f, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
                         placeholder="brightminds"
-                        className="flex-1 border border-gray-300 rounded-l-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 min-w-0 border border-gray-300 rounded-l-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <span className="bg-gray-100 border border-l-0 border-gray-300 rounded-r-xl px-3 py-2.5 text-sm text-gray-500 whitespace-nowrap">
+                      <span className="bg-gray-100 border border-l-0 border-gray-300 rounded-r-xl px-2 py-2.5 text-xs text-gray-500 whitespace-nowrap">
                         .{process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'yourdomain.com'}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">Then add wildcard *.{process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'yourdomain.com'} in Vercel → Domains</p>
+                    <p className="text-xs text-gray-400 mt-1">Add wildcard *.{process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'yourdomain.com'} in Vercel → Domains</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Custom Domain</label>
