@@ -508,13 +508,29 @@ export const ENTITY_CONFIG: Record<string, EntityConfig> = {
 };
 
 function detectDelimiter(text: string): string {
-  const firstLine = text.split('\n')[0] ?? '';
-  const tabs     = (firstLine.match(/\t/g)     ?? []).length;
-  const commas   = (firstLine.match(/,/g)      ?? []).length;
-  const semis    = (firstLine.match(/;/g)      ?? []).length;
+  // Check first few non-empty lines to find the most likely delimiter
+  const lines = text.split('\n').filter(l => l.trim());
+  const sample = lines.slice(0, 3).join('\n');
+  const tabs   = (sample.match(/\t/g)  ?? []).length;
+  const commas = (sample.match(/,/g)   ?? []).length;
+  const semis  = (sample.match(/;/g)   ?? []).length;
   if (tabs > commas && tabs > semis) return '\t';
   if (semis > commas) return ';';
   return ',';
+}
+
+function parseWithOptions(text: string, delimiter: string, fromLine?: number): Record<string, string>[] {
+  return parse(text, {
+    columns: deduplicateColumns,
+    skip_empty_lines: true,
+    trim: true,
+    bom: true,
+    relax_quotes: true,
+    relax_column_count: true,
+    skip_records_with_error: true,
+    delimiter,
+    from_line: fromLine,
+  }) as Record<string, string>[];
 }
 
 export async function runImport(
@@ -529,16 +545,25 @@ export async function runImport(
   const text = await file.text();
   const cleanedText = preprocessCsv(text);
   const delimiter = detectDelimiter(cleanedText);
-  const records = parse(cleanedText, {
-    columns: deduplicateColumns,
-    skip_empty_lines: true,
-    trim: true,
-    bom: true,
-    relax_quotes: true,
-    relax_column_count: true,
-    skip_records_with_error: true,
-    delimiter,
-  }) as Record<string, string>[];
+
+  // Initial parse — if fewer than 3 columns match the column map, the header
+  // row may not be on line 1 (e.g. the file has a title/metadata row on top).
+  // Scan up to 5 lines to find the row with the most column-map hits.
+  let records = parseWithOptions(cleanedText, delimiter);
+  const initialHits = Object.keys(records[0] ?? {}).filter(h => columnMap[h]).length;
+  if (records.length > 0 && initialHits < 3) {
+    let bestLine = 1;
+    let bestHits = initialHits;
+    for (let tryLine = 2; tryLine <= 6; tryLine++) {
+      try {
+        const attempt = parseWithOptions(cleanedText, delimiter, tryLine);
+        if (attempt.length === 0) continue;
+        const hits = Object.keys(attempt[0]).filter(h => columnMap[h]).length;
+        if (hits > bestHits) { bestHits = hits; bestLine = tryLine; }
+      } catch { /* skip */ }
+    }
+    if (bestLine > 1) records = parseWithOptions(cleanedText, delimiter, bestLine);
+  }
 
   let inserted = 0;
   let skipped = 0;
