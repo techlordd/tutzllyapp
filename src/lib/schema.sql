@@ -419,14 +419,15 @@ CREATE TABLE IF NOT EXISTS class_activities (
 
 -- Grade book
 CREATE TABLE IF NOT EXISTS grade_book (
-  id SERIAL PRIMARY KEY,
+  record_id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
+  user_id TEXT,
   tutor_id TEXT,
   tutor_name TEXT,
   student_id TEXT,
   student_name TEXT,
   course_name TEXT,
-  course_id INTEGER REFERENCES courses(id),
+  course_id_ref TEXT,
   month TEXT,
   year TEXT,
   punctuality NUMERIC(5,2),
@@ -437,13 +438,13 @@ CREATE TABLE IF NOT EXISTS grade_book (
   remarks TEXT,
   grade_code_status TEXT,
   status VARCHAR(20) DEFAULT 'draft',
-  user_id INTEGER REFERENCES users(id),
   entry_status VARCHAR(20) DEFAULT 'active',
   ip VARCHAR(45),
   created_by TEXT,
   updated_by TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  record_key TEXT,
+  timestamp TIMESTAMP DEFAULT NOW(),
+  last_updated TIMESTAMP DEFAULT NOW()
 );
 
 -- Messages - chat with admin
