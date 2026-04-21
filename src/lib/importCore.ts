@@ -622,9 +622,9 @@ export async function runImport(
       for (const [csvCol, val] of Object.entries(record)) {
         const dbCol = columnMap[csvCol];
         if (dbCol && val !== '' && val != null) {
-          if (dbCol === 'record_id' && !/^\d+$/.test(val)) {
-            // record_id is a SERIAL (integer) PK — skip non-integer CSV values (e.g. 'oz0kt')
-            // and let PostgreSQL auto-generate the sequence value instead
+          if (dbCol === 'record_id') {
+            // record_id is a SERIAL PK — always let PostgreSQL auto-generate it;
+            // never import from CSV (different academies share the same IDs otherwise)
             continue;
           } else if (boolCols?.has(dbCol)) {
             dbRow[dbCol] = /^(yes|true|1)$/i.test(val);
