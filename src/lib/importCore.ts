@@ -685,16 +685,19 @@ export async function runImport(
           userId = existing.rows[0].id;
         } else {
           const hash = await hashPassword('Tutzlly@123');
+          // Ensure username is unique — if already taken by another user (different
+          // email, different academy), append a short random suffix to avoid collision
+          let username = String(dbRow['username'] || (dbRow['email'] as string).split('@')[0]);
+          const takenUsername = await client.query<{ id: number }>(
+            'SELECT id FROM users WHERE username = $1', [username]
+          );
+          if (takenUsername.rows.length > 0) {
+            username = username + '_' + Math.random().toString(36).slice(2, 6);
+          }
           const r = await client.query<{ id: number }>(
             `INSERT INTO users (user_id, username, email, password_hash, role, is_active)
              VALUES ($1, $2, $3, $4, $5, true) RETURNING id`,
-            [
-              generateId('USR'),
-              dbRow['username'] || (dbRow['email'] as string).split('@')[0],
-              dbRow['email'],
-              hash,
-              config.userRole,
-            ]
+            [generateId('USR'), username, dbRow['email'], hash, config.userRole]
           );
           userId = r.rows[0].id;
         }
