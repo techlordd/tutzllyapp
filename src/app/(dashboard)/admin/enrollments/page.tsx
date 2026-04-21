@@ -111,14 +111,14 @@ export default function EnrollmentsPage() {
   };
 
   const columns = [
-    { key: 'student_name', label: 'Student', render: (_: unknown, row: Enrollment) => (
+    { key: 'student_name', label: 'Student Name', sortable: true, render: (_: unknown, row: Enrollment) => (
       <div className="flex items-center gap-3">
         <Avatar name={row.student_name} size="sm" />
-        <div>
-          <p className="font-medium">{row.student_name}</p>
-          <p className="text-xs text-gray-400">{row.student_id}</p>
-        </div>
+        <span className="font-medium">{row.student_name || '—'}</span>
       </div>
+    )},
+    { key: 'student_id', label: 'Student ID', render: (v: unknown) => (
+      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
     )},
     { key: 'tutor_name', label: 'Tutor' },
     { key: 'tutor_email', label: 'Tutor Email' },
