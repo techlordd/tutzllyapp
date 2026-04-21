@@ -154,11 +154,10 @@ export default function ClassroomsPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            {classrooms.length > 0 && (
-              <Button variant="danger" icon={Trash2} onClick={() => setDeleteAllOpen(true)}>
-                Delete All
-              </Button>
-            )}
+            <Button variant="danger" icon={Trash2} onClick={() => setDeleteAllOpen(true)}
+              disabled={classrooms.length === 0}>
+              Delete All
+            </Button>
             <Button icon={Plus} onClick={() => { setForm(emptyForm()); setModalOpen(true); }}>
               Add Classroom
             </Button>

@@ -21,6 +21,7 @@ const ENTITY_OPTIONS: { value: string; label: string; group: string }[] = [
   { value: 'messages_parent',  label: 'Messages (Parent)',         group: 'Messages' },
   { value: 'messages_student', label: 'Messages (Student)',        group: 'Messages' },
   { value: 'messages_tutor',   label: 'Messages (Tutor)',          group: 'Messages' },
+  { value: 'classrooms',       label: 'Classrooms',                group: 'Academic' },
 ];
 
 interface Academy {
