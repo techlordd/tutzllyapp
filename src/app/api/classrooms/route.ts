@@ -3,8 +3,34 @@ import { query, queryOne } from '@/lib/db';
 import { getAcademyId } from '@/lib/request-context';
 import { generateId } from '@/lib/utils';
 
+async function ensureTable() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS classrooms (
+      record_id SERIAL PRIMARY KEY,
+      academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
+      classroom_id TEXT UNIQUE,
+      room_name TEXT,
+      link TEXT,
+      meeting_id TEXT,
+      passcode TEXT,
+      assigned_to TEXT,
+      user_id TEXT,
+      entry_status TEXT DEFAULT 'active',
+      ip TEXT,
+      record_key TEXT,
+      created_by TEXT,
+      updated_by TEXT,
+      timestamp TIMESTAMP DEFAULT NOW(),
+      last_updated TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_classrooms_academy_id ON classrooms(academy_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_classrooms_classroom_id ON classrooms(classroom_id)`);
+}
+
 export async function GET(request: NextRequest) {
   try {
+    await ensureTable();
     const academyId = getAcademyId(request);
     const classrooms = await query(
       `SELECT * FROM classrooms WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)
@@ -20,6 +46,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await ensureTable();
     const d = await request.json();
     const academyId = getAcademyId(request);
     const classroomId = d.classroom_id || generateId('CLS');
@@ -38,6 +65,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await ensureTable();
     const academyId = getAcademyId(request);
     const rows = await query<{ record_id: number }>(
       `SELECT record_id FROM classrooms WHERE (academy_id = $1 OR $1 = 0)`,
