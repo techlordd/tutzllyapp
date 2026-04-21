@@ -439,13 +439,7 @@ export default function AssignCoursesPage() {
               </FormField>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-700">Courses</p>
-                  <button type="button" onClick={addRow} disabled={!tutorId}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-40 transition-colors">
-                    <Plus size={13} /> Add course
-                  </button>
-                </div>
+                <p className="text-sm font-medium text-gray-700">Courses</p>
 
                 {courseRows.map((row, idx) => {
                   const unavailable = getUnavailableIds(row.rowId);
@@ -494,6 +488,11 @@ export default function AssignCoursesPage() {
                     </div>
                   );
                 })}
+
+                <button type="button" onClick={addRow} disabled={!tutorId}
+                  className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-40 transition-colors pt-1">
+                  <Plus size={15} /> Add more
+                </button>
               </div>
 
               {tutorId && courseRows.some(r => r.course_id) && (
