@@ -40,7 +40,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function DELETE(request: NextRequest) {
+  try {
+    const academyId = getAcademyId(request);
+    const rows = await query<{ id: number }>(
+      `SELECT id FROM courses WHERE (academy_id = $1 OR $1 = 0)`,
+      [academyId]
+    );
+    await query(`DELETE FROM courses WHERE (academy_id = $1 OR $1 = 0)`, [academyId]);
+    return NextResponse.json({ deleted: rows.length });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to delete courses' }, { status: 500 });
+  }
+}
   await ensureCourseConstraint();
   try {
     const data = await request.json();

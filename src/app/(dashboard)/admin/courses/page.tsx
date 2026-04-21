@@ -18,6 +18,8 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ course_name: '', course_code: '' });
@@ -51,6 +53,19 @@ export default function CoursesPage() {
     setSubmitting(false);
   };
 
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      const res = await fetch('/api/courses', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Failed to delete courses'); setDeletingAll(false); return; }
+      toast.success(`Deleted ${data.deleted} course${data.deleted !== 1 ? 's' : ''}`);
+      setDeleteAllOpen(false);
+      fetchCourses();
+    } catch { toast.error('Failed to delete courses'); }
+    setDeletingAll(false);
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this course?')) return;
     try {
@@ -76,9 +91,14 @@ export default function CoursesPage() {
             <h2 className="text-2xl font-bold text-gray-900">Courses</h2>
             <p className="text-gray-500 text-sm mt-0.5">{courses.length} courses available</p>
           </div>
-          <Button icon={Plus} onClick={() => { setForm({ course_name: '', course_code: '' }); setEditingCourse(null); setModalOpen(true); }}>
-            Add Course
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="danger" icon={Trash2} onClick={() => setDeleteAllOpen(true)} disabled={courses.length === 0}>
+              Delete All
+            </Button>
+            <Button icon={Plus} onClick={() => { setForm({ course_name: '', course_code: '' }); setEditingCourse(null); setModalOpen(true); }}>
+              Add Course
+            </Button>
+          </div>
         </div>
 
         <DataTable data={courses} columns={columns} loading={loading}
@@ -98,6 +118,19 @@ export default function CoursesPage() {
           )}
         />
       </div>
+
+      <Modal isOpen={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} title="Delete All Courses" size="sm">
+        <div className="space-y-4">
+          <p className="text-gray-600 text-sm">
+            This will permanently delete all <strong>{courses.length}</strong> course{courses.length !== 1 ? 's' : ''}.
+            This action cannot be undone.
+          </p>
+          <div className="flex gap-3 pt-1">
+            <Button variant="secondary" onClick={() => setDeleteAllOpen(false)}>Cancel</Button>
+            <Button variant="danger" loading={deletingAll} onClick={handleDeleteAll}>Delete All</Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingCourse ? 'Edit Course' : 'Add New Course'} size="md">
         <form onSubmit={handleSubmit} className="space-y-4">
