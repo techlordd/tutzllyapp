@@ -588,6 +588,25 @@ CREATE TABLE IF NOT EXISTS messages_tutor (
   last_updated TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS classrooms (
+  record_id SERIAL PRIMARY KEY,
+  academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
+  classroom_id TEXT UNIQUE,
+  room_name TEXT,
+  link TEXT,
+  meeting_id TEXT,
+  passcode TEXT,
+  assigned_to TEXT,
+  user_id TEXT,
+  entry_status TEXT DEFAULT 'active',
+  ip TEXT,
+  record_key TEXT,
+  created_by TEXT,
+  updated_by TEXT,
+  timestamp TIMESTAMP DEFAULT NOW(),
+  last_updated TIMESTAMP DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_tutors_tutor_id ON tutors(tutor_id);
 CREATE INDEX IF NOT EXISTS idx_tutors_academy_id ON tutors(academy_id);
@@ -613,3 +632,5 @@ CREATE INDEX IF NOT EXISTS idx_enrollments_academy_id ON student_enrollments(aca
 CREATE INDEX IF NOT EXISTS idx_courses_academy_id ON courses(academy_id);
 CREATE INDEX IF NOT EXISTS idx_user_academy_roles_user_id ON user_academy_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_academy_roles_academy_id ON user_academy_roles(academy_id);
+CREATE INDEX IF NOT EXISTS idx_classrooms_academy_id ON classrooms(academy_id);
+CREATE INDEX IF NOT EXISTS idx_classrooms_classroom_id ON classrooms(classroom_id);

@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, CalendarDays, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
-  School, LogOut, Upload, Palette, Building2, ShieldCheck
+  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor
 } from 'lucide-react';
 
 interface NavItem {
@@ -27,6 +27,7 @@ const adminNav: NavItem[] = [
   { label: 'Schedules', href: '/admin/schedules', icon: Calendar },
   { label: 'Timetable', href: '/admin/timetable', icon: CalendarDays },
   { label: 'Sessions', href: '/admin/sessions', icon: Video },
+  { label: 'Classrooms', href: '/admin/classrooms', icon: Monitor },
   { label: 'Class Activities', href: '/admin/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/admin/grades', icon: BarChart3 },
   { label: 'Messages', href: '/admin/messages', icon: MessageSquare },

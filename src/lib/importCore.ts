@@ -19,6 +19,7 @@ export const ENTITY_OPTIONS: { value: string; label: string; group: string }[] =
   { value: 'messages_parent',  label: 'Messages (Parent)',         group: 'Messages' },
   { value: 'messages_student', label: 'Messages (Student)',        group: 'Messages' },
   { value: 'messages_tutor',   label: 'Messages (Tutor)',          group: 'Messages' },
+  { value: 'classrooms',       label: 'Classrooms',                group: 'Academic' },
 ];
 
 export interface ImportResult {
@@ -459,6 +460,22 @@ export const COLUMN_MAPS: Record<string, Record<string, string>> = {
     'Created By': 'created_by', 'Updated By': 'updated_by',
     'Entry Status': 'entry_status', 'IP': 'ip', 'ID': 'record_id', 'Key': 'record_key',
   },
+  classrooms: {
+    'Room Name': 'room_name',
+    'Link': 'link',
+    'Meeting ID': 'meeting_id',
+    'Passcode': 'passcode',
+    'Assigned To': 'assigned_to',
+    'User ID': 'user_id',
+    'Timestamp': 'timestamp',
+    'Last Updated': 'last_updated',
+    'Created By': 'created_by',
+    'Updated By': 'updated_by',
+    'Entry Status': 'entry_status',
+    'IP': 'ip',
+    'ID': 'record_id',
+    'Key': 'record_key',
+  },
   messages_tutor: {
     'Date': 'message_date', 'Time': 'message_time', 'Roles': 'role',
     'Sender Email': 'sender_email', 'User Role': 'user_role', 'User Role2': 'user_role2',
@@ -505,6 +522,7 @@ export const ENTITY_CONFIG: Record<string, EntityConfig> = {
   messages_parent:  { table: 'messages_parent',          idField: null,              idPrefix: null,  createUser: false },
   messages_student: { table: 'messages_student',         idField: null,              idPrefix: null,  createUser: false },
   messages_tutor:   { table: 'messages_tutor',           idField: null,              idPrefix: null,  createUser: false },
+  classrooms:       { table: 'classrooms',               idField: 'classroom_id',    idPrefix: 'CLS', createUser: false },
 };
 
 function detectDelimiter(text: string): string {
