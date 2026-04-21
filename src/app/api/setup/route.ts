@@ -20,6 +20,22 @@ export async function POST(request: Request) {
   }
 
   try {
+    // ── Migration 019: make course_code unique per-academy, not globally ──
+    try {
+      await query(`ALTER TABLE courses DROP CONSTRAINT IF EXISTS courses_course_code_key`);
+      await query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints
+            WHERE table_name = 'courses' AND constraint_name = 'courses_course_code_academy_id_key'
+          ) THEN
+            ALTER TABLE courses ADD CONSTRAINT courses_course_code_academy_id_key UNIQUE (course_code, academy_id);
+          END IF;
+        END $$;
+      `);
+    } catch { /* ignore */ }
+
     // ── Migration: create classrooms table if it doesn't exist yet ──
     try {
       await query(`

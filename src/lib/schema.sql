@@ -185,7 +185,7 @@ CREATE TABLE IF NOT EXISTS courses (
   id SERIAL PRIMARY KEY,
   academy_id INTEGER REFERENCES academies(id) ON DELETE CASCADE,
   course_name VARCHAR(255) NOT NULL,
-  course_code VARCHAR(50) UNIQUE NOT NULL,
+  course_code VARCHAR(50) NOT NULL,
   course_name_deprecated VARCHAR(255),
   course_code_deprecated VARCHAR(50),
   user_id INTEGER REFERENCES users(id),
@@ -194,7 +194,8 @@ CREATE TABLE IF NOT EXISTS courses (
   created_by VARCHAR(100),
   updated_by VARCHAR(100),
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (course_code, academy_id)
 );
 
 -- Tutor course assignments
