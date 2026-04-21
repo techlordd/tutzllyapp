@@ -6,7 +6,8 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select } from '@/components/ui/FormField';
-import { Plus, Trash2, ExternalLink, Copy } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Copy, Eye } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 interface Classroom {
@@ -38,6 +39,7 @@ const emptyForm = () => ({
 });
 
 export default function ClassroomsPage() {
+  const router = useRouter();
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -170,6 +172,15 @@ export default function ClassroomsPage() {
           loading={loading}
           searchKeys={['room_name', 'classroom_id', 'meeting_id', 'assigned_to']}
           emptyMessage="No classrooms yet"
+          actions={(row) => (
+            <button
+              onClick={() => router.push(`/admin/classrooms/${row.record_id}`)}
+              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+              title="View details"
+            >
+              <Eye size={15} />
+            </button>
+          )}
         />
       </div>
 
