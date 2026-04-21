@@ -6,7 +6,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Select } from '@/components/ui/FormField';
 import Avatar from '@/components/ui/Avatar';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Enrollment {
@@ -36,6 +36,8 @@ export default function EnrollmentsPage() {
   const [tutorAssignments, setTutorAssignments] = useState<TutorAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
@@ -91,6 +93,19 @@ export default function EnrollmentsPage() {
     setForm(f => ({ ...f, course_id: courseId, course_name: c?.course_name || '', course_code: c?.course_code || '' }));
   };
 
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      const res = await fetch('/api/enrollments', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Failed to delete'); setDeletingAll(false); return; }
+      toast.success(`Deleted ${data.deleted} enrollment${data.deleted !== 1 ? 's' : ''}`);
+      setDeleteAllOpen(false);
+      fetchData();
+    } catch { toast.error('Failed to delete enrollments'); }
+    setDeletingAll(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -139,7 +154,12 @@ export default function EnrollmentsPage() {
             <h2 className="text-2xl font-bold text-gray-900">Enrollments</h2>
             <p className="text-gray-500 text-sm mt-0.5">{enrollments.length} enrollments</p>
           </div>
-          <Button icon={Plus} onClick={() => setModalOpen(true)}>Enroll Student</Button>
+          <div className="flex gap-2">
+            <Button variant="danger" icon={Trash2} onClick={() => setDeleteAllOpen(true)} disabled={enrollments.length === 0}>
+              Delete All
+            </Button>
+            <Button icon={Plus} onClick={() => setModalOpen(true)}>Enroll Student</Button>
+          </div>
         </div>
 
         <DataTable data={enrollments} columns={columns} loading={loading}
@@ -147,6 +167,19 @@ export default function EnrollmentsPage() {
           emptyMessage="No enrollments yet"
         />
       </div>
+
+      <Modal isOpen={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} title="Delete All Enrollments" size="sm">
+        <div className="space-y-4">
+          <p className="text-gray-600 text-sm">
+            This will permanently delete all <strong>{enrollments.length}</strong> enrollment{enrollments.length !== 1 ? 's' : ''}.
+            This action cannot be undone.
+          </p>
+          <div className="flex gap-3 pt-1">
+            <Button variant="secondary" onClick={() => setDeleteAllOpen(false)}>Cancel</Button>
+            <Button variant="danger" loading={deletingAll} onClick={handleDeleteAll}>Delete All</Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setForm(emptyForm); }} title="Enroll Student & Assign Tutor" size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
