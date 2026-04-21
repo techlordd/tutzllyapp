@@ -661,8 +661,14 @@ export async function runImport(
         continue;
       }
 
-      if (config.idField && config.idPrefix && !dbRow[config.idField]) {
-        dbRow[config.idField] = generateId(config.idPrefix);
+      if (config.idField && config.idPrefix) {
+        const existingId = dbRow[config.idField];
+        // Plain integers (e.g. Formidable Forms entry IDs like 1028) are not globally
+        // unique — two academies can share the same number. Discard them and generate a
+        // fresh prefixed ID so each academy's rows get their own unique identifier.
+        if (!existingId || /^\d+$/.test(String(existingId))) {
+          dbRow[config.idField] = generateId(config.idPrefix);
+        }
       }
       if (!dbRow['entry_status']) dbRow['entry_status'] = 'active';
 
