@@ -188,7 +188,8 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Demo Access */}
+        {/* Demo Access — only shown on the root Tutzlly portal, not academy portals */}
+        {!branding && (
         <div className="mt-4 bg-white/5 border border-white/10 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-2">
             <div className="h-px flex-1 bg-white/10" />
@@ -211,6 +212,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
+        )}
       </div>
     </div>
   );
