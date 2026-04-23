@@ -149,26 +149,16 @@ export default function SessionsPage() {
   };
 
   const columns = [
-    { key: 'ssid', label: 'SSID', render: (v: unknown) =>
-      <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{(v as string)?.slice(0, 12)}…</span>
-    },
-    { key: 'student_name', label: 'Student Name', sortable: true, render: (v: unknown) => (
+    { key: 'student_name', label: 'Student', sortable: true, render: (v: unknown) => (
       <span className="font-medium">{v as string || '—'}</span>
     )},
-    { key: 'student_id', label: 'Student ID', render: (v: unknown) => (
-      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
-    )},
-    { key: 'tutor_firstname', label: 'Tutor Name', render: (_: unknown, row: Session) => (
+    { key: 'tutor_firstname', label: 'Tutor', render: (_: unknown, row: Session) => (
       <span className="font-medium">{[row.tutor_firstname, row.tutor_lastname].filter(Boolean).join(' ') || '—'}</span>
     )},
-    { key: 'tutor_id', label: 'Tutor ID', render: (v: unknown) => (
-      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
-    )},
     { key: 'course_name', label: 'Course' },
-    { key: 'entry_date', label: 'Entry Date', render: (v: unknown) => formatDate(v as string) },
     { key: 'day', label: 'Day', render: (v: unknown) => <span className="text-sm">{v as string || '—'}</span> },
-    { key: 'schedule_start_time', label: 'Schedule Time', render: (_: unknown, row: Session) => (
-      <span className="text-sm">{formatTime(row.schedule_start_time)} – {formatTime(row.schedule_end_time)}</span>
+    { key: 'schedule_start_time', label: 'Time', render: (_: unknown, row: Session) => (
+      <span className="text-sm whitespace-nowrap">{formatTime(row.schedule_start_time)} – {formatTime(row.schedule_end_time)}</span>
     )},
     { key: 'zoom_link', label: 'Zoom', render: (v: unknown) => v ? (
       <a href={v as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 text-xs">

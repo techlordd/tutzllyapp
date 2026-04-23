@@ -119,14 +119,8 @@ export default function TutorsPage() {
         </div>
       )
     },
-    {
-      key: 'tutor_id', label: 'Tutor ID', render: (v: unknown) => (
-        <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{v as string}</span>
-      )
-    },
     { key: 'email', label: 'Email' },
     { key: 'phone_no', label: 'Phone' },
-    { key: 'sex', label: 'Sex' },
     { key: 'pay_category', label: 'Pay Category' },
     {
       key: 'payrate_per_hour', label: 'Rate/Hr', render: (v: unknown) =>

@@ -165,39 +165,22 @@ export default function SchedulesPage() {
   };
 
   const columns = [
-    { key: 'schedule_id', label: 'Schedule ID', render: (v: unknown) => (
-      <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{(v as string)?.slice(0, 14)}…</span>
-    )},
-    { key: 'student_name', label: 'Student Name', sortable: true, render: (_: unknown, row: Schedule) => (
-      <div className="flex items-center gap-2">
-        <span className="font-medium">{row.student_name || '—'}</span>
-      </div>
-    )},
-    { key: 'student_id', label: 'Student ID', render: (v: unknown) => (
-      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
-    )},
-    { key: 'sort_id', label: 'Sort ID', render: (v: unknown) => (
-      <span className="text-sm text-gray-600">{v != null ? String(v) : '—'}</span>
-    )},
-    { key: 'year', label: 'Year', render: (v: unknown) => <span className="text-sm">{v as string || '—'}</span> },
-    { key: 'day', label: 'Day' },
-    { key: 'tutor_name', label: 'Tutor Name', sortable: true, render: (v: unknown) => (
+    { key: 'student_name', label: 'Student', sortable: true, render: (v: unknown) => (
       <span className="font-medium">{v as string || '—'}</span>
     )},
-    { key: 'tutor_id', label: 'Tutor ID', render: (v: unknown) => (
-      <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
+    { key: 'day', label: 'Day' },
+    { key: 'tutor_name', label: 'Tutor', sortable: true, render: (v: unknown) => (
+      <span className="font-medium">{v as string || '—'}</span>
     )},
     { key: 'course_name', label: 'Course', render: (_: unknown, row: Schedule) => (
       <div>
         <p className="font-medium">{row.course_name || '—'}</p>
-        <span className="font-mono text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{row.course_code}</span>
+        {row.course_code && <span className="font-mono text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{row.course_code}</span>}
       </div>
     )},
     { key: 'session_start_time', label: 'Time', render: (_: unknown, row: Schedule) =>
-      <span className="text-sm">{formatTime(row.session_start_time)} – {formatTime(row.session_end_time)}</span>
+      <span className="text-sm whitespace-nowrap">{formatTime(row.session_start_time)} – {formatTime(row.session_end_time)}</span>
     },
-    { key: 'duration', label: 'Duration', render: (v: unknown) => v ? `${v} min` : '—' },
-    { key: 'time_zone', label: 'Time Zone', render: (v: unknown) => <span className="text-xs text-gray-600">{v as string || '—'}</span> },
     { key: 'zoom_link', label: 'Zoom', render: (v: unknown) => v ? (
       <a href={v as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs">
         <Video size={12} /> Join

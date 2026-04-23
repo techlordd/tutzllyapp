@@ -115,20 +115,9 @@ export default function StudentsPage() {
         </div>
       )
     },
-    {
-      key: 'student_id', label: 'Student ID', render: (v: unknown) => (
-        <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">{v as string}</span>
-      )
-    },
-    {
-      key: 'enrollment_id', label: 'Enrollment ID', render: (v: unknown) => (
-        <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{(v as string) || '—'}</span>
-      )
-    },
     { key: 'email', label: 'Email' },
     { key: 'grade', label: 'Grade' },
     { key: 'school', label: 'School' },
-    { key: 'phone_no', label: 'Phone' },
     { key: 'status', label: 'Status', render: (v: unknown) => statusBadge(v as string) },
   ];
 

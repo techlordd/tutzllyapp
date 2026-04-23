@@ -136,14 +136,14 @@ export default function EnrollmentsPage() {
       <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{v as string || '—'}</span>
     )},
     { key: 'tutor_name', label: 'Tutor' },
-    { key: 'tutor_email', label: 'Tutor Email' },
-    { key: 'course_name', label: 'Course' },
-    { key: 'course_code', label: 'Code', render: (v: unknown) => (
-      <span className="font-mono text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">{v as string}</span>
-    )},
-    { key: 'assign_id', label: 'Assign ID', render: (v: unknown) => (
-      <span className="font-mono text-xs text-gray-400">{(v as string)?.slice(0, 14)}...</span>
-    )},
+    {
+      key: 'course_name', label: 'Course', render: (_: unknown, row: Enrollment) => (
+        <div>
+          <p className="font-medium">{row.course_name || '—'}</p>
+          {row.course_code && <span className="font-mono text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{row.course_code}</span>}
+        </div>
+      )
+    },
   ];
 
   return (

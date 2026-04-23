@@ -243,23 +243,12 @@ export default function AssignCoursesPage() {
         </div>
       )
     },
-    { key: 'course_name', label: 'Assign Course' },
     {
-      key: 'course_code', label: 'Course ID / Code', render: (v: unknown) => v
-        ? <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{v as string}</span>
-        : <span className="text-gray-300">—</span>
-    },
-    {
-      key: 'tutor_id', label: 'Tutor ID', render: (v: unknown) => (
-        <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">{v as string}</span>
-      )
-    },
-    { key: 'tutor_username', label: 'Tutor Username' },
-    { key: 'tutor_sex', label: 'Sex' },
-    { key: 'tutor_email', label: 'Tutor Email' },
-    {
-      key: 'tutor_assign_id', label: 'Tutor Assign ID', render: (v: unknown) => (
-        <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{v as string}</span>
+      key: 'course_name', label: 'Course', render: (_: unknown, row: Assignment) => (
+        <div>
+          <p className="font-medium">{row.course_name || '—'}</p>
+          {row.course_code && <span className="font-mono text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">{row.course_code}</span>}
+        </div>
       )
     },
     { key: 'entry_status', label: 'Status', render: (v: unknown) => statusBadge((v as string) || 'active') },

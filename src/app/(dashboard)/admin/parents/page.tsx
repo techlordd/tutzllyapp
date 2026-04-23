@@ -143,11 +143,6 @@ export default function ParentsPage() {
         </div>
       )
     },
-    {
-      key: 'parent_id', label: 'Parent ID', render: (v: unknown) => (
-        <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">{v as string}</span>
-      )
-    },
     { key: 'email', label: 'Email' },
     { key: 'phone_no', label: 'Phone' },
     {
