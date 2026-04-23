@@ -10,9 +10,11 @@ export async function GET(request: NextRequest) {
     const academyId = getAcademyId(request);
     let sql = `SELECT ta.*,
                       COALESCE(ta.course_name, c.course_name) AS course_name,
-                      COALESCE(ta.course_code, c.course_code) AS course_code
+                      COALESCE(ta.course_code, c.course_code) AS course_code,
+                      t.firstname, t.surname
                FROM tutor_course_assignments ta
                LEFT JOIN courses c ON ta.course_id = c.id
+               LEFT JOIN tutors t ON ta.tutor_id = t.tutor_id AND t.entry_status != 'deleted'
                WHERE ta.entry_status != 'deleted' AND (ta.academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (tutorId) { params.push(tutorId); sql += ` AND ta.tutor_id = $${params.length}`; }
