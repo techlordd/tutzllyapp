@@ -19,7 +19,7 @@ interface Student {
 }
 
 interface TutorAssignment {
-  tutor_assign_id: string; tutor_id: string; tutor_username: string; tutor_sex: string; tutor_email: string;
+  tutor_assign_id: string; tutor_id: string; tutor_name: string; tutor_username: string; tutor_sex: string; tutor_email: string;
   firstname: string; surname: string;
   course_id: number; course_name: string; course_code: string;
 }
@@ -67,7 +67,7 @@ export default function EnrollmentsPage() {
     [s.firstname, s.surname].filter(Boolean).join(' ') || s.username || s.email;
 
   const tutorDisplayName = (a: TutorAssignment) =>
-    [a.firstname, a.surname].filter(Boolean).join(' ') || a.tutor_username || a.tutor_email;
+    [a.firstname, a.surname].filter(Boolean).join(' ') || a.tutor_name || a.tutor_username || a.tutor_email;
 
   const handleStudentChange = (studentId: string) => {
     const s = students.find(s => s.student_id === studentId);

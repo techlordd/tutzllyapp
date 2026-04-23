@@ -11,10 +11,16 @@ export async function GET(request: NextRequest) {
     let sql = `SELECT ta.*,
                       COALESCE(ta.course_name, c.course_name) AS course_name,
                       COALESCE(ta.course_code, c.course_code) AS course_code,
-                      t.firstname, t.surname
+                      COALESCE(NULLIF(t.firstname,''), t.full_name_first_name) AS firstname,
+                      COALESCE(NULLIF(t.surname,''), t.full_name_last_name) AS surname
                FROM tutor_course_assignments ta
                LEFT JOIN courses c ON ta.course_id = c.id
-               LEFT JOIN tutors t ON ta.tutor_id = t.tutor_id AND t.entry_status != 'deleted'
+               LEFT JOIN LATERAL (
+                 SELECT firstname, full_name_first_name, surname, full_name_last_name
+                 FROM tutors
+                 WHERE tutor_id = ta.tutor_id AND entry_status != 'deleted'
+                 LIMIT 1
+               ) t ON true
                WHERE ta.entry_status != 'deleted' AND (ta.academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (tutorId) { params.push(tutorId); sql += ` AND ta.tutor_id = $${params.length}`; }
