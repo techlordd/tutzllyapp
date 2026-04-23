@@ -188,7 +188,7 @@ export default function EnrollmentsPage() {
               <option value="">Choose a student</option>
               {students.map(s => (
                 <option key={s.student_id} value={s.student_id}>
-                  {studentDisplayName(s)} — {s.email}
+                  {studentDisplayName(s)}
                 </option>
               ))}
             </Select>
@@ -199,7 +199,7 @@ export default function EnrollmentsPage() {
               <option value="">Choose a tutor</option>
               {assignedTutors.map(a => (
                 <option key={a.tutor_id} value={a.tutor_id}>
-                  {tutorDisplayName(a)} — {a.tutor_email}
+                  {tutorDisplayName(a)}
                 </option>
               ))}
             </Select>

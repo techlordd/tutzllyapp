@@ -1,0 +1,66 @@
+                                                    Table "public.class_activities"
+               Column               |            Type             | Collation | Nullable |                   Default                    
+------------------------------------+-----------------------------+-----------+----------+----------------------------------------------
+ record_id                          | integer                     |           | not null | nextval('class_activities_id_seq'::regclass)
+ ssid                               | text                        |           |          | 
+ tutor_id                           | text                        |           |          | 
+ tutor_firstname                    | text                        |           |          | 
+ tutor_lastname                     | text                        |           |          | 
+ student_id                         | text                        |           |          | 
+ student_name                       | text                        |           |          | 
+ course_name                        | text                        |           |          | 
+ course_id                          | integer                     |           |          | 
+ session_code_status                | text                        |           |          | 
+ mothers_email                      | text                        |           |          | 
+ fathers_email                      | text                        |           |          | 
+ class_activity_date                | date                        |           |          | 
+ class_activity_time                | time without time zone      |           |          | 
+ topic_taught                       | text                        |           |          | 
+ details_of_class_activity          | text                        |           |          | 
+ activity                           | text                        |           |          | 
+ assigned_homework_from_prev        | boolean                     |           |          | false
+ status_of_past_homework_review     | text                        |           |          | 
+ new_homework_assigned              | boolean                     |           |          | false
+ topic_of_homework                  | text                        |           |          | 
+ no_homework_why                    | text                        |           |          | 
+ did_student_complete_prev_homework | text                        |           |          | 
+ homework1                          | text                        |           |          | 
+ homework2                          | text                        |           |          | 
+ homework3                          | text                        |           |          | 
+ student_reason_for_not_completing  | text                        |           |          | 
+ did_student_join_on_time           | text                        |           |          | 
+ punctuality1                       | text                        |           |          | 
+ punctuality2                       | text                        |           |          | 
+ student_reason_for_late            | text                        |           |          | 
+ is_student_attentive               | text                        |           |          | 
+ attentiveness1                     | text                        |           |          | 
+ attentiveness2                     | text                        |           |          | 
+ attentiveness3                     | text                        |           |          | 
+ student_engages_in_class           | text                        |           |          | 
+ class_engagement1                  | text                        |           |          | 
+ class_engagement2                  | text                        |           |          | 
+ class_engagement3                  | text                        |           |          | 
+ tutors_general_observation         | text                        |           |          | 
+ tutors_intervention                | text                        |           |          | 
+ helpful_link1                      | text                        |           |          | 
+ helpful_link2                      | text                        |           |          | 
+ helpful_link3                      | text                        |           |          | 
+ user_id                            | integer                     |           |          | 
+ entry_status                       | character varying(20)       |           |          | 'active'::character varying
+ ip                                 | character varying(45)       |           |          | 
+ created_by                         | text                        |           |          | 
+ updated_by                         | text                        |           |          | 
+ timestamp                          | timestamp without time zone |           |          | now()
+ last_updated                       | timestamp without time zone |           |          | now()
+ academy_id                         | integer                     |           |          | 
+ course_id_ref                      | text                        |           |          | 
+ record_key                         | text                        |           |          | 
+Indexes:
+    "class_activities_pkey" PRIMARY KEY, btree (record_id)
+    "idx_class_activities_academy_id" btree (academy_id)
+    "idx_class_activities_student_id" btree (student_id)
+    "idx_class_activities_tutor_id" btree (tutor_id)
+Foreign-key constraints:
+    "class_activities_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id)
+    "class_activities_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id)
+

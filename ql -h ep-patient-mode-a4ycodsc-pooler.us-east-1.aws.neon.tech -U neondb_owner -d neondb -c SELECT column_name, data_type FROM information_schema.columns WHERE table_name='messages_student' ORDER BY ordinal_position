@@ -1,0 +1,43 @@
+                                              Table "public.messages_student"
+         Column         |            Type             | Collation | Nullable |                   Default                    
+------------------------+-----------------------------+-----------+----------+----------------------------------------------
+ record_id              | integer                     |           | not null | nextval('messages_student_id_seq'::regclass)
+ message_date           | date                        |           |          | 
+ message_time           | time without time zone      |           |          | 
+ role                   | text                        |           |          | 
+ sender_email           | text                        |           |          | 
+ user_role              | text                        |           |          | 
+ message_to             | text                        |           |          | 
+ sender                 | text                        |           |          | 
+ tutor_name             | text                        |           |          | 
+ tutor_id               | text                        |           |          | 
+ student_name           | text                        |           |          | 
+ student_id             | text                        |           |          | 
+ lookup_tutor_id        | text                        |           |          | 
+ recipient_name_student | text                        |           |          | 
+ recipient_id_student   | text                        |           |          | 
+ recipient_email        | text                        |           |          | 
+ cc                     | text                        |           |          | 
+ recipient_name_tutor   | text                        |           |          | 
+ recipient_id_tutor     | text                        |           |          | 
+ recipient_name_parent  | text                        |           |          | 
+ recipient_id_parent    | text                        |           |          | 
+ recipient_admin        | text                        |           |          | 
+ subject                | text                        |           |          | 
+ body                   | text                        |           |          | 
+ attach_file            | text                        |           |          | 
+ status                 | character varying(20)       |           |          | 'unread'::character varying
+ user_id                | text                        |           |          | 
+ entry_status           | character varying(20)       |           |          | 'active'::character varying
+ ip                     | character varying(45)       |           |          | 
+ created_by             | text                        |           |          | 
+ updated_by             | text                        |           |          | 
+ timestamp              | timestamp without time zone |           |          | now()
+ last_updated           | timestamp without time zone |           |          | now()
+ academy_id             | integer                     |           |          | 
+ record_key             | text                        |           |          | 
+Indexes:
+    "messages_student_pkey" PRIMARY KEY, btree (record_id)
+Foreign-key constraints:
+    "messages_student_academy_id_fkey" FOREIGN KEY (academy_id) REFERENCES academies(id) ON DELETE CASCADE
+
