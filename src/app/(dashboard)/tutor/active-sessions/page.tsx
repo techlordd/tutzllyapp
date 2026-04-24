@@ -8,10 +8,11 @@ import FormField, { Input } from '@/components/ui/FormField';
 import { Video, Radio, Square } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '@/store/authStore';
 
 interface ActiveSession {
   ssid: string;
-  tutor_firstname: string; tutor_lastname: string;
+  student_id: string;
   student_name: string;
   course_name: string; course_code: string;
   start_session_date: string; start_session_time: string;
@@ -38,7 +39,8 @@ function calcDuration(startDate: string, startTime: string, endDate: string, end
   return diff > 0 ? String(diff) : '';
 }
 
-export default function ActiveSessionsPage() {
+export default function TutorActiveSessionsPage() {
+  const user = useAuthStore(state => state.user);
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setTick] = useState(0);
@@ -56,14 +58,22 @@ export default function ActiveSessionsPage() {
   const [endSubmitting, setEndSubmitting] = useState(false);
 
   const fetchSessions = useCallback(async () => {
+    if (!user?.user_id) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/sessions?status=started');
+      const res = await fetch(`/api/sessions?status=started&tutor_id=${user.user_id}`);
       const data = await res.json();
       setSessions(data.sessions || []);
     } catch { /* silent */ }
     setLoading(false);
-  }, []);
+  }, [user?.user_id]);
+
+  useEffect(() => {
+    fetchSessions();
+    const refresh = setInterval(fetchSessions, 30000);
+    const tick = setInterval(() => setTick(t => t + 1), 60000);
+    return () => { clearInterval(refresh); clearInterval(tick); };
+  }, [fetchSessions]);
 
   const openEndModal = (session: ActiveSession) => {
     const now = new Date();
@@ -100,18 +110,7 @@ export default function ActiveSessionsPage() {
     setEndSubmitting(false);
   };
 
-  useEffect(() => {
-    fetchSessions();
-    const refresh = setInterval(fetchSessions, 30000);
-    // Tick every minute to keep elapsed times live
-    const tick = setInterval(() => setTick(t => t + 1), 60000);
-    return () => { clearInterval(refresh); clearInterval(tick); };
-  }, [fetchSessions]);
-
   const columns = [
-    { key: 'tutor_firstname', label: 'Tutor', render: (_: unknown, row: ActiveSession) =>
-      `${row.tutor_firstname || ''} ${row.tutor_lastname || ''}`.trim() || '—'
-    },
     { key: 'student_name', label: 'Student', sortable: true },
     { key: 'course_name', label: 'Course', render: (_: unknown, row: ActiveSession) => (
       <div>
@@ -147,7 +146,7 @@ export default function ActiveSessionsPage() {
             <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Active Sessions</h2>
+            <h2 className="text-2xl font-bold text-gray-900">My Active Sessions</h2>
             <p className="text-gray-500 text-sm">
               {sessions.length} session{sessions.length !== 1 ? 's' : ''} currently in progress · refreshes every 30s
             </p>
@@ -158,7 +157,7 @@ export default function ActiveSessionsPage() {
           data={sessions}
           columns={columns}
           loading={loading}
-          searchKeys={['student_name', 'course_name', 'tutor_firstname', 'tutor_lastname']}
+          searchKeys={['student_name', 'course_name']}
           emptyMessage="No active sessions right now"
           actions={(row) => (
             <button
@@ -174,7 +173,6 @@ export default function ActiveSessionsPage() {
       {endModal && (
         <Modal isOpen={true} onClose={() => setEndModal(null)} title="End Session" size="sm">
           <div className="bg-gray-50 rounded-xl p-3 mb-4 text-sm space-y-0.5">
-            <p><span className="font-medium">Tutor:</span> {`${endModal.tutor_firstname || ''} ${endModal.tutor_lastname || ''}`.trim() || '—'}</p>
             <p><span className="font-medium">Student:</span> {endModal.student_name}</p>
             <p><span className="font-medium">Course:</span> {endModal.course_name}</p>
             {endForm.start_session_time && (

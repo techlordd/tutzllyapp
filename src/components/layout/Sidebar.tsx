@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, CalendarDays, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
-  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio
+  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio, RotateCcw, XCircle
 } from 'lucide-react';
 
 interface NavItem {
@@ -29,6 +29,8 @@ const adminNav: NavItem[] = [
   { label: 'Timetable', href: '/admin/timetable', icon: CalendarDays },
   { label: 'Sessions', href: '/admin/sessions', icon: Video },
   { label: 'Active Sessions', href: '/admin/active-sessions', icon: Radio },
+  { label: 'Rescheduled Sessions', href: '/admin/rescheduled-sessions', icon: RotateCcw },
+  { label: 'Missed Sessions', href: '/admin/missed-sessions', icon: XCircle },
   { label: 'Classrooms', href: '/admin/classrooms', icon: Monitor },
   { label: 'Class Activities', href: '/admin/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/admin/grades', icon: BarChart3 },
@@ -43,6 +45,9 @@ const tutorNav: NavItem[] = [
   { label: 'My Courses', href: '/tutor/courses', icon: BookOpen },
   { label: 'Schedule', href: '/tutor/schedule', icon: Calendar },
   { label: 'Sessions', href: '/tutor/sessions', icon: Video },
+  { label: 'Active Sessions', href: '/tutor/active-sessions', icon: Radio },
+  { label: 'Rescheduled Sessions', href: '/tutor/rescheduled-sessions', icon: RotateCcw },
+  { label: 'Missed Sessions', href: '/tutor/missed-sessions', icon: XCircle },
   { label: 'Class Activities', href: '/tutor/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/tutor/grades', icon: BarChart3 },
   { label: 'Messages', href: '/tutor/messages', icon: MessageSquare },
@@ -95,24 +100,39 @@ interface SidebarProps {
 
 export default function Sidebar({ role, userName, userEmail, isSuperAdmin, academyName, collapsed = false, onCollapse, onNavClick, mobileOpen = false }: SidebarProps) {
   const pathname = usePathname();
-  const { clearUser } = useAuthStore();
+  const { clearUser, user } = useAuthStore();
   const [activeSessionsCount, setActiveSessionsCount] = useState(0);
+  const [rescheduledCount, setRescheduledCount] = useState(0);
+  const [missedCount, setMissedCount] = useState(0);
 
   useEffect(() => {
-    if (role !== 'admin') return;
-    const fetchCount = () =>
-      fetch('/api/sessions?status=started&count=true')
-        .then(r => r.json())
-        .then(d => setActiveSessionsCount(d.count || 0))
-        .catch(() => {});
-    fetchCount();
-    const interval = setInterval(fetchCount, 30000);
+    if (role !== 'admin' && role !== 'tutor') return;
+    const tutorParam = role === 'tutor' && user?.user_id ? `&tutor_id=${user.user_id}` : '';
+    const fetchCounts = () => {
+      fetch(`/api/sessions?status=started&count=true${tutorParam}`)
+        .then(r => r.json()).then(d => setActiveSessionsCount(d.count || 0)).catch(() => {});
+      fetch(`/api/sessions?status=rescheduled&count=true${tutorParam}`)
+        .then(r => r.json()).then(d => setRescheduledCount(d.count || 0)).catch(() => {});
+      fetch(`/api/sessions?status=missed&count=true${tutorParam}`)
+        .then(r => r.json()).then(d => setMissedCount(d.count || 0)).catch(() => {});
+    };
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
     return () => clearInterval(interval);
-  }, [role]);
+  }, [role, user?.user_id]);
+
+  const sessionBadges: Record<string, number> = {
+    '/admin/active-sessions': activeSessionsCount,
+    '/tutor/active-sessions': activeSessionsCount,
+    '/admin/rescheduled-sessions': rescheduledCount,
+    '/tutor/rescheduled-sessions': rescheduledCount,
+    '/admin/missed-sessions': missedCount,
+    '/tutor/missed-sessions': missedCount,
+  };
 
   const navItems = (navMap[role] || []).map(item =>
-    item.href === '/admin/active-sessions'
-      ? { ...item, badge: activeSessionsCount }
+    sessionBadges[item.href] !== undefined
+      ? { ...item, badge: sessionBadges[item.href] }
       : item
   );
 

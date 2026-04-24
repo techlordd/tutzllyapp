@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
       const countParams: (string | number)[] = [academyId];
       let countSql = `SELECT COUNT(*) AS total FROM sessions WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
       if (status) { countParams.push(status); countSql += ` AND status = $${countParams.length}`; }
+      if (tutorId) { countParams.push(tutorId); countSql += ` AND (tutor_id = $${countParams.length} OR tutor_id IN (SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $${countParams.length} AND t.entry_status != 'deleted'))`; }
       const result = await queryOne<{ total: string }>(countSql, countParams);
       return NextResponse.json({ count: parseInt(result?.total ?? '0', 10) });
     }
