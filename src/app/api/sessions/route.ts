@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    let sql = `SELECT s.*, COALESCE(s.course_name, c.course_name) AS course_display
+    let sql = `SELECT s.*,
+                      COALESCE(s.course_name, c.course_name) AS course_name,
+                      c.course_code
                FROM sessions s
                LEFT JOIN courses c ON s.course_id = c.id
                WHERE s.entry_status != 'deleted' AND (s.academy_id = $1 OR $1 = 0)`;

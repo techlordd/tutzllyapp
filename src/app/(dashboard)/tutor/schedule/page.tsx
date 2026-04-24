@@ -1,17 +1,27 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DataTable from '@/components/ui/DataTable';
-import { Video, Calendar } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import FormField, { Input } from '@/components/ui/FormField';
+import { Video, Calendar, Play, RotateCcw } from 'lucide-react';
 import { formatTime } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
 interface Schedule {
-  schedule_id: string; student_name: string; course_name: string;
+  schedule_id: string; student_id: string; student_name: string;
+  tutor_id: string; tutor_name: string; tutor_email: string;
+  course_name: string; course_code: string;
   day: string; session_start_time: string; session_end_time: string;
   duration: number; zoom_link: string; meeting_id: string; time_zone: string;
   assign_status: string;
+}
+
+interface Session {
+  ssid: string; schedule_id: string; student_name: string; course_name: string;
+  status: string;
 }
 
 const DAYS = [
@@ -27,29 +37,94 @@ const DAYS = [
 export default function TutorSchedulePage() {
   const user = useAuthStore(state => state.user);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Action modal state (Start / Reschedule / Missed)
+  const [actionModal, setActionModal] = useState<{ session: Session; schedule: Schedule; action: string } | null>(null);
+  const [actionForm, setActionForm] = useState({
+    start_session_date: new Date().toISOString().split('T')[0],
+    start_session_time: new Date().toTimeString().slice(0, 5),
+    reschedule_to: '',
+    reschedule_time: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchData = useCallback(async () => {
     if (!user?.user_id) return;
-    fetch(`/api/schedules?tutor_id=${user.user_id}`)
-      .then(r => r.json())
-      .then(d => { setSchedules(d.schedules || []); setLoading(false); })
-      .catch(() => { setLoading(false); toast.error('Failed to load data'); });
+    setLoading(true);
+    try {
+      const [schRes, sesRes] = await Promise.all([
+        fetch(`/api/schedules?tutor_id=${user.user_id}`),
+        fetch(`/api/sessions?tutor_id=${user.user_id}`),
+      ]);
+      const [schData, sesData] = await Promise.all([schRes.json(), sesRes.json()]);
+      setSchedules(schData.schedules || []);
+      setSessions(sesData.sessions || []);
+    } catch { toast.error('Failed to load data'); }
+    setLoading(false);
   }, [user?.user_id]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Find the most recent actionable session for a schedule
+  const sessionFor = (schedule: Schedule): Session | undefined => {
+    const matches = sessions.filter(
+      s => s.schedule_id === schedule.schedule_id &&
+           (s.status === 'scheduled' || s.status === 'started')
+    );
+    return matches[0];
+  };
+
+  const handleAction = async (action: string) => {
+    if (!actionModal) return;
+    setSubmitting(true);
+    const statusMap: Record<string, string> = { start: 'started', reschedule: 'rescheduled', miss: 'missed' };
+    try {
+      const res = await fetch(`/api/sessions/${actionModal.session.ssid}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: statusMap[action], ...actionForm }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`Session ${statusMap[action]}!`);
+      setActionModal(null);
+      fetchData();
+    } catch { toast.error('Failed to update session'); }
+    setSubmitting(false);
+  };
+
+  const handleMissed = async (session: Session) => {
+    if (!confirm('Mark this session as missed?')) return;
+    try {
+      await fetch(`/api/sessions/${session.ssid}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'missed' }),
+      });
+      toast.success('Session marked as missed');
+      fetchData();
+    } catch { toast.error('Failed to mark session as missed'); }
+  };
 
   const filtered = selectedDay ? schedules.filter(s => s.day === selectedDay) : schedules;
 
   const columns = [
     { key: 'student_name', label: 'Student', sortable: true },
-    { key: 'course_name', label: 'Course' },
+    { key: 'course_name', label: 'Course', render: (_: unknown, row: Schedule) => (
+      <div>
+        <p className="font-medium text-sm">{row.course_name || '—'}</p>
+        {row.course_code && <span className="font-mono text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{row.course_code}</span>}
+      </div>
+    )},
     { key: 'day', label: 'Day', render: (v: unknown) => {
       const d = DAYS.find(d => d.full === (v as string));
       return d ? <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${d.light}`}>{v as string}</span> : <span>{v as string}</span>;
     }},
     { key: 'session_start_time', label: 'Time', render: (_: unknown, row: Schedule) =>
       `${formatTime(row.session_start_time)} – ${formatTime(row.session_end_time)}` },
-    { key: 'duration', label: 'Duration', render: (v: unknown) => `${v} min` },
+    { key: 'duration', label: 'Duration', render: (v: unknown) => v ? `${v} min` : '—' },
     { key: 'time_zone', label: 'Timezone' },
     { key: 'zoom_link', label: 'Zoom', render: (v: unknown) => v ? (
       <a href={v as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline text-xs">
@@ -76,33 +151,82 @@ export default function TutorSchedulePage() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedDay(null)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-              selectedDay === null
-                ? 'bg-gray-800 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            All
-          </button>
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedDay === null ? 'bg-gray-800 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          >All</button>
           {DAYS.map(d => (
-            <button
-              key={d.full}
+            <button key={d.full}
               onClick={() => setSelectedDay(selectedDay === d.full ? null : d.full)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                selectedDay === d.full
-                  ? `${d.bg} text-white shadow-sm ring-2 ${d.ring} ring-offset-1`
-                  : `${d.light} hover:opacity-80`
-              }`}
-            >
-              {d.label}
-            </button>
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedDay === d.full ? `${d.bg} text-white shadow-sm ring-2 ${d.ring} ring-offset-1` : `${d.light} hover:opacity-80`}`}
+            >{d.label}</button>
           ))}
         </div>
 
         <DataTable data={filtered} columns={columns} loading={loading}
           searchKeys={['student_name', 'course_name', 'day']}
-          emptyMessage="No schedules for this day" />
+          emptyMessage="No schedules for this day"
+          actions={(row) => {
+            const session = sessionFor(row);
+            if (!session) return null;
+            return (
+              <div className="flex items-center gap-1">
+                {session.status === 'scheduled' && (
+                  <button
+                    onClick={() => { setActionForm({ start_session_date: new Date().toISOString().split('T')[0], start_session_time: new Date().toTimeString().slice(0, 5), reschedule_to: '', reschedule_time: '' }); setActionModal({ session, schedule: row, action: 'start' }); }}
+                    className="px-2 py-1 text-xs rounded-lg bg-green-50 text-green-700 hover:bg-green-100 flex items-center gap-1">
+                    <Play size={11} /> Start
+                  </button>
+                )}
+                {(session.status === 'scheduled' || session.status === 'started') && (
+                  <>
+                    <button
+                      onClick={() => { setActionForm(f => ({ ...f, reschedule_to: '', reschedule_time: '' })); setActionModal({ session, schedule: row, action: 'reschedule' }); }}
+                      className="px-2 py-1 text-xs rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 flex items-center gap-1">
+                      <RotateCcw size={11} /> Reschedule
+                    </button>
+                    <button onClick={() => handleMissed(session)}
+                      className="px-2 py-1 text-xs rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs">
+                      Missed
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          }}
+        />
       </div>
+
+      {/* Action Modal */}
+      {actionModal && (
+        <Modal isOpen={true} onClose={() => setActionModal(null)}
+          title={actionModal.action === 'start' ? 'Start Session' : 'Reschedule Session'}
+          size="sm">
+          <div className="bg-gray-50 rounded-xl p-3 mb-4 text-sm space-y-0.5">
+            <p><span className="font-medium">Student:</span> {actionModal.schedule.student_name}</p>
+            <p><span className="font-medium">Course:</span> {actionModal.schedule.course_name}</p>
+          </div>
+
+          {actionModal.action === 'start' && (
+            <div className="space-y-3">
+              <FormField label="Start Date"><Input type="date" value={actionForm.start_session_date} onChange={e => setActionForm({ ...actionForm, start_session_date: e.target.value })} /></FormField>
+              <FormField label="Start Time"><Input type="time" value={actionForm.start_session_time} onChange={e => setActionForm({ ...actionForm, start_session_time: e.target.value })} /></FormField>
+            </div>
+          )}
+
+          {actionModal.action === 'reschedule' && (
+            <div className="space-y-3">
+              <FormField label="Reschedule To (Date)"><Input type="date" value={actionForm.reschedule_to} onChange={e => setActionForm({ ...actionForm, reschedule_to: e.target.value })} /></FormField>
+              <FormField label="New Time"><Input type="time" value={actionForm.reschedule_time} onChange={e => setActionForm({ ...actionForm, reschedule_time: e.target.value })} /></FormField>
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-4">
+            <Button variant="secondary" onClick={() => setActionModal(null)}>Cancel</Button>
+            <Button loading={submitting} onClick={() => handleAction(actionModal.action)}>
+              {actionModal.action === 'start' ? 'Start Session' : 'Reschedule'}
+            </Button>
+          </div>
+        </Modal>
+      )}
     </DashboardLayout>
   );
 }
