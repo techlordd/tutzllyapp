@@ -16,7 +16,7 @@ interface Session {
   tutor_id: string; tutor_firstname: string; tutor_lastname: string;
   student_id: string; student_name: string; student_email: string;
   email_lookup_student_id: string; confirmation: string;
-  course_name: string; course_id_ref: string;
+  course_name: string; course_id_ref: string; course_code: string;
   entry_date: string; day: string;
   schedule_start_time: string; schedule_end_time: string; schedule_day: string;
   start_session_date: string; start_session_time: string; start_session_confirmation: string;
@@ -40,7 +40,7 @@ const STATUS_OPTIONS = ['scheduled', 'started', 'ended', 'missed', 'rescheduled'
 export default function SessionsPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [schedules, setSchedules] = useState<{schedule_id: string; student_name: string; tutor_name: string; course_name: string; day: string; session_start_time: string}[]>([]);
+  const [schedules, setSchedules] = useState<{schedule_id: string; student_name: string; tutor_name: string; course_name: string; course_code: string; day: string; session_start_time: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -51,7 +51,7 @@ export default function SessionsPage() {
 
   const [form, setForm] = useState({
     schedule_id: '', tutor_id: '', tutor_firstname: '', tutor_lastname: '',
-    student_id: '', student_name: '', student_email: '', course_name: '', course_id: '',
+    student_id: '', student_name: '', student_email: '', course_name: '', course_code: '', course_id: '',
     entry_date: new Date().toISOString().split('T')[0], day: '',
     schedule_start_time: '', schedule_end_time: '', schedule_day: '',
     zoom_link: '', meeting_id: '', meeting_passcode: '',
@@ -85,6 +85,7 @@ export default function SessionsPage() {
         schedule_start_time: (sch as any).session_start_time || '',
         schedule_end_time: (sch as any).session_end_time || '',
         course_name: sch.course_name || '', day: sch.day || '',
+        course_code: (sch as any).course_code || '',
         zoom_link: (sch as any).zoom_link || '',
         meeting_id: (sch as any).meeting_id || '',
         meeting_passcode: (sch as any).meeting_passcode || '',
@@ -155,7 +156,12 @@ export default function SessionsPage() {
     { key: 'tutor_firstname', label: 'Tutor', render: (_: unknown, row: Session) => (
       <span className="font-medium">{[row.tutor_firstname, row.tutor_lastname].filter(Boolean).join(' ') || '—'}</span>
     )},
-    { key: 'course_name', label: 'Course' },
+    { key: 'course_name', label: 'Course', render: (_: unknown, row: Session) => (
+      <div>
+        <p className="font-medium text-sm">{row.course_name || '—'}</p>
+        {row.course_code && <span className="font-mono text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{row.course_code}</span>}
+      </div>
+    )},
     { key: 'day', label: 'Day', render: (v: unknown) => <span className="text-sm">{v as string || '—'}</span> },
     { key: 'schedule_start_time', label: 'Time', render: (_: unknown, row: Session) => (
       <span className="text-sm whitespace-nowrap">{formatTime(row.schedule_start_time)} – {formatTime(row.schedule_end_time)}</span>

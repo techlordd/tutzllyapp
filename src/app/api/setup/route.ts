@@ -569,6 +569,14 @@ export async function POST(request: Request) {
       }
     }
 
+    // ── Migration 020: add course_code to sessions and class_activities ──
+    try {
+      await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS course_code TEXT`);
+    } catch { /* ignore */ }
+    try {
+      await query(`ALTER TABLE class_activities ADD COLUMN IF NOT EXISTS course_code TEXT`);
+    } catch { /* ignore */ }
+
     return NextResponse.json({
       success: true,
       message: 'Database initialized with demo accounts',

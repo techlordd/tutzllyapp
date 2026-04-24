@@ -187,12 +187,12 @@ export default function SchedulesPage() {
     { key: 'tutor_name', label: 'Tutor', sortable: true, render: (v: unknown) => (
       <span className="font-medium">{v as string || '—'}</span>
     )},
-    { key: 'course_name', label: 'Course', render: (_: unknown, row: Schedule) => (
-      <div>
-        <p className="font-medium">{row.course_name || '—'}</p>
-        {row.course_code && <span className="font-mono text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{row.course_code}</span>}
-      </div>
+    { key: 'course_name', label: 'Course', render: (v: unknown) => (
+      <span className="font-medium">{(v as string) || '—'}</span>
     )},
+    { key: 'course_code', label: 'Code', render: (v: unknown) => v ? (
+      <span className="font-mono text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{v as string}</span>
+    ) : <span className="text-gray-400">—</span> },
     { key: 'session_start_time', label: 'Time', render: (_: unknown, row: Schedule) =>
       <span className="text-sm whitespace-nowrap">{formatTime(row.session_start_time)} – {formatTime(row.session_end_time)}</span>
     },
@@ -330,6 +330,10 @@ export default function SchedulesPage() {
                   <option key={a.tutor_assign_id} value={a.course_id}>{a.course_name} ({a.course_code})</option>
                 ))}
               </Select>
+            </FormField>
+
+            <FormField label="Course Code">
+              <Input value={form.course_code} readOnly className="bg-gray-50 text-gray-600 font-mono" placeholder="Auto-filled from course" />
             </FormField>
 
             <FormField label="Year">

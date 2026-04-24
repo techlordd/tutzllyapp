@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 
 interface Activity {
   record_id: number; ssid: string; tutor_id: string; tutor_firstname: string; tutor_lastname: string;
-  student_id: string; student_name: string; course_name: string; course_id_ref: string;
+  student_id: string; student_name: string; course_name: string; course_code: string; course_id_ref: string;
   class_activity_date: string; class_activity_time: string;
   topic_taught: string; details_of_class_activity: string; activity: string;
   session_code_status: string; mothers_email: string; fathers_email: string;
@@ -33,7 +33,7 @@ interface Activity {
 export default function ActivitiesPage() {
   const router = useRouter();
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [sessions, setSessions] = useState<{ssid: string; tutor_id: string; tutor_firstname: string; tutor_lastname: string; student_id: string; student_name: string; course_name: string}[]>([]);
+  const [sessions, setSessions] = useState<{ssid: string; tutor_id: string; tutor_firstname: string; tutor_lastname: string; student_id: string; student_name: string; course_name: string; course_code: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +41,7 @@ export default function ActivitiesPage() {
   const [deletingAll, setDeletingAll] = useState(false);
   const [form, setForm] = useState({
     ssid: '', tutor_id: '', tutor_firstname: '', tutor_lastname: '',
-    student_id: '', student_name: '', course_name: '', course_id: '',
+    student_id: '', student_name: '', course_name: '', course_code: '', course_id: '',
     session_code_status: '', mothers_email: '', fathers_email: '',
     class_activity_date: new Date().toISOString().split('T')[0],
     class_activity_time: new Date().toTimeString().slice(0, 5),
@@ -81,6 +81,7 @@ export default function ActivitiesPage() {
         student_id: s.student_id || '',
         student_name: s.student_name || '',
         course_name: s.course_name || '',
+        course_code: s.course_code || '',
       }));
     }
   };
@@ -121,7 +122,12 @@ export default function ActivitiesPage() {
     { key: 'tutor_firstname', label: 'Tutor', render: (_: unknown, row: Activity) => (
       <span className="font-medium">{[row.tutor_firstname, row.tutor_lastname].filter(Boolean).join(' ') || '—'}</span>
     )},
-    { key: 'course_name', label: 'Course' },
+    { key: 'course_name', label: 'Course', render: (_: unknown, row: Activity) => (
+      <div>
+        <p className="font-medium text-sm">{row.course_name || '—'}</p>
+        {row.course_code && <span className="font-mono text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{row.course_code}</span>}
+      </div>
+    )},
     { key: 'class_activity_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
     { key: 'topic_taught', label: 'Topic', render: (v: unknown) => (
       <span className="truncate max-w-[180px] block" title={v as string}>{v as string || '—'}</span>

@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
        student_reason_for_not_completing, did_student_join_on_time, punctuality1, punctuality2, student_reason_for_late,
        is_student_attentive, attentiveness1, attentiveness2, attentiveness3, student_engages_in_class,
        class_engagement1, class_engagement2, class_engagement3, tutors_general_observation, tutors_intervention,
-       helpful_link1, helpful_link2, helpful_link3, entry_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,'active')
+       helpful_link1, helpful_link2, helpful_link3, course_code, entry_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,'active')
        RETURNING *`,
       [academyId || null, d.ssid,d.tutor_id,d.tutor_firstname,d.tutor_lastname,d.student_id,d.student_name,
        d.course_name,d.course_id_ref,d.session_code_status,d.mothers_email,d.fathers_email,
@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
        d.did_student_join_on_time,d.punctuality1,d.punctuality2,d.student_reason_for_late,
        d.is_student_attentive,d.attentiveness1,d.attentiveness2,d.attentiveness3,
        d.student_engages_in_class,d.class_engagement1,d.class_engagement2,d.class_engagement3,
-       d.tutors_general_observation,d.tutors_intervention,d.helpful_link1,d.helpful_link2,d.helpful_link3]
+       d.tutors_general_observation,d.tutors_intervention,d.helpful_link1,d.helpful_link2,d.helpful_link3,
+       d.course_code || null]
     );
     return NextResponse.json({ activity }, { status: 201 });
   } catch (error) {
