@@ -6,7 +6,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Select } from '@/components/ui/FormField';
 import Avatar from '@/components/ui/Avatar';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Enrollment {
@@ -30,6 +30,15 @@ const emptyForm = {
   course_id: '', course_name: '', course_code: '',
 };
 
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>
+      <span className="text-sm text-gray-900">{value || '—'}</span>
+    </div>
+  );
+}
+
 export default function EnrollmentsPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -40,11 +49,9 @@ export default function EnrollmentsPage() {
   const [deletingAll, setDeletingAll] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [viewEnrollment, setViewEnrollment] = useState<Enrollment | null>(null);
 
-  // Unique tutors who have at least one course assigned
   const assignedTutors = [...new Map(tutorAssignments.map(a => [a.tutor_id, a])).values()];
-
-  // Courses that the currently selected tutor is assigned to teach
   const tutorCourses = tutorAssignments.filter(a => a.tutor_id === form.tutor_id);
 
   const fetchData = useCallback(async () => {
@@ -83,7 +90,6 @@ export default function EnrollmentsPage() {
       tutor_username: a?.tutor_username || '',
       tutor_sex: a?.tutor_sex || '',
       tutor_email: a?.tutor_email || '',
-      // Reset course when tutor changes
       course_id: '', course_name: '', course_code: '',
     }));
   };
@@ -165,8 +171,73 @@ export default function EnrollmentsPage() {
         <DataTable data={enrollments} columns={columns} loading={loading}
           searchKeys={['student_name', 'tutor_name', 'course_name', 'tutor_email']}
           emptyMessage="No enrollments yet"
+          actions={(row: Enrollment) => (
+            <button
+              onClick={() => setViewEnrollment(row)}
+              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+              title="View enrollment"
+            >
+              <Eye size={15} />
+            </button>
+          )}
         />
       </div>
+
+      {/* View enrollment modal */}
+      <Modal isOpen={!!viewEnrollment} onClose={() => setViewEnrollment(null)} title="Enrollment Details" size="md">
+        {viewEnrollment && (
+          <div className="space-y-5">
+            {/* Student section */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Student</p>
+              <div className="flex items-center gap-3 mb-3">
+                <Avatar name={viewEnrollment.student_name} size="md" />
+                <div>
+                  <p className="font-semibold text-gray-900">{viewEnrollment.student_name || '—'}</p>
+                  <p className="text-xs text-gray-500">{viewEnrollment.student_sex || '—'}</p>
+                </div>
+              </div>
+              <InfoRow label="Student ID" value={viewEnrollment.student_id} />
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Tutor section */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Tutor</p>
+              <div className="grid grid-cols-2 gap-3">
+                <InfoRow label="Name" value={viewEnrollment.tutor_name} />
+                <InfoRow label="Email" value={viewEnrollment.tutor_email} />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Course section */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Course</p>
+              <div className="grid grid-cols-2 gap-3">
+                <InfoRow label="Course Name" value={viewEnrollment.course_name} />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Course Code</span>
+                  <span className="font-mono text-sm bg-green-50 text-green-700 px-2 py-0.5 rounded inline-block w-fit">{viewEnrollment.course_code || '—'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Meta */}
+            <div className="grid grid-cols-1 gap-2">
+              <InfoRow label="Enrollment ID" value={viewEnrollment.assign_id} />
+            </div>
+
+            <div className="pt-1">
+              <Button variant="secondary" onClick={() => setViewEnrollment(null)}>Close</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal isOpen={deleteAllOpen} onClose={() => setDeleteAllOpen(false)} title="Delete All Enrollments" size="sm">
         <div className="space-y-4">

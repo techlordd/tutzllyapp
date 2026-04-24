@@ -12,6 +12,19 @@ const DAY_ABBREV: Record<string, string> = {
   Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun',
 };
 
+const DAY_THEME: Record<string, {
+  header: string; badge: string; card: string; cardHover: string;
+  icon: string; accent: string; tab: string; tabActive: string;
+}> = {
+  Monday:    { header: 'bg-blue-600',    badge: 'bg-blue-500/25 text-blue-100',    card: 'bg-blue-50/70 border-blue-200',    cardHover: 'hover:bg-blue-50 hover:border-blue-300',    icon: 'text-blue-500',    accent: 'text-blue-600',    tab: 'text-blue-700 bg-blue-50 border-blue-200',    tabActive: 'bg-blue-600 text-white border-blue-600' },
+  Tuesday:   { header: 'bg-violet-600',  badge: 'bg-violet-500/25 text-violet-100', card: 'bg-violet-50/70 border-violet-200', cardHover: 'hover:bg-violet-50 hover:border-violet-300', icon: 'text-violet-500',  accent: 'text-violet-600',  tab: 'text-violet-700 bg-violet-50 border-violet-200', tabActive: 'bg-violet-600 text-white border-violet-600' },
+  Wednesday: { header: 'bg-emerald-600', badge: 'bg-emerald-500/25 text-emerald-100', card: 'bg-emerald-50/70 border-emerald-200', cardHover: 'hover:bg-emerald-50 hover:border-emerald-300', icon: 'text-emerald-500', accent: 'text-emerald-600', tab: 'text-emerald-700 bg-emerald-50 border-emerald-200', tabActive: 'bg-emerald-600 text-white border-emerald-600' },
+  Thursday:  { header: 'bg-amber-500',   badge: 'bg-amber-500/25 text-amber-100',   card: 'bg-amber-50/70 border-amber-200',   cardHover: 'hover:bg-amber-50 hover:border-amber-300',   icon: 'text-amber-500',   accent: 'text-amber-600',   tab: 'text-amber-700 bg-amber-50 border-amber-200',   tabActive: 'bg-amber-500 text-white border-amber-500' },
+  Friday:    { header: 'bg-rose-600',    badge: 'bg-rose-500/25 text-rose-100',    card: 'bg-rose-50/70 border-rose-200',    cardHover: 'hover:bg-rose-50 hover:border-rose-300',    icon: 'text-rose-500',    accent: 'text-rose-600',    tab: 'text-rose-700 bg-rose-50 border-rose-200',    tabActive: 'bg-rose-600 text-white border-rose-600' },
+  Saturday:  { header: 'bg-teal-600',    badge: 'bg-teal-500/25 text-teal-100',    card: 'bg-teal-50/70 border-teal-200',    cardHover: 'hover:bg-teal-50 hover:border-teal-300',    icon: 'text-teal-500',    accent: 'text-teal-600',    tab: 'text-teal-700 bg-teal-50 border-teal-200',    tabActive: 'bg-teal-600 text-white border-teal-600' },
+  Sunday:    { header: 'bg-indigo-600',  badge: 'bg-indigo-500/25 text-indigo-100', card: 'bg-indigo-50/70 border-indigo-200', cardHover: 'hover:bg-indigo-50 hover:border-indigo-300', icon: 'text-indigo-500',  accent: 'text-indigo-600',  tab: 'text-indigo-700 bg-indigo-50 border-indigo-200', tabActive: 'bg-indigo-600 text-white border-indigo-600' },
+};
+
 interface Schedule {
   schedule_id: string; student_name: string; student_id: string;
   tutor_name: string; tutor_email: string; course_name: string; course_code: string;
@@ -20,64 +33,68 @@ interface Schedule {
 }
 
 function SessionCard({ s }: { s: Schedule }) {
+  const theme = DAY_THEME[s.day] ?? DAY_THEME.Monday;
   const active = s.assign_status === 'active';
   return (
     <Link href={`/admin/schedules/${s.schedule_id}`}>
-      <div className={`rounded-xl border p-3 space-y-2 cursor-pointer transition-shadow hover:shadow-md ${
-        active ? 'border-blue-100 bg-blue-50/60 hover:bg-blue-50' : 'border-gray-100 bg-gray-50 opacity-60'
+      <div className={`rounded-xl border p-3 space-y-2.5 cursor-pointer transition-all duration-150 ${
+        active
+          ? `${theme.card} ${theme.cardHover} shadow-sm hover:shadow-md`
+          : 'bg-gray-50 border-gray-200 opacity-50 hover:opacity-70'
       }`}>
-        {/* Time */}
+        {/* Time row */}
         <div className="flex items-center justify-between gap-1">
           <div className="flex items-center gap-1.5">
-            <Clock size={11} className="text-blue-400 flex-shrink-0" />
-            <span className="text-xs font-semibold text-slate-700">
+            <Clock size={11} className={active ? theme.icon : 'text-gray-400'} />
+            <span className="text-xs font-bold text-slate-800 tracking-tight">
               {s.session_start_time ? formatTime(s.session_start_time) : '—'}
-              {' – '}
+              <span className="font-normal text-slate-400 mx-0.5">–</span>
               {s.session_end_time ? formatTime(s.session_end_time) : '—'}
             </span>
           </div>
-          {s.zoom_link && (
-            <a
-              href={s.zoom_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-              className="flex items-center gap-0.5 text-blue-600 hover:text-blue-800 text-xs font-medium flex-shrink-0"
-            >
-              <Video size={11} /> Join
-            </a>
-          )}
+          <div className="flex items-center gap-1.5">
+            {s.duration ? (
+              <span className="text-[10px] bg-white/70 border border-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">{s.duration}m</span>
+            ) : null}
+            {s.zoom_link && (
+              <a
+                href={s.zoom_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-white border border-gray-200 transition-colors hover:bg-gray-50 ${active ? theme.accent : 'text-gray-400'}`}
+              >
+                <Video size={10} /> Join
+              </a>
+            )}
+          </div>
         </div>
+
+        {/* Divider */}
+        <div className="border-t border-white/60" />
 
         {/* Course */}
         <div className="flex items-start gap-1.5">
-          <BookOpen size={11} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+          <BookOpen size={11} className={`flex-shrink-0 mt-0.5 ${active ? theme.icon : 'text-gray-300'}`} />
           <div className="min-w-0">
-            <span className="text-xs font-medium text-gray-800 leading-tight block truncate">{s.course_name || '—'}</span>
+            <span className="text-xs font-semibold text-slate-800 leading-tight block truncate">{s.course_name || '—'}</span>
             {s.course_code && (
-              <span className="text-[10px] font-mono bg-white border border-gray-200 text-gray-500 px-1 py-0.5 rounded mt-0.5 inline-block">{s.course_code}</span>
+              <span className="text-[10px] font-mono bg-white border border-gray-200 text-gray-500 px-1 rounded mt-0.5 inline-block">{s.course_code}</span>
             )}
           </div>
         </div>
 
         {/* Student */}
         <div className="flex items-center gap-1.5">
-          <User size={11} className="text-green-400 flex-shrink-0" />
-          <span className="text-[11px] text-gray-600 truncate">{s.student_name || '—'}</span>
+          <User size={11} className={`flex-shrink-0 ${active ? 'text-slate-400' : 'text-gray-300'}`} />
+          <span className="text-[11px] text-slate-600 truncate">{s.student_name || '—'}</span>
         </div>
 
         {/* Tutor */}
         <div className="flex items-center gap-1.5">
-          <GraduationCap size={11} className="text-purple-400 flex-shrink-0" />
-          <span className="text-[11px] text-gray-600 truncate">{s.tutor_name || '—'}</span>
+          <GraduationCap size={11} className={`flex-shrink-0 ${active ? 'text-slate-400' : 'text-gray-300'}`} />
+          <span className="text-[11px] text-slate-500 truncate">{s.tutor_name || '—'}</span>
         </div>
-
-        {/* Duration pill */}
-        {s.duration ? (
-          <div className="pt-0.5">
-            <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium">{s.duration} min</span>
-          </div>
-        ) : null}
       </div>
     </Link>
   );
@@ -139,27 +156,37 @@ export default function TimetablePage() {
       <div className="space-y-5">
 
         {/* Page header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Timetable</h2>
-            <p className="text-gray-500 text-sm mt-0.5">
-              {schedules.length} schedules · {totalActive} active
-            </p>
+            <p className="text-gray-500 text-sm mt-0.5">{schedules.length} schedules · {totalActive} active</p>
           </div>
-          {/* Stats chips */}
-          <div className="flex gap-2 flex-wrap">
-            {DAYS.map(d => dayCounts[d] > 0 && (
-              <span key={d} className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">
-                {DAY_ABBREV[d]} <span className="font-bold">{dayCounts[d]}</span>
-              </span>
-            ))}
+
+          {/* Day count chips */}
+          <div className="flex gap-1.5 flex-wrap">
+            {DAYS.map(d => {
+              if (!dayCounts[d]) return null;
+              const theme = DAY_THEME[d];
+              return (
+                <button
+                  key={d}
+                  onClick={() => setActiveDay(activeDay === d ? null : d)}
+                  className={`text-xs px-2.5 py-1 rounded-full font-semibold border transition-all ${
+                    activeDay === d
+                      ? `${theme.tabActive} shadow-sm`
+                      : `${theme.tab} hover:opacity-80`
+                  }`}
+                >
+                  {DAY_ABBREV[d]} <span className="opacity-80">{dayCounts[d]}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Filter bar */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row gap-3">
-          {/* Search */}
-          <div className="relative flex-1">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3.5 flex flex-col sm:flex-row gap-3 items-center">
+          <div className="relative flex-1 w-full">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -170,7 +197,6 @@ export default function TimetablePage() {
             />
           </div>
 
-          {/* Day chips */}
           <div className="flex flex-wrap gap-1.5 items-center">
             <Filter size={13} className="text-gray-400 flex-shrink-0" />
             <button
@@ -179,22 +205,25 @@ export default function TimetablePage() {
                 !activeDay ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >All</button>
-            {DAYS.map(d => (
-              <button
-                key={d}
-                onClick={() => setActiveDay(activeDay === d ? null : d)}
-                className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-                  activeDay === d
-                    ? 'bg-blue-600 text-white'
-                    : dayCounts[d] > 0
-                      ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                      : 'bg-gray-50 text-gray-300'
-                }`}
-              >
-                {DAY_ABBREV[d]}
-                {dayCounts[d] > 0 && <span className="ml-1 opacity-70">{dayCounts[d]}</span>}
-              </button>
-            ))}
+            {DAYS.map(d => {
+              const theme = DAY_THEME[d];
+              return (
+                <button
+                  key={d}
+                  onClick={() => setActiveDay(activeDay === d ? null : d)}
+                  className={`text-xs px-2.5 py-1 rounded-full font-medium border transition-all ${
+                    activeDay === d
+                      ? `${theme.tabActive}`
+                      : dayCounts[d] > 0
+                        ? `${theme.tab} hover:opacity-80`
+                        : 'bg-gray-50 text-gray-300 border-transparent'
+                  }`}
+                >
+                  {DAY_ABBREV[d]}
+                  {dayCounts[d] > 0 && <span className="ml-1 opacity-70">{dayCounts[d]}</span>}
+                </button>
+              );
+            })}
             <button
               onClick={() => setActiveOnly(v => !v)}
               className={`text-xs px-2.5 py-1 rounded-full font-medium border transition-colors ${
@@ -212,57 +241,72 @@ export default function TimetablePage() {
           <>
             {/* Desktop: 7-column weekly grid */}
             <div className="hidden lg:grid grid-cols-7 gap-3">
-              {DAYS.map(day => (
-                <div key={day} className={`${activeDay && activeDay !== day ? 'opacity-30' : ''} transition-opacity`}>
-                  {/* Day header */}
-                  <div className={`rounded-xl px-3 py-2 mb-2 text-center ${
-                    byDay[day].length > 0 ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-400'
-                  }`}>
-                    <p className="text-xs font-bold">{DAY_ABBREV[day]}</p>
-                    <p className="text-[10px] opacity-70">{byDay[day].length} session{byDay[day].length !== 1 ? 's' : ''}</p>
-                  </div>
+              {DAYS.map(day => {
+                const theme = DAY_THEME[day];
+                const count = byDay[day].length;
+                const dimmed = !!activeDay && activeDay !== day;
+                return (
+                  <div key={day} className={`transition-opacity duration-200 ${dimmed ? 'opacity-25' : ''}`}>
+                    {/* Day header */}
+                    <div className={`rounded-xl px-3 py-2.5 mb-2.5 text-center ${count > 0 ? theme.header : 'bg-gray-100'}`}>
+                      <p className={`text-xs font-extrabold tracking-wide ${count > 0 ? 'text-white' : 'text-gray-400'}`}>
+                        {DAY_ABBREV[day]}
+                      </p>
+                      <p className={`text-[10px] mt-0.5 ${count > 0 ? 'text-white/70' : 'text-gray-400'}`}>
+                        {count} session{count !== 1 ? 's' : ''}
+                      </p>
+                    </div>
 
-                  {/* Session cards */}
-                  <div className="space-y-2">
-                    {byDay[day].length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-gray-200 p-4 text-center">
-                        <CalendarDays size={16} className="mx-auto text-gray-300 mb-1" />
-                        <p className="text-[10px] text-gray-300">No sessions</p>
-                      </div>
-                    ) : (
-                      byDay[day].map(s => <SessionCard key={s.schedule_id} s={s} />)
-                    )}
+                    {/* Cards */}
+                    <div className="space-y-2">
+                      {count === 0 ? (
+                        <div className="rounded-xl border border-dashed border-gray-200 p-4 text-center">
+                          <CalendarDays size={16} className="mx-auto text-gray-300 mb-1" />
+                          <p className="text-[10px] text-gray-300">No sessions</p>
+                        </div>
+                      ) : (
+                        byDay[day].map(s => <SessionCard key={s.schedule_id} s={s} />)
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Mobile/Tablet: tab per day */}
             <div className="lg:hidden">
-              {/* Day tabs */}
-              <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar">
-                {DAYS.map(d => (
-                  <button
-                    key={d}
-                    onClick={() => setMobileDay(d)}
-                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      mobileDay === d
-                        ? 'bg-slate-800 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {DAY_ABBREV[d]}
-                    {byDay[d].length > 0 && (
-                      <span className={`ml-1.5 text-[10px] px-1 py-0.5 rounded-full ${mobileDay === d ? 'bg-white/20' : 'bg-gray-200'}`}>
-                        {byDay[d].length}
-                      </span>
-                    )}
-                  </button>
-                ))}
+              <div className="flex overflow-x-auto gap-1.5 pb-2 no-scrollbar">
+                {DAYS.map(d => {
+                  const theme = DAY_THEME[d];
+                  const isActive = mobileDay === d;
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => setMobileDay(d)}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                        isActive ? theme.tabActive : `${theme.tab} opacity-70 hover:opacity-100`
+                      }`}
+                    >
+                      {DAY_ABBREV[d]}
+                      {byDay[d].length > 0 && (
+                        <span className={`ml-1.5 text-[10px] px-1 py-0.5 rounded-full ${isActive ? 'bg-white/25' : 'bg-white/60'}`}>
+                          {byDay[d].length}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Selected day sessions */}
-              <div className="mt-3 space-y-2">
+              {/* Selected day header */}
+              {byDay[mobileDay].length > 0 && (
+                <div className={`rounded-xl px-4 py-3 mt-2 mb-3 ${DAY_THEME[mobileDay].header}`}>
+                  <p className="text-sm font-bold text-white">{mobileDay}</p>
+                  <p className="text-xs text-white/70">{byDay[mobileDay].length} session{byDay[mobileDay].length !== 1 ? 's' : ''}</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
                 {byDay[mobileDay].length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-32 text-gray-400 border border-dashed border-gray-200 rounded-2xl">
                     <CalendarDays size={24} className="mb-2 opacity-40" />
