@@ -220,27 +220,11 @@ export default function TutorSessionsPage() {
           </div>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <FormField label="Start Date">
-                <Input type="date" value={endForm.start_session_date}
-                  onChange={e => {
-                    const d = e.target.value;
-                    setEndForm(f => ({ ...f, start_session_date: d, session_duration: calcDuration(d, f.start_session_time, f.end_session_date, f.end_session_time) }));
-                  }} />
-              </FormField>
               <FormField label="Start Time">
                 <Input type="time" value={endForm.start_session_time}
                   onChange={e => {
                     const t = e.target.value;
                     setEndForm(f => ({ ...f, start_session_time: t, session_duration: calcDuration(f.start_session_date, t, f.end_session_date, f.end_session_time) }));
-                  }} />
-              </FormField>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="End Date">
-                <Input type="date" value={endForm.end_session_date}
-                  onChange={e => {
-                    const d = e.target.value;
-                    setEndForm(f => ({ ...f, end_session_date: d, session_duration: calcDuration(f.start_session_date, f.start_session_time, d, f.end_session_time) }));
                   }} />
               </FormField>
               <FormField label="End Time">
