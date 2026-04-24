@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 interface Schedule {
   schedule_id: string; student_id: string; student_name: string;
   tutor_id: string; tutor_name: string; tutor_email: string;
-  course_name: string; course_code: string;
+  course_name: string; course_code: string; course_id: number;
   day: string; session_start_time: string; session_end_time: string;
   duration: number; zoom_link: string; meeting_id: string; time_zone: string;
   assign_status: string;
@@ -21,7 +21,7 @@ interface Schedule {
 
 interface Session {
   ssid: string; schedule_id: string; student_name: string; course_name: string;
-  status: string;
+  status: string; entry_date: string;
 }
 
 const DAYS = [
@@ -34,6 +34,8 @@ const DAYS = [
   { label: 'Sun', full: 'Sunday',    bg: 'bg-amber-500',  ring: 'ring-amber-500',  light: 'bg-amber-100 text-amber-700' },
 ];
 
+const today = new Date().toISOString().split('T')[0];
+
 export default function TutorSchedulePage() {
   const user = useAuthStore(state => state.user);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -41,10 +43,10 @@ export default function TutorSchedulePage() {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  // Action modal state (Start / Reschedule / Missed)
-  const [actionModal, setActionModal] = useState<{ session: Session; schedule: Schedule; action: string } | null>(null);
+  // Action modal state (Start / Reschedule)
+  const [actionModal, setActionModal] = useState<{ schedule: Schedule; action: string } | null>(null);
   const [actionForm, setActionForm] = useState({
-    start_session_date: new Date().toISOString().split('T')[0],
+    start_session_date: today,
     start_session_time: new Date().toTimeString().slice(0, 5),
     reschedule_to: '',
     reschedule_time: '',
@@ -68,41 +70,63 @@ export default function TutorSchedulePage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Find the most recent actionable session for a schedule
-  const sessionFor = (schedule: Schedule): Session | undefined => {
-    const matches = sessions.filter(
-      s => s.schedule_id === schedule.schedule_id &&
-           (s.status === 'scheduled' || s.status === 'started')
+  const sessionForToday = useCallback((schedule: Schedule): Session | undefined => {
+    return sessions.find(s =>
+      s.schedule_id === schedule.schedule_id &&
+      s.entry_date && s.entry_date.split('T')[0] === today
     );
-    return matches[0];
-  };
+  }, [sessions]);
+
+  const buildSessionBody = (schedule: Schedule, status: string, form: typeof actionForm) => ({
+    schedule_id: schedule.schedule_id,
+    tutor_id: schedule.tutor_id,
+    tutor_firstname: schedule.tutor_name?.split(' ')[0] || '',
+    tutor_lastname: schedule.tutor_name?.split(' ').slice(1).join(' ') || '',
+    student_id: schedule.student_id,
+    student_name: schedule.student_name,
+    course_name: schedule.course_name,
+    course_id: schedule.course_id,
+    entry_date: form.start_session_date || today,
+    day: schedule.day,
+    schedule_start_time: schedule.session_start_time,
+    schedule_end_time: schedule.session_end_time,
+    zoom_link: schedule.zoom_link,
+    meeting_id: schedule.meeting_id,
+    start_session_date: form.start_session_date,
+    start_session_time: form.start_session_time,
+    reschedule_to: form.reschedule_to,
+    reschedule_time: form.reschedule_time,
+    status,
+  });
 
   const handleAction = async (action: string) => {
     if (!actionModal) return;
     setSubmitting(true);
-    const statusMap: Record<string, string> = { start: 'started', reschedule: 'rescheduled', miss: 'missed' };
+    const statusMap: Record<string, string> = { start: 'started', reschedule: 'rescheduled' };
+    const status = statusMap[action];
     try {
-      const res = await fetch(`/api/sessions/${actionModal.session.ssid}`, {
-        method: 'PUT',
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: statusMap[action], ...actionForm }),
+        body: JSON.stringify(buildSessionBody(actionModal.schedule, status, actionForm)),
       });
       if (!res.ok) throw new Error();
-      toast.success(`Session ${statusMap[action]}!`);
+      toast.success(action === 'start' ? 'Session started!' : 'Session rescheduled!');
       setActionModal(null);
       fetchData();
     } catch { toast.error('Failed to update session'); }
     setSubmitting(false);
   };
 
-  const handleMissed = async (session: Session) => {
+  const handleMissed = async (schedule: Schedule) => {
     if (!confirm('Mark this session as missed?')) return;
     try {
-      await fetch(`/api/sessions/${session.ssid}`, {
-        method: 'PUT',
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'missed' }),
+        body: JSON.stringify(buildSessionBody(schedule, 'missed', { start_session_date: today, start_session_time: '', reschedule_to: '', reschedule_time: '' })),
       });
+      if (!res.ok) throw new Error();
       toast.success('Session marked as missed');
       fetchData();
     } catch { toast.error('Failed to mark session as missed'); }
@@ -165,30 +189,37 @@ export default function TutorSchedulePage() {
           searchKeys={['student_name', 'course_name', 'day']}
           emptyMessage="No schedules for this day"
           actions={(row) => {
-            const session = sessionFor(row);
-            if (!session) return null;
+            const todaySession = sessionForToday(row);
+
+            if (todaySession?.status === 'started') {
+              return <span className="px-2 py-1 text-xs rounded-lg bg-blue-50 text-blue-700 font-medium">● Active Session</span>;
+            }
+            if (todaySession?.status === 'ended') {
+              return <span className="px-2 py-1 text-xs rounded-lg bg-gray-100 text-gray-500 font-medium">✓ Concluded for today</span>;
+            }
+            if (todaySession?.status === 'missed') {
+              return <span className="px-2 py-1 text-xs rounded-lg bg-red-50 text-red-600 font-medium">Missed</span>;
+            }
+            if (todaySession?.status === 'rescheduled') {
+              return <span className="px-2 py-1 text-xs rounded-lg bg-amber-50 text-amber-700 font-medium">Rescheduled</span>;
+            }
+
             return (
               <div className="flex items-center gap-1">
-                {session.status === 'scheduled' && (
-                  <button
-                    onClick={() => { setActionForm({ start_session_date: new Date().toISOString().split('T')[0], start_session_time: new Date().toTimeString().slice(0, 5), reschedule_to: '', reschedule_time: '' }); setActionModal({ session, schedule: row, action: 'start' }); }}
-                    className="px-2 py-1 text-xs rounded-lg bg-green-50 text-green-700 hover:bg-green-100 flex items-center gap-1">
-                    <Play size={11} /> Start
-                  </button>
-                )}
-                {(session.status === 'scheduled' || session.status === 'started') && (
-                  <>
-                    <button
-                      onClick={() => { setActionForm(f => ({ ...f, reschedule_to: '', reschedule_time: '' })); setActionModal({ session, schedule: row, action: 'reschedule' }); }}
-                      className="px-2 py-1 text-xs rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 flex items-center gap-1">
-                      <RotateCcw size={11} /> Reschedule
-                    </button>
-                    <button onClick={() => handleMissed(session)}
-                      className="px-2 py-1 text-xs rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs">
-                      Missed
-                    </button>
-                  </>
-                )}
+                <button
+                  onClick={() => { setActionForm({ start_session_date: today, start_session_time: new Date().toTimeString().slice(0, 5), reschedule_to: '', reschedule_time: '' }); setActionModal({ schedule: row, action: 'start' }); }}
+                  className="px-2 py-1 text-xs rounded-lg bg-green-50 text-green-700 hover:bg-green-100 flex items-center gap-1">
+                  <Play size={11} /> Start
+                </button>
+                <button
+                  onClick={() => { setActionForm(f => ({ ...f, reschedule_to: '', reschedule_time: '' })); setActionModal({ schedule: row, action: 'reschedule' }); }}
+                  className="px-2 py-1 text-xs rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 flex items-center gap-1">
+                  <RotateCcw size={11} /> Reschedule
+                </button>
+                <button onClick={() => handleMissed(row)}
+                  className="px-2 py-1 text-xs rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200">
+                  Missed
+                </button>
               </div>
             );
           }}
