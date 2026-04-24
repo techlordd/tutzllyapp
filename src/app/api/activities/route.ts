@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const academyId = getAcademyId(request);
     let sql = `SELECT * FROM class_activities WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
-    if (tutorId) { params.push(tutorId); sql += ` AND tutor_id = $${params.length}`; }
+    if (tutorId) { params.push(tutorId); sql += ` AND (tutor_id = $${params.length} OR tutor_id IN (SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $${params.length} AND t.entry_status != 'deleted'))`; }
     if (studentId) { params.push(studentId); sql += ` AND student_id = $${params.length}`; }
     sql += ' ORDER BY class_activity_date DESC, class_activity_time DESC';
     const activities = await query(sql, params);
@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
   try {
     const d = await request.json();
     const academyId = getAcademyId(request);
+    if (d.tutor_id) {
+      const resolved = await queryOne<{ tutor_id: string }>(
+        `SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $1 AND t.entry_status != 'deleted' LIMIT 1`,
+        [d.tutor_id]
+      );
+      if (resolved) d.tutor_id = resolved.tutor_id;
+    }
     const activity = await queryOne(
       `INSERT INTO class_activities (academy_id, ssid, tutor_id, tutor_firstname, tutor_lastname, student_id, student_name,
        course_name, course_id_ref, session_code_status, mothers_email, fathers_email, class_activity_date, class_activity_time,

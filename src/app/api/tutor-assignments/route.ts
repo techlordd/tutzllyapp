@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
                ) t ON true
                WHERE ta.entry_status != 'deleted' AND (ta.academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
-    if (tutorId) { params.push(tutorId); sql += ` AND ta.tutor_id = $${params.length}`; }
+    if (tutorId) { params.push(tutorId); sql += ` AND (ta.tutor_id = $${params.length} OR ta.tutor_id IN (SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $${params.length} AND t.entry_status != 'deleted'))`; }
     sql += ' ORDER BY ta.timestamp DESC';
     const assignments = await query(sql, params);
     return NextResponse.json({ assignments });

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
                LEFT JOIN courses c ON s.course_id = c.id
                WHERE s.entry_status != 'deleted' AND (s.academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
-    if (tutorId) { params.push(tutorId); sql += ` AND s.tutor_id = $${params.length}`; }
+    if (tutorId) { params.push(tutorId); sql += ` AND (s.tutor_id = $${params.length} OR s.tutor_id IN (SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $${params.length} AND t.entry_status != 'deleted'))`; }
     if (studentId) { params.push(studentId); sql += ` AND s.student_id = $${params.length}`; }
     if (parentId) {
       params.push(parentId);
