@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
                WHERE se.entry_status != 'deleted' AND (se.academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (studentId) { params.push(studentId); sql += ` AND se.student_id = $${params.length}`; }
-    if (tutorId) { params.push(tutorId); sql += ` AND se.tutor_id = $${params.length}`; }
+    if (tutorId) { params.push(tutorId); sql += ` AND (se.tutor_id = $${params.length} OR se.tutor_id IN (SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $${params.length} AND t.entry_status != 'deleted'))`; }
     if (parentId) {
       params.push(parentId);
       sql += ` AND se.student_id IN (SELECT sid FROM (SELECT unnest(ARRAY[p.student_id1,p.student_id2,p.student_id3,p.student_id4,p.student_id5]) AS sid FROM parents p JOIN users u ON p.user_id = u.id WHERE u.user_id = $${params.length}) sub WHERE sid IS NOT NULL)`;
