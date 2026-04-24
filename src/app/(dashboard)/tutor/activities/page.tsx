@@ -20,6 +20,7 @@ interface Session {
   tutor_lastname: string;
   entry_date: string;
   zoom_link: string;
+  status: string;
 }
 
 interface Activity {
@@ -91,7 +92,7 @@ export default function TutorActivitiesPage() {
     try {
       const [actRes, sesRes] = await Promise.all([
         fetch(`/api/activities?tutor_id=${user.user_id}`),
-        fetch(`/api/sessions?tutor_id=${user.user_id}&status=ended`),
+        fetch(`/api/sessions?tutor_id=${user.user_id}`),
       ]);
       const [actData, sesData] = await Promise.all([actRes.json(), sesRes.json()]);
       setActivities(actData.activities || []);
@@ -190,7 +191,7 @@ export default function TutorActivitiesPage() {
               <option value="">Select a completed session</option>
               {sessions.map(s => (
                 <option key={s.ssid} value={s.ssid}>
-                  {s.student_name} — {s.course_name}{s.entry_date ? ` (${formatDate(s.entry_date)})` : ''}
+                  {s.student_name} — {s.course_name}{s.entry_date ? ` (${formatDate(s.entry_date)})` : ''}{s.status ? ` [${s.status}]` : ''}
                 </option>
               ))}
             </Select>
