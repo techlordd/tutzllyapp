@@ -48,6 +48,14 @@ function ScoreBadge({ score }: { score: string }) {
   return <span className={`ml-1.5 text-xs font-semibold px-1.5 py-0.5 rounded-full ${c}`}>{score}/100</span>;
 }
 
+function calcDuration(startDate: string, startTime: string, endDate: string, endTime: string): string {
+  if (!startDate || !startTime || !endDate || !endTime) return '';
+  const start = new Date(`${startDate}T${startTime}`);
+  const end = new Date(`${endDate}T${endTime}`);
+  const diff = Math.round((end.getTime() - start.getTime()) / 60000);
+  return diff > 0 ? String(diff) : '';
+}
+
 export default function TutorSessionsPage() {
   const user = useAuthStore(state => state.user);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -56,9 +64,14 @@ export default function TutorSessionsPage() {
   // End session modal
   const [endModal, setEndModal] = useState<Session | null>(null);
   const [endForm, setEndForm] = useState({
-    end_session_date: new Date().toISOString().split('T')[0],
+    end_session_date: '',
     end_session_time: '',
     session_duration: '',
+    // submitted but not shown
+    start_session_date: '',
+    start_session_time: '',
+    schedule_start_time: '',
+    schedule_end_time: '',
   });
   const [endSubmitting, setEndSubmitting] = useState(false);
 
@@ -166,7 +179,23 @@ export default function TutorSessionsPage() {
           actions={(row) => (
             <div className="flex items-center gap-1">
               {row.status === 'started' && (
-                <button onClick={() => { setEndForm({ end_session_date: new Date().toISOString().split('T')[0], end_session_time: '', session_duration: '' }); setEndModal(row); }}
+                <button onClick={() => {
+                  const now = new Date();
+                  const nowDate = now.toISOString().split('T')[0];
+                  const nowTime = now.toTimeString().slice(0, 5);
+                  const startDate = row.start_session_date?.split('T')[0] || row.entry_date?.split('T')[0] || nowDate;
+                  const startTime = row.start_session_time || '';
+                  setEndForm({
+                    end_session_date: nowDate,
+                    end_session_time: nowTime,
+                    session_duration: calcDuration(startDate, startTime, nowDate, nowTime),
+                    start_session_date: startDate,
+                    start_session_time: startTime,
+                    schedule_start_time: row.schedule_start_time || '',
+                    schedule_end_time: row.schedule_end_time || '',
+                  });
+                  setEndModal(row);
+                }}
                   className="px-2 py-1 text-xs rounded-lg bg-red-50 text-red-700 hover:bg-red-100 flex items-center gap-1">
                   <Square size={11} /> End
                 </button>
@@ -188,11 +217,32 @@ export default function TutorSessionsPage() {
           <div className="bg-gray-50 rounded-xl p-3 mb-4 text-sm space-y-0.5">
             <p><span className="font-medium">Student:</span> {endModal.student_name}</p>
             <p><span className="font-medium">Course:</span> {endModal.course_name}</p>
+            {endForm.start_session_time && (
+              <p className="pt-1 text-blue-700">
+                <span className="font-medium">Started:</span>{' '}
+                {endForm.start_session_date} at {formatTime(endForm.start_session_time)}
+              </p>
+            )}
           </div>
           <div className="space-y-3">
-            <FormField label="End Date"><Input type="date" value={endForm.end_session_date} onChange={e => setEndForm({ ...endForm, end_session_date: e.target.value })} /></FormField>
-            <FormField label="End Time"><Input type="time" value={endForm.end_session_time} onChange={e => setEndForm({ ...endForm, end_session_time: e.target.value })} /></FormField>
-            <FormField label="Duration (minutes)"><Input type="number" value={endForm.session_duration} onChange={e => setEndForm({ ...endForm, session_duration: e.target.value })} /></FormField>
+            <FormField label="End Date">
+              <Input type="date" value={endForm.end_session_date}
+                onChange={e => {
+                  const d = e.target.value;
+                  setEndForm(f => ({ ...f, end_session_date: d, session_duration: calcDuration(f.start_session_date, f.start_session_time, d, f.end_session_time) }));
+                }} />
+            </FormField>
+            <FormField label="End Time">
+              <Input type="time" value={endForm.end_session_time}
+                onChange={e => {
+                  const t = e.target.value;
+                  setEndForm(f => ({ ...f, end_session_time: t, session_duration: calcDuration(f.start_session_date, f.start_session_time, f.end_session_date, t) }));
+                }} />
+            </FormField>
+            <FormField label="Duration (minutes)" hint="Auto-calculated from start and end time">
+              <Input type="number" value={endForm.session_duration}
+                onChange={e => setEndForm({ ...endForm, session_duration: e.target.value })} />
+            </FormField>
           </div>
           <div className="flex gap-3 mt-4">
             <Button variant="secondary" onClick={() => setEndModal(null)}>Cancel</Button>
