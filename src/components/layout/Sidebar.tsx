@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, CalendarDays, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
-  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor
+  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio
 } from 'lucide-react';
 
 interface NavItem {
@@ -27,6 +28,7 @@ const adminNav: NavItem[] = [
   { label: 'Schedules', href: '/admin/schedules', icon: Calendar },
   { label: 'Timetable', href: '/admin/timetable', icon: CalendarDays },
   { label: 'Sessions', href: '/admin/sessions', icon: Video },
+  { label: 'Active Sessions', href: '/admin/active-sessions', icon: Radio },
   { label: 'Classrooms', href: '/admin/classrooms', icon: Monitor },
   { label: 'Class Activities', href: '/admin/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/admin/grades', icon: BarChart3 },
@@ -93,8 +95,26 @@ interface SidebarProps {
 
 export default function Sidebar({ role, userName, userEmail, isSuperAdmin, academyName, collapsed = false, onCollapse, onNavClick, mobileOpen = false }: SidebarProps) {
   const pathname = usePathname();
-  const navItems = navMap[role] || [];
   const { clearUser } = useAuthStore();
+  const [activeSessionsCount, setActiveSessionsCount] = useState(0);
+
+  useEffect(() => {
+    if (role !== 'admin') return;
+    const fetchCount = () =>
+      fetch('/api/sessions?status=started&count=true')
+        .then(r => r.json())
+        .then(d => setActiveSessionsCount(d.count || 0))
+        .catch(() => {});
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    return () => clearInterval(interval);
+  }, [role]);
+
+  const navItems = (navMap[role] || []).map(item =>
+    item.href === '/admin/active-sessions'
+      ? { ...item, badge: activeSessionsCount }
+      : item
+  );
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -167,12 +187,24 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
             >
               <Icon size={18} className="flex-shrink-0" />
               {!collapsed && (
-                <span className="text-sm font-medium truncate">{item.label}</span>
+                <>
+                  <span className="text-sm font-medium truncate flex-1">{item.label}</span>
+                  {!!item.badge && (
+                    <span className="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center leading-none">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
+                </>
               )}
               {collapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-slate-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 transition-opacity">
-                  {item.label}
-                </div>
+                <>
+                  {!!item.badge && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+                  )}
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-slate-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 transition-opacity">
+                    {item.label}{item.badge ? ` (${item.badge})` : ''}
+                  </div>
+                </>
               )}
             </Link>
           );
