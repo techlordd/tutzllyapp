@@ -11,6 +11,16 @@ import { DAYS_OF_WEEK, TIMEZONES, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import TimetableDrawer from '@/components/layout/TimetableDrawer';
 
+const DAYS = [
+  { label: 'Mon', full: 'Monday',    bg: 'bg-blue-500',   ring: 'ring-blue-500',   light: 'bg-blue-100 text-blue-700' },
+  { label: 'Tue', full: 'Tuesday',   bg: 'bg-purple-500', ring: 'ring-purple-500', light: 'bg-purple-100 text-purple-700' },
+  { label: 'Wed', full: 'Wednesday', bg: 'bg-emerald-500',ring: 'ring-emerald-500',light: 'bg-emerald-100 text-emerald-700' },
+  { label: 'Thu', full: 'Thursday',  bg: 'bg-orange-500', ring: 'ring-orange-500', light: 'bg-orange-100 text-orange-700' },
+  { label: 'Fri', full: 'Friday',    bg: 'bg-red-500',    ring: 'ring-red-500',    light: 'bg-red-100 text-red-700' },
+  { label: 'Sat', full: 'Saturday',  bg: 'bg-pink-500',   ring: 'ring-pink-500',   light: 'bg-pink-100 text-pink-700' },
+  { label: 'Sun', full: 'Sunday',    bg: 'bg-amber-500',  ring: 'ring-amber-500',  light: 'bg-amber-100 text-amber-700' },
+];
+
 interface Schedule {
   schedule_id: string; student_name: string; student_id: string;
   tutor_name: string; tutor_id: string; tutor_email: string; course_name: string;
@@ -53,6 +63,7 @@ export default function SchedulesPage() {
   const [form, setForm] = useState(emptyForm);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   // Unique enrolled students
   const enrolledStudents = [...new Map(enrollments.map(e => [e.student_id, e])).values()];
@@ -67,6 +78,7 @@ export default function SchedulesPage() {
   // Courses assigned to the selected tutor — sourced from tutor-assignments
   // (JOINs the courses table, so course_name/code are always accurate)
   const tutorCourses = tutorAssignments.filter(a => a.tutor_id === form.tutor_id);
+  const filtered = selectedDay ? schedules.filter(s => s.day === selectedDay) : schedules;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -168,7 +180,10 @@ export default function SchedulesPage() {
     { key: 'student_name', label: 'Student', sortable: true, render: (v: unknown) => (
       <span className="font-medium">{v as string || '—'}</span>
     )},
-    { key: 'day', label: 'Day' },
+    { key: 'day', label: 'Day', render: (v: unknown) => {
+      const d = DAYS.find(d => d.full === (v as string));
+      return d ? <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${d.light}`}>{v as string}</span> : <span>{v as string || '—'}</span>;
+    }},
     { key: 'tutor_name', label: 'Tutor', sortable: true, render: (v: unknown) => (
       <span className="font-medium">{v as string || '—'}</span>
     )},
@@ -197,7 +212,7 @@ export default function SchedulesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Schedules</h2>
-            <p className="text-gray-500 text-sm mt-0.5">{schedules.length} schedules</p>
+            <p className="text-gray-500 text-sm mt-0.5">{filtered.length} of {schedules.length} schedules</p>
           </div>
           <div className="flex gap-2">
             <Button icon={CalendarDays} variant="secondary" onClick={() => setTimetableOpen(true)}>Timetable</Button>
@@ -208,9 +223,36 @@ export default function SchedulesPage() {
           </div>
         </div>
 
-        <DataTable data={schedules} columns={columns} loading={loading}
+        {/* Day filter buttons */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedDay(null)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+              selectedDay === null
+                ? 'bg-gray-800 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            All
+          </button>
+          {DAYS.map(d => (
+            <button
+              key={d.full}
+              onClick={() => setSelectedDay(selectedDay === d.full ? null : d.full)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                selectedDay === d.full
+                  ? `${d.bg} text-white shadow-sm ring-2 ${d.ring} ring-offset-1`
+                  : `${d.light} hover:opacity-80`
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+
+        <DataTable data={filtered} columns={columns} loading={loading}
           searchKeys={['student_name', 'tutor_name', 'course_name', 'day']}
-          emptyMessage="No schedules created yet"
+          emptyMessage="No schedules found for this day"
           actions={(row) => (
             <>
               <Link href={`/admin/schedules/${row.schedule_id}`}>
