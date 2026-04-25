@@ -6,18 +6,19 @@ import Avatar from '@/components/ui/Avatar';
 import { statusBadge } from '@/components/ui/Badge';
 import {
   ArrowLeft, Mail, Phone, User, MapPin, Calendar, BookOpen, Video,
-  ClipboardList, GraduationCap, CheckCircle, AlertCircle, XCircle, FileText, Users,
+  ClipboardList, GraduationCap, CheckCircle, AlertCircle, XCircle, FileText, Users, BarChart3,
 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-type Tab = 'bio' | 'sessions' | 'activities' | 'courses';
+type Tab = 'bio' | 'sessions' | 'activities' | 'courses' | 'grades';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'bio',        label: 'Bio',             icon: User          },
   { id: 'sessions',   label: 'Session Log',      icon: Video         },
   { id: 'activities', label: 'Class Activities', icon: ClipboardList },
   { id: 'courses',    label: 'Enrolled Courses', icon: BookOpen      },
+  { id: 'grades',     label: 'Grade Book',       icon: BarChart3     },
 ];
 
 interface Student {
@@ -47,6 +48,13 @@ interface Activity {
 interface Enrollment {
   assign_id: string; course_name: string; course_code: string;
   tutor_name: string; entry_status: string; timestamp: string;
+}
+
+interface Grade {
+  record_id: number; course_name: string; tutor_name: string;
+  month: string; year: string;
+  punctuality: number; attentiveness: number; engagement: number;
+  homework: number; test_score: number; remarks: string; status: string;
 }
 
 function InfoRow({ icon: Icon, label, value }: {
@@ -117,6 +125,7 @@ export default function ParentChildDetailPage() {
   const [sessions,   setSessions]   = useState<Session[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [courses,    setCourses]    = useState<Enrollment[]>([]);
+  const [grades,     setGrades]     = useState<Grade[]>([]);
   const [tabLoaded,  setTabLoaded]  = useState<Partial<Record<Tab, boolean>>>({});
   const [tabLoading, setTabLoading] = useState(false);
 
@@ -141,6 +150,9 @@ export default function ParentChildDetailPage() {
       } else if (t === 'courses') {
         const d = await fetch(`/api/enrollments?student_id=${id}`).then(r => r.json());
         setCourses(d.enrollments || []);
+      } else if (t === 'grades') {
+        const d = await fetch(`/api/grades?student_id=${id}`).then(r => r.json());
+        setGrades(d.grades || []);
       }
       setTabLoaded(prev => ({ ...prev, [t]: true }));
     } catch { toast.error('Failed to load tab data'); }
@@ -359,6 +371,50 @@ export default function ParentChildDetailPage() {
                             <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{a.tutors_general_observation || '—'}</td>
                           </tr>
                         ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* GRADE BOOK */}
+            {!tabLoading && tab === 'grades' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <StatChip label="Total Entries" value={grades.length}                                            color="slate" />
+                  <StatChip label="Submitted"     value={grades.filter(g => g.status === 'submitted').length}     color="green" />
+                  <StatChip label="Draft"         value={grades.filter(g => g.status === 'draft').length}         color="amber" />
+                </div>
+                {grades.length === 0 ? <EmptyState message="No grade entries found for this student" /> : (
+                  <div className="overflow-x-auto rounded-xl border border-gray-100">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                        <tr>
+                          {['Period', 'Course', 'Tutor', 'Punct.', 'Attend.', 'Engage.', 'H/Work', 'Test', 'Avg', 'Status'].map(h => (
+                            <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {grades.map(g => {
+                          const scores = [g.punctuality, g.attentiveness, g.engagement, g.homework, g.test_score].filter(Boolean);
+                          const average = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '—';
+                          return (
+                            <tr key={g.record_id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{g.month} {g.year}</td>
+                              <td className="px-4 py-3 text-gray-600">{g.course_name || '—'}</td>
+                              <td className="px-4 py-3 text-gray-600">{g.tutor_name || '—'}</td>
+                              <td className="px-4 py-3 text-gray-500">{g.punctuality != null ? `${g.punctuality}%` : '—'}</td>
+                              <td className="px-4 py-3 text-gray-500">{g.attentiveness != null ? `${g.attentiveness}%` : '—'}</td>
+                              <td className="px-4 py-3 text-gray-500">{g.engagement != null ? `${g.engagement}%` : '—'}</td>
+                              <td className="px-4 py-3 text-gray-500">{g.homework != null ? `${g.homework}%` : '—'}</td>
+                              <td className="px-4 py-3 text-gray-500">{g.test_score != null ? `${g.test_score}%` : '—'}</td>
+                              <td className="px-4 py-3 font-semibold text-blue-600">{average}{average !== '—' ? '%' : ''}</td>
+                              <td className="px-4 py-3">{statusBadge(g.status)}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
