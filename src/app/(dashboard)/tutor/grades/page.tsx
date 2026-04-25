@@ -295,13 +295,6 @@ export default function TutorGradesPage() {
               onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))} />
           </FormField>
 
-          <FormField label="Status">
-            <Select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-              <option value="submitted">Submitted</option>
-              <option value="draft">Draft</option>
-            </Select>
-          </FormField>
-
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button type="submit" loading={submitting}>Submit Grades</Button>
