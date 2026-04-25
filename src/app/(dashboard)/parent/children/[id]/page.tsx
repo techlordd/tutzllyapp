@@ -398,7 +398,9 @@ export default function ParentChildDetailPage() {
                       </thead>
                       <tbody className="divide-y divide-gray-50">
                         {grades.map(g => {
-                          const scores = [g.punctuality, g.attentiveness, g.engagement, g.homework, g.test_score].filter(Boolean);
+                          const scores = [g.punctuality, g.attentiveness, g.engagement, g.homework, g.test_score]
+                            .map(v => parseFloat(String(v)))
+                            .filter(v => !isNaN(v));
                           const average = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '—';
                           return (
                             <tr key={g.record_id} className="hover:bg-gray-50/50 transition-colors">
