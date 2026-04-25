@@ -503,8 +503,9 @@ export interface EntityConfig {
   idPrefix: string | null;
   createUser: boolean;
   userRole?: string;
-  upsertOn?: string;         // column name for ON CONFLICT (...) DO UPDATE
-  allowDuplicates?: boolean; // plain INSERT, no ON CONFLICT clause — all rows inserted
+  upsertOn?: string;             // column name for ON CONFLICT (col) DO UPDATE
+  upsertOnConstraint?: string;   // constraint name for ON CONFLICT ON CONSTRAINT ... DO UPDATE
+  allowDuplicates?: boolean;     // plain INSERT, no ON CONFLICT clause — all rows inserted
 }
 
 export const ENTITY_CONFIG: Record<string, EntityConfig> = {
@@ -515,9 +516,9 @@ export const ENTITY_CONFIG: Record<string, EntityConfig> = {
   assignments:      { table: 'tutor_course_assignments', idField: 'tutor_assign_id', idPrefix: 'ASN', createUser: false, upsertOn: 'tutor_assign_id' },
   enrollments:      { table: 'student_enrollments',      idField: 'assign_id',       idPrefix: 'ENR', createUser: false, upsertOn: 'assign_id' },
   schedules:        { table: 'schedules',                idField: 'schedule_id',     idPrefix: 'SCH', createUser: false, upsertOn: 'schedule_id' },
-  sessions:         { table: 'sessions',                 idField: null,              idPrefix: null,  createUser: false, allowDuplicates: true },
-  activities:       { table: 'class_activities',         idField: null,              idPrefix: null,  createUser: false },
-  grades:           { table: 'grade_book',               idField: null,              idPrefix: null,  createUser: false },
+  sessions:         { table: 'sessions',                 idField: 'ssid',            idPrefix: 'SES', createUser: false, upsertOn: 'ssid' },
+  activities:       { table: 'class_activities',         idField: null,              idPrefix: null,  createUser: false, upsertOn: 'ssid' },
+  grades:           { table: 'grade_book',               idField: null,              idPrefix: null,  createUser: false, upsertOnConstraint: 'uq_grade_book_student_tutor_period' },
   messages_admin:   { table: 'messages_admin',           idField: null,              idPrefix: null,  createUser: false },
   messages_parent:  { table: 'messages_parent',          idField: null,              idPrefix: null,  createUser: false },
   messages_student: { table: 'messages_student',         idField: null,              idPrefix: null,  createUser: false },
@@ -715,6 +716,9 @@ export async function runImport(
           .map(c => `${c} = EXCLUDED.${c}`)
           .join(', ');
         sql = `INSERT INTO ${config.table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT (${config.upsertOn}) DO UPDATE SET ${updateSet}`;
+      } else if (config.upsertOnConstraint) {
+        const updateSet = cols.map(c => `${c} = EXCLUDED.${c}`).join(', ');
+        sql = `INSERT INTO ${config.table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT ON CONSTRAINT ${config.upsertOnConstraint} DO UPDATE SET ${updateSet}`;
       } else if (config.allowDuplicates) {
         sql = `INSERT INTO ${config.table} (${cols.join(', ')}) VALUES (${ph})`;
       } else {
@@ -732,12 +736,14 @@ export async function runImport(
       } else {
         inserted++;
         log.push(`[OK]   Row ${i + 1} | ${rowKey}`);
-        if (config.createUser && createdUserId && config.userRole) {
-          await client.query(
-            `INSERT INTO user_academy_roles (user_id, academy_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-            [createdUserId, academyId, config.userRole]
-          );
-        }
+      }
+      // Always ensure role assignment exists for people entities — runs even on
+      // conflict/skip so that re-imports heal any missing user_academy_roles rows.
+      if (config.createUser && createdUserId && config.userRole) {
+        await client.query(
+          `INSERT INTO user_academy_roles (user_id, academy_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+          [createdUserId, academyId, config.userRole]
+        );
       }
       await client.query('RELEASE SAVEPOINT sp');
     } catch (err) {

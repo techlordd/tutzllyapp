@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, CalendarDays, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
-  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio, RotateCcw, XCircle
+  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio, RotateCcw, XCircle, TrendingUp, UserCircle
 } from 'lucide-react';
 
 interface NavItem {
@@ -31,12 +31,14 @@ const adminNav: NavItem[] = [
   { label: 'Active Sessions', href: '/admin/active-sessions', icon: Radio },
   { label: 'Rescheduled Sessions', href: '/admin/rescheduled-sessions', icon: RotateCcw },
   { label: 'Missed Sessions', href: '/admin/missed-sessions', icon: XCircle },
+  { label: 'Session Reports', href: '/admin/session-reports', icon: TrendingUp },
   { label: 'Classrooms', href: '/admin/classrooms', icon: Monitor },
   { label: 'Class Activities', href: '/admin/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/admin/grades', icon: BarChart3 },
   { label: 'Messages', href: '/admin/messages', icon: MessageSquare },
   { label: 'Import CSV', href: '/admin/import', icon: Upload },
   { label: 'Branding', href: '/admin/branding', icon: Palette },
+  { label: 'Profile', href: '/admin/profile', icon: UserCircle },
 ];
 
 const tutorNav: NavItem[] = [
@@ -51,6 +53,7 @@ const tutorNav: NavItem[] = [
   { label: 'Class Activities', href: '/tutor/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/tutor/grades', icon: BarChart3 },
   { label: 'Messages', href: '/tutor/messages', icon: MessageSquare },
+  { label: 'Profile', href: '/tutor/profile', icon: UserCircle },
 ];
 
 const studentNav: NavItem[] = [
@@ -61,6 +64,7 @@ const studentNav: NavItem[] = [
   { label: 'Class Activities', href: '/student/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/student/grades', icon: BarChart3 },
   { label: 'Messages', href: '/student/messages', icon: MessageSquare },
+  { label: 'Profile', href: '/student/profile', icon: UserCircle },
 ];
 
 const parentNav: NavItem[] = [
@@ -70,6 +74,7 @@ const parentNav: NavItem[] = [
   { label: 'Sessions', href: '/parent/sessions', icon: Video },
   { label: 'Grade Book', href: '/parent/grades', icon: BarChart3 },
   { label: 'Messages', href: '/parent/messages', icon: MessageSquare },
+  { label: 'Profile', href: '/parent/profile', icon: UserCircle },
 ];
 
 const superAdminNav: NavItem[] = [

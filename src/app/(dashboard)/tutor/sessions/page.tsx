@@ -6,7 +6,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Video, Square, ClipboardList } from 'lucide-react';
+import { Video, Square, ClipboardList, Eye, CheckCircle, AlertCircle, Link2 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
@@ -56,9 +56,24 @@ function calcDuration(startDate: string, startTime: string, endDate: string, end
   return diff > 0 ? String(diff) : '';
 }
 
+interface Activity {
+  record_id: number; ssid: string; student_name: string; course_name: string; course_code: string;
+  class_activity_date: string; class_activity_time: string;
+  topic_taught: string; details_of_class_activity: string;
+  did_student_complete_prev_homework: string; new_homework_assigned: string; topic_of_homework: string;
+  homework1: string; homework2: string; homework3: string;
+  did_student_join_on_time: string; punctuality1: string;
+  is_student_attentive: string; attentiveness1: string;
+  student_engages_in_class: string; class_engagement1: string;
+  tutors_general_observation: string; tutors_intervention: string;
+  helpful_link1: string; helpful_link2: string; helpful_link3: string;
+}
+
 export default function TutorSessionsPage() {
   const user = useAuthStore(state => state.user);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [activityMap, setActivityMap] = useState<Map<string, Activity>>(new Map());
+  const [viewActivity, setViewActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
 
   // End session modal
@@ -84,9 +99,20 @@ export default function TutorSessionsPage() {
     if (!user?.user_id) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/sessions?tutor_id=${user.user_id}`);
-      const data = await res.json();
-      setSessions(data.sessions || []);
+      const [sessRes, actRes] = await Promise.all([
+        fetch(`/api/sessions?tutor_id=${user.user_id}`),
+        fetch(`/api/activities?tutor_id=${user.user_id}`),
+      ]);
+      const [sessData, actData] = await Promise.all([sessRes.json(), actRes.json()]);
+      setSessions(sessData.sessions || []);
+      // Activities arrive newest-first; iterate in reverse so newest wins per ssid
+      const map = new Map<string, Activity>();
+      const allActs = (actData.activities || []) as Activity[];
+      for (let i = allActs.length - 1; i >= 0; i--) {
+        const a = allActs[i];
+        if (a.ssid) map.set(a.ssid, a);
+      }
+      setActivityMap(map);
     } catch { toast.error('Failed to load data'); }
     setLoading(false);
   }, [user?.user_id]);
@@ -142,6 +168,7 @@ export default function TutorSessionsPage() {
       if (!res.ok) throw new Error();
       toast.success('Activity logged!');
       setActivityModal(null);
+      fetchSessions();
     } catch { toast.error('Failed to log activity'); }
     setActSubmitting(false);
   };
@@ -201,10 +228,18 @@ export default function TutorSessionsPage() {
                 </button>
               )}
               {row.status === 'ended' && (
-                <button onClick={() => openLogActivity(row)}
-                  className="px-2 py-1 text-xs rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center gap-1">
-                  <ClipboardList size={11} /> Log Activity
-                </button>
+                activityMap.has(row.ssid)
+                  ? (
+                    <button onClick={() => setViewActivity(activityMap.get(row.ssid)!)}
+                      className="px-2 py-1 text-xs rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center gap-1">
+                      <Eye size={11} /> View Class Activity
+                    </button>
+                  ) : (
+                    <button onClick={() => openLogActivity(row)}
+                      className="px-2 py-1 text-xs rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center gap-1">
+                      <ClipboardList size={11} /> Log Activity
+                    </button>
+                  )
               )}
             </div>
           )}
@@ -243,6 +278,101 @@ export default function TutorSessionsPage() {
           <div className="flex gap-3 mt-4">
             <Button variant="secondary" onClick={() => setEndModal(null)}>Cancel</Button>
             <Button loading={endSubmitting} onClick={handleEndSession}>End Session</Button>
+          </div>
+        </Modal>
+      )}
+
+      {/* View Class Activity Modal */}
+      {viewActivity && (
+        <Modal isOpen={true} onClose={() => setViewActivity(null)} title="Class Activity" size="2xl">
+          <div className="space-y-5">
+
+            {/* Header */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-blue-50 rounded-xl p-3">
+              <div><p className="text-xs text-blue-400 font-medium">Student</p><p className="font-semibold text-blue-900 text-sm">{viewActivity.student_name || '—'}</p></div>
+              <div><p className="text-xs text-blue-400 font-medium">Course</p><p className="font-semibold text-blue-900 text-sm">{viewActivity.course_name || '—'}</p></div>
+              <div><p className="text-xs text-blue-400 font-medium">Code</p><p className="font-semibold text-blue-900 text-sm font-mono">{viewActivity.course_code || '—'}</p></div>
+              <div>
+                <p className="text-xs text-blue-400 font-medium">Date &amp; Time</p>
+                <p className="font-semibold text-blue-900 text-sm">
+                  {viewActivity.class_activity_date ? formatDate(viewActivity.class_activity_date) : '—'}
+                  {viewActivity.class_activity_time ? ` · ${formatTime(viewActivity.class_activity_time)}` : ''}
+                </p>
+              </div>
+            </div>
+
+            {/* Class Details — always shown */}
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Topic Taught</p>
+                <p className="text-sm text-gray-900">{viewActivity.topic_taught || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Class Details</p>
+                <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewActivity.details_of_class_activity || '—'}</p>
+              </div>
+            </div>
+
+            {/* Student Assessment — always shown */}
+            <div className="border-t pt-4">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Student Assessment</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {([
+                  ['Joined on Time?', viewActivity.did_student_join_on_time, viewActivity.punctuality1],
+                  ['Attentive in Class?', viewActivity.is_student_attentive, viewActivity.attentiveness1],
+                  ['Engaged in Class?', viewActivity.student_engages_in_class, viewActivity.class_engagement1],
+                ] as [string, string, string][]).map(([label, answer, score]) => (
+                  <div key={label} className="flex items-start gap-2">
+                    {answer === 'Yes'
+                      ? <CheckCircle size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
+                      : answer
+                        ? <AlertCircle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
+                        : <AlertCircle size={14} className="text-gray-300 mt-0.5 flex-shrink-0" />}
+                    <div>
+                      <p className="text-xs text-gray-400">{label}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {answer || '—'}
+                        {score ? <ScoreBadge score={score} /> : null}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tutor's Notes — always shown */}
+            <div className="border-t pt-4">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Tutor&apos;s Notes</p>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">General Observation</p>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewActivity.tutors_general_observation || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Intervention / Action</p>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewActivity.tutors_intervention || '—'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Helpful Links — only if present */}
+            {(viewActivity.helpful_link1 || viewActivity.helpful_link2 || viewActivity.helpful_link3) && (
+              <div className="border-t pt-4">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Helpful Links</p>
+                <div className="space-y-1.5">
+                  {[viewActivity.helpful_link1, viewActivity.helpful_link2, viewActivity.helpful_link3].filter(Boolean).map((link, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Link2 size={13} className="text-blue-500 flex-shrink-0" />
+                      <a href={link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline break-all">{link}</a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <Button variant="secondary" onClick={() => setViewActivity(null)}>Close</Button>
+            </div>
           </div>
         </Modal>
       )}
