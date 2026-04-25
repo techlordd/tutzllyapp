@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, generateFullToken, getUserAcademyRoles } from '@/lib/auth';
-import { queryOne } from '@/lib/db';
+import { query, queryOne } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const academyRoles = await getUserAcademyRoles(user.id);
+    let academyRoles = await getUserAcademyRoles(user.id);
+
+    // Fallback for student/tutor/parent accounts whose user_academy_roles row was never
+    // created (e.g. imported via CSV before that backfill ran). Look up their academy from
+    // the role-specific table and write the missing row so future logins use the fast path.
+    if (academyRoles.length === 0 && ['student', 'tutor', 'parent'].includes(user.role)) {
+      const tableMap: Record<string, string> = { student: 'students', tutor: 'tutors', parent: 'parents' };
+      const table = tableMap[user.role];
+      const found = await query<{ academy_id: number; academy_name: string }>(
+        `SELECT r.academy_id, a.academy_name
+         FROM ${table} r
+         JOIN academies a ON a.id = r.academy_id
+         WHERE r.user_id = $1 AND a.is_active = true
+         ORDER BY r.academy_id ASC`,
+        [user.id]
+      );
+      if (found.length > 0) {
+        for (const row of found) {
+          await queryOne(
+            `INSERT INTO user_academy_roles (user_id, academy_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+            [user.id, row.academy_id, user.role]
+          );
+        }
+        academyRoles = found.map(r => ({ academy_id: r.academy_id, role: user.role, academy_name: r.academy_name }));
+      }
+    }
 
     // Super admin (platform-level Tutzlly staff): skip academy selection entirely
     if (user.role === 'super_admin') {
