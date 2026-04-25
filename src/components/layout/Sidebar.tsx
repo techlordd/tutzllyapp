@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, CalendarDays, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
-  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio, RotateCcw, XCircle
+  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio, RotateCcw, XCircle, TrendingUp
 } from 'lucide-react';
 
 interface NavItem {
@@ -31,6 +31,7 @@ const adminNav: NavItem[] = [
   { label: 'Active Sessions', href: '/admin/active-sessions', icon: Radio },
   { label: 'Rescheduled Sessions', href: '/admin/rescheduled-sessions', icon: RotateCcw },
   { label: 'Missed Sessions', href: '/admin/missed-sessions', icon: XCircle },
+  { label: 'Session Reports', href: '/admin/session-reports', icon: TrendingUp },
   { label: 'Classrooms', href: '/admin/classrooms', icon: Monitor },
   { label: 'Class Activities', href: '/admin/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/admin/grades', icon: BarChart3 },
