@@ -70,7 +70,7 @@ export default function TutorActiveSessionsPage() {
 
   useEffect(() => {
     fetchSessions();
-    const refresh = setInterval(fetchSessions, 30000);
+    const refresh = setInterval(fetchSessions, 600000);
     const tick = setInterval(() => setTick(t => t + 1), 60000);
     return () => { clearInterval(refresh); clearInterval(tick); };
   }, [fetchSessions]);
@@ -148,7 +148,7 @@ export default function TutorActiveSessionsPage() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">My Active Sessions</h2>
             <p className="text-gray-500 text-sm">
-              {sessions.length} session{sessions.length !== 1 ? 's' : ''} currently in progress · refreshes every 30s
+              {sessions.length} session{sessions.length !== 1 ? 's' : ''} currently in progress · refreshes every 10m
             </p>
           </div>
         </div>

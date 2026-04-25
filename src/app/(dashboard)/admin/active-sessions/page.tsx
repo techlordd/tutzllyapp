@@ -102,7 +102,7 @@ export default function ActiveSessionsPage() {
 
   useEffect(() => {
     fetchSessions();
-    const refresh = setInterval(fetchSessions, 30000);
+    const refresh = setInterval(fetchSessions, 600000);
     // Tick every minute to keep elapsed times live
     const tick = setInterval(() => setTick(t => t + 1), 60000);
     return () => { clearInterval(refresh); clearInterval(tick); };
@@ -149,7 +149,7 @@ export default function ActiveSessionsPage() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Active Sessions</h2>
             <p className="text-gray-500 text-sm">
-              {sessions.length} session{sessions.length !== 1 ? 's' : ''} currently in progress · refreshes every 30s
+              {sessions.length} session{sessions.length !== 1 ? 's' : ''} currently in progress · refreshes every 10m
             </p>
           </div>
         </div>
