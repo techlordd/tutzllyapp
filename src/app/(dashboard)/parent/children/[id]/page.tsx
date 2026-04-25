@@ -7,6 +7,7 @@ import { statusBadge } from '@/components/ui/Badge';
 import {
   ArrowLeft, Mail, Phone, User, MapPin, Calendar, BookOpen, Video,
   ClipboardList, GraduationCap, CheckCircle, AlertCircle, XCircle, FileText, Users, BarChart3,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -20,6 +21,8 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'courses',    label: 'Enrolled Courses', icon: BookOpen      },
   { id: 'grades',     label: 'Grade Book',       icon: BarChart3     },
 ];
+
+const PAGE_SIZE = 10;
 
 interface Student {
   student_id: string; enrollment_id: string;
@@ -98,6 +101,35 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+function Paginator({ total, page, onPage }: { total: number; page: number; onPage: (p: number) => void }) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) return null;
+  const from = (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, total);
+  return (
+    <div className="flex items-center justify-between pt-3 px-1">
+      <p className="text-xs text-gray-400">Showing {from}–{to} of {total}</p>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPage(page - 1)}
+          disabled={page === 1}
+          className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 transition-colors"
+        >
+          <ChevronLeft size={15} />
+        </button>
+        <span className="text-xs text-gray-500 px-2">{page} / {totalPages}</span>
+        <button
+          onClick={() => onPage(page + 1)}
+          disabled={page === totalPages}
+          className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 transition-colors"
+        >
+          <ChevronRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function sessionStatusBadge(status: string) {
   const map: Record<string, { label: string; icon: React.ElementType; cls: string }> = {
     ended:       { label: 'Ended',       icon: CheckCircle, cls: 'bg-green-50 text-green-700' },
@@ -129,6 +161,10 @@ export default function ParentChildDetailPage() {
   const [tabLoaded,  setTabLoaded]  = useState<Partial<Record<Tab, boolean>>>({});
   const [tabLoading, setTabLoading] = useState(false);
 
+  const [pages, setPages] = useState<Record<Tab, number>>({
+    bio: 1, sessions: 1, activities: 1, courses: 1, grades: 1,
+  });
+
   useEffect(() => {
     fetch(`/api/students/${id}`)
       .then(r => r.json())
@@ -159,7 +195,13 @@ export default function ParentChildDetailPage() {
     setTabLoading(false);
   }, [id, tabLoaded]);
 
-  const switchTab = (t: Tab) => { setTab(t); loadTab(t); };
+  const switchTab = (t: Tab) => {
+    setTab(t);
+    setPages(prev => ({ ...prev, [t]: 1 }));
+    loadTab(t);
+  };
+
+  const setPage = (t: Tab, p: number) => setPages(prev => ({ ...prev, [t]: p }));
 
   if (loading) return (
     <DashboardLayout title="Child Profile">
@@ -179,6 +221,11 @@ export default function ParentChildDetailPage() {
   const addressParts = [student.address_line_1, student.address_line_2, student.address_city,
     student.address_state_province, student.address_zip_postal, student.address_country].filter(Boolean);
   const fullAddress = addressParts.join(', ') || student.address;
+
+  const pagedSessions   = sessions.slice((pages.sessions - 1) * PAGE_SIZE, pages.sessions * PAGE_SIZE);
+  const pagedActivities = activities.slice((pages.activities - 1) * PAGE_SIZE, pages.activities * PAGE_SIZE);
+  const pagedCourses    = courses.slice((pages.courses - 1) * PAGE_SIZE, pages.courses * PAGE_SIZE);
+  const pagedGrades     = grades.slice((pages.grades - 1) * PAGE_SIZE, pages.grades * PAGE_SIZE);
 
   return (
     <DashboardLayout title="Child Profile">
@@ -317,33 +364,36 @@ export default function ParentChildDetailPage() {
                   <StatChip label="Missed"    value={sessions.filter(s => s.status === 'missed').length}    color="red"   />
                 </div>
                 {sessions.length === 0 ? <EmptyState message="No sessions found for this student" /> : (
-                  <div className="overflow-x-auto rounded-xl border border-gray-100">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-                        <tr>
-                          {['Date', 'Tutor', 'Course', 'Time', 'Duration', 'Status'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {sessions.map(s => (
-                          <tr key={s.ssid} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-4 py-3 font-medium text-gray-900">{formatDate(s.start_session_date)}</td>
-                            <td className="px-4 py-3 text-gray-600">{s.tutor_name || '—'}</td>
-                            <td className="px-4 py-3 text-gray-600">{s.course_name || '—'}</td>
-                            <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                              {s.start_session_time ? formatTime(s.start_session_time) : '—'}
-                            </td>
-                            <td className="px-4 py-3 text-gray-500">
-                              {s.session_duration ? `${s.session_duration}h` : '—'}
-                            </td>
-                            <td className="px-4 py-3">{sessionStatusBadge(s.status)}</td>
+                  <>
+                    <div className="overflow-x-auto rounded-xl border border-gray-100">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                          <tr>
+                            {['Date', 'Tutor', 'Course', 'Time', 'Duration', 'Status'].map(h => (
+                              <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                            ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {pagedSessions.map(s => (
+                            <tr key={s.ssid} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="px-4 py-3 font-medium text-gray-900">{formatDate(s.start_session_date)}</td>
+                              <td className="px-4 py-3 text-gray-600">{s.tutor_name || '—'}</td>
+                              <td className="px-4 py-3 text-gray-600">{s.course_name || '—'}</td>
+                              <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                                {s.start_session_time ? formatTime(s.start_session_time) : '—'}
+                              </td>
+                              <td className="px-4 py-3 text-gray-500">
+                                {s.session_duration ? `${s.session_duration}h` : '—'}
+                              </td>
+                              <td className="px-4 py-3">{sessionStatusBadge(s.status)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Paginator total={sessions.length} page={pages.sessions} onPage={p => setPage('sessions', p)} />
+                  </>
                 )}
               </div>
             )}
@@ -352,28 +402,31 @@ export default function ParentChildDetailPage() {
             {!tabLoading && tab === 'activities' && (
               <div>
                 {activities.length === 0 ? <EmptyState message="No class activities found for this student" /> : (
-                  <div className="overflow-x-auto rounded-xl border border-gray-100">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-                        <tr>
-                          {['Date', 'Tutor', 'Course', 'Topic Taught', 'Observation'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {activities.map(a => (
-                          <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{formatDate(a.class_activity_date)}</td>
-                            <td className="px-4 py-3 text-gray-600">{a.tutor_name || '—'}</td>
-                            <td className="px-4 py-3 text-gray-600">{a.course_name || '—'}</td>
-                            <td className="px-4 py-3 text-gray-700 max-w-[200px] truncate">{a.topic_taught || '—'}</td>
-                            <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{a.tutors_general_observation || '—'}</td>
+                  <>
+                    <div className="overflow-x-auto rounded-xl border border-gray-100">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                          <tr>
+                            {['Date', 'Tutor', 'Course', 'Topic Taught', 'Observation'].map(h => (
+                              <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                            ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {pagedActivities.map(a => (
+                            <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{formatDate(a.class_activity_date)}</td>
+                              <td className="px-4 py-3 text-gray-600">{a.tutor_name || '—'}</td>
+                              <td className="px-4 py-3 text-gray-600">{a.course_name || '—'}</td>
+                              <td className="px-4 py-3 text-gray-700 max-w-[200px] truncate">{a.topic_taught || '—'}</td>
+                              <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{a.tutors_general_observation || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Paginator total={activities.length} page={pages.activities} onPage={p => setPage('activities', p)} />
+                  </>
                 )}
               </div>
             )}
@@ -387,39 +440,42 @@ export default function ParentChildDetailPage() {
                   <StatChip label="Draft"         value={grades.filter(g => g.status === 'draft').length}         color="amber" />
                 </div>
                 {grades.length === 0 ? <EmptyState message="No grade entries found for this student" /> : (
-                  <div className="overflow-x-auto rounded-xl border border-gray-100">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-                        <tr>
-                          {['Period', 'Course', 'Tutor', 'Punct.', 'Attend.', 'Engage.', 'H/Work', 'Test', 'Avg', 'Status'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {grades.map(g => {
-                          const scores = [g.punctuality, g.attentiveness, g.engagement, g.homework, g.test_score]
-                            .map(v => parseFloat(String(v)))
-                            .filter(v => !isNaN(v));
-                          const average = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '—';
-                          return (
-                            <tr key={g.record_id} className="hover:bg-gray-50/50 transition-colors">
-                              <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{g.month} {g.year}</td>
-                              <td className="px-4 py-3 text-gray-600">{g.course_name || '—'}</td>
-                              <td className="px-4 py-3 text-gray-600">{g.tutor_name || '—'}</td>
-                              <td className="px-4 py-3 text-gray-500">{g.punctuality != null ? `${g.punctuality}%` : '—'}</td>
-                              <td className="px-4 py-3 text-gray-500">{g.attentiveness != null ? `${g.attentiveness}%` : '—'}</td>
-                              <td className="px-4 py-3 text-gray-500">{g.engagement != null ? `${g.engagement}%` : '—'}</td>
-                              <td className="px-4 py-3 text-gray-500">{g.homework != null ? `${g.homework}%` : '—'}</td>
-                              <td className="px-4 py-3 text-gray-500">{g.test_score != null ? `${g.test_score}%` : '—'}</td>
-                              <td className="px-4 py-3 font-semibold text-blue-600">{average}{average !== '—' ? '%' : ''}</td>
-                              <td className="px-4 py-3">{statusBadge(g.status)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  <>
+                    <div className="overflow-x-auto rounded-xl border border-gray-100">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                          <tr>
+                            {['Period', 'Course', 'Tutor', 'Punct.', 'Attend.', 'Engage.', 'H/Work', 'Test', 'Avg', 'Status'].map(h => (
+                              <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {pagedGrades.map(g => {
+                            const scores = [g.punctuality, g.attentiveness, g.engagement, g.homework, g.test_score]
+                              .map(v => parseFloat(String(v)))
+                              .filter(v => !isNaN(v));
+                            const average = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '—';
+                            return (
+                              <tr key={g.record_id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{g.month} {g.year}</td>
+                                <td className="px-4 py-3 text-gray-600">{g.course_name || '—'}</td>
+                                <td className="px-4 py-3 text-gray-600">{g.tutor_name || '—'}</td>
+                                <td className="px-4 py-3 text-gray-500">{g.punctuality != null ? `${g.punctuality}%` : '—'}</td>
+                                <td className="px-4 py-3 text-gray-500">{g.attentiveness != null ? `${g.attentiveness}%` : '—'}</td>
+                                <td className="px-4 py-3 text-gray-500">{g.engagement != null ? `${g.engagement}%` : '—'}</td>
+                                <td className="px-4 py-3 text-gray-500">{g.homework != null ? `${g.homework}%` : '—'}</td>
+                                <td className="px-4 py-3 text-gray-500">{g.test_score != null ? `${g.test_score}%` : '—'}</td>
+                                <td className="px-4 py-3 font-semibold text-blue-600">{average}{average !== '—' ? '%' : ''}</td>
+                                <td className="px-4 py-3">{statusBadge(g.status)}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Paginator total={grades.length} page={pages.grades} onPage={p => setPage('grades', p)} />
+                  </>
                 )}
               </div>
             )}
@@ -440,7 +496,7 @@ export default function ParentChildDetailPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                          {courses.map(e => (
+                          {pagedCourses.map(e => (
                             <tr key={e.assign_id} className="hover:bg-gray-50/50 transition-colors">
                               <td className="px-4 py-3 font-medium text-gray-900">{e.course_name || '—'}</td>
                               <td className="px-4 py-3">
@@ -456,6 +512,7 @@ export default function ParentChildDetailPage() {
                         </tbody>
                       </table>
                     </div>
+                    <Paginator total={courses.length} page={pages.courses} onPage={p => setPage('courses', p)} />
                   </>
                 )}
               </div>
