@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
 
     let sql = `SELECT s.*,
                       COALESCE(s.course_name, c.course_name) AS course_name,
-                      COALESCE(s.course_code, c.course_code) AS course_code
+                      COALESCE(s.course_code, c.course_code) AS course_code,
+                      NULLIF(TRIM(CONCAT(s.tutor_firstname, ' ', s.tutor_lastname)), '') AS tutor_name
                FROM sessions s
                LEFT JOIN courses c ON s.course_id = c.id
                WHERE s.entry_status != 'deleted' AND (s.academy_id = $1 OR $1 = 0)`;

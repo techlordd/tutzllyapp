@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const tutorId = searchParams.get('tutor_id');
     const studentId = searchParams.get('student_id');
     const academyId = getAcademyId(request);
-    let sql = `SELECT * FROM class_activities WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
+    let sql = `SELECT *, NULLIF(TRIM(CONCAT(tutor_firstname, ' ', tutor_lastname)), '') AS tutor_name FROM class_activities WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (tutorId) { params.push(tutorId); sql += ` AND (tutor_id = $${params.length} OR tutor_id IN (SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $${params.length} AND t.entry_status != 'deleted'))`; }
     if (studentId) { params.push(studentId); sql += ` AND (student_id = $${params.length} OR student_id IN (SELECT st.student_id FROM students st JOIN users u ON st.user_id = u.id WHERE u.user_id = $${params.length} AND st.entry_status != 'deleted'))`; }
