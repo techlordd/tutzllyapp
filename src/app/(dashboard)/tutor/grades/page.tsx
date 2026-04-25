@@ -148,7 +148,7 @@ export default function TutorGradesPage() {
         <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Grade Report" size="lg">
           <div className="space-y-4">
             <div className="text-center pb-4 border-b">
-              <h3 className="text-lg font-bold">{selected.student_name}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{selected.student_name}</h3>
               <p className="text-gray-500 text-sm">{selected.course_name} — {selected.month} {selected.year}</p>
               {(() => {
                 const avg = parseFloat(getAvg(selected));
@@ -181,7 +181,7 @@ export default function TutorGradesPage() {
             {selected.remarks && (
               <div>
                 <p className="text-xs text-gray-400 mb-1">Remarks</p>
-                <p className="text-sm bg-gray-50 p-3 rounded-xl">{selected.remarks}</p>
+                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl">{selected.remarks}</p>
               </div>
             )}
             <div className="flex justify-end">{statusBadge(selected.status)}</div>
