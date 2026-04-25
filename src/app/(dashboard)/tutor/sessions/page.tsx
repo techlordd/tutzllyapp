@@ -105,8 +105,11 @@ export default function TutorSessionsPage() {
       ]);
       const [sessData, actData] = await Promise.all([sessRes.json(), actRes.json()]);
       setSessions(sessData.sessions || []);
+      // Activities arrive newest-first; iterate in reverse so newest wins per ssid
       const map = new Map<string, Activity>();
-      for (const a of (actData.activities || []) as Activity[]) {
+      const allActs = (actData.activities || []) as Activity[];
+      for (let i = allActs.length - 1; i >= 0; i--) {
+        const a = allActs[i];
         if (a.ssid) map.set(a.ssid, a);
       }
       setActivityMap(map);
@@ -165,6 +168,7 @@ export default function TutorSessionsPage() {
       if (!res.ok) throw new Error();
       toast.success('Activity logged!');
       setActivityModal(null);
+      fetchSessions();
     } catch { toast.error('Failed to log activity'); }
     setActSubmitting(false);
   };
@@ -282,12 +286,14 @@ export default function TutorSessionsPage() {
       {viewActivity && (
         <Modal isOpen={true} onClose={() => setViewActivity(null)} title="Class Activity" size="2xl">
           <div className="space-y-5">
+
+            {/* Header */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-blue-50 rounded-xl p-3">
               <div><p className="text-xs text-blue-400 font-medium">Student</p><p className="font-semibold text-blue-900 text-sm">{viewActivity.student_name || '—'}</p></div>
               <div><p className="text-xs text-blue-400 font-medium">Course</p><p className="font-semibold text-blue-900 text-sm">{viewActivity.course_name || '—'}</p></div>
-              {viewActivity.course_code && <div><p className="text-xs text-blue-400 font-medium">Code</p><p className="font-semibold text-blue-900 text-sm font-mono">{viewActivity.course_code}</p></div>}
+              <div><p className="text-xs text-blue-400 font-medium">Code</p><p className="font-semibold text-blue-900 text-sm font-mono">{viewActivity.course_code || '—'}</p></div>
               <div>
-                <p className="text-xs text-blue-400 font-medium">Date</p>
+                <p className="text-xs text-blue-400 font-medium">Date &amp; Time</p>
                 <p className="font-semibold text-blue-900 text-sm">
                   {viewActivity.class_activity_date ? formatDate(viewActivity.class_activity_date) : '—'}
                   {viewActivity.class_activity_time ? ` · ${formatTime(viewActivity.class_activity_time)}` : ''}
@@ -295,69 +301,61 @@ export default function TutorSessionsPage() {
               </div>
             </div>
 
+            {/* Class Details — always shown */}
             <div className="space-y-3">
               <div>
                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Topic Taught</p>
                 <p className="text-sm text-gray-900">{viewActivity.topic_taught || '—'}</p>
               </div>
-              {viewActivity.details_of_class_activity && (
-                <div>
-                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Class Details</p>
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewActivity.details_of_class_activity}</p>
-                </div>
-              )}
+              <div>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Class Details</p>
+                <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewActivity.details_of_class_activity || '—'}</p>
+              </div>
             </div>
 
+            {/* Student Assessment — always shown */}
             <div className="border-t pt-4">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Student Assessment</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                {[
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {([
                   ['Joined on Time?', viewActivity.did_student_join_on_time, viewActivity.punctuality1],
-                  ['Attentive?', viewActivity.is_student_attentive, viewActivity.attentiveness1],
-                  ['Engaged?', viewActivity.student_engages_in_class, viewActivity.class_engagement1],
-                ].map(([label, answer, score]) => (
-                  <div key={label as string} className="flex items-start gap-2">
+                  ['Attentive in Class?', viewActivity.is_student_attentive, viewActivity.attentiveness1],
+                  ['Engaged in Class?', viewActivity.student_engages_in_class, viewActivity.class_engagement1],
+                ] as [string, string, string][]).map(([label, answer, score]) => (
+                  <div key={label} className="flex items-start gap-2">
                     {answer === 'Yes'
                       ? <CheckCircle size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
-                      : <AlertCircle size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />}
+                      : answer
+                        ? <AlertCircle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
+                        : <AlertCircle size={14} className="text-gray-300 mt-0.5 flex-shrink-0" />}
                     <div>
-                      <p className="text-xs text-gray-400">{label as string}</p>
-                      <p className="text-sm font-medium text-gray-900">{answer || '—'}{score ? <span className="ml-1.5 text-xs text-gray-400">({score}/100)</span> : null}</p>
+                      <p className="text-xs text-gray-400">{label}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {answer || '—'}
+                        {score ? <ScoreBadge score={score} /> : null}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {(viewActivity.did_student_complete_prev_homework || viewActivity.new_homework_assigned || viewActivity.topic_of_homework || viewActivity.homework1) && (
-              <div className="border-t pt-4">
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Homework</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  {viewActivity.did_student_complete_prev_homework && <p><span className="text-gray-400">Completed prev:</span> {viewActivity.did_student_complete_prev_homework}</p>}
-                  {viewActivity.new_homework_assigned && <p><span className="text-gray-400">New assigned:</span> {viewActivity.new_homework_assigned}</p>}
-                  {viewActivity.topic_of_homework && <p><span className="text-gray-400">Topic:</span> {viewActivity.topic_of_homework}</p>}
-                  {[viewActivity.homework1, viewActivity.homework2, viewActivity.homework3].filter(Boolean).length > 0 && (
-                    <div>
-                      <p className="text-gray-400 mb-1">Items:</p>
-                      {[viewActivity.homework1, viewActivity.homework2, viewActivity.homework3].filter(Boolean).map((hw, i) => (
-                        <p key={i} className="text-gray-900">{hw}</p>
-                      ))}
-                    </div>
-                  )}
+            {/* Tutor's Notes — always shown */}
+            <div className="border-t pt-4">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Tutor&apos;s Notes</p>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">General Observation</p>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewActivity.tutors_general_observation || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Intervention / Action</p>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewActivity.tutors_intervention || '—'}</p>
                 </div>
               </div>
-            )}
+            </div>
 
-            {(viewActivity.tutors_general_observation || viewActivity.tutors_intervention) && (
-              <div className="border-t pt-4">
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Tutor&apos;s Notes</p>
-                <div className="space-y-2 text-sm">
-                  {viewActivity.tutors_general_observation && <div><p className="text-gray-400 text-xs mb-0.5">General Observation</p><p className="text-gray-900 whitespace-pre-wrap">{viewActivity.tutors_general_observation}</p></div>}
-                  {viewActivity.tutors_intervention && <div><p className="text-gray-400 text-xs mb-0.5">Intervention / Action</p><p className="text-gray-900 whitespace-pre-wrap">{viewActivity.tutors_intervention}</p></div>}
-                </div>
-              </div>
-            )}
-
+            {/* Helpful Links — only if present */}
             {(viewActivity.helpful_link1 || viewActivity.helpful_link2 || viewActivity.helpful_link3) && (
               <div className="border-t pt-4">
                 <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Helpful Links</p>
