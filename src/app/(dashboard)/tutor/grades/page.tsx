@@ -41,7 +41,7 @@ const emptyForm = () => ({
   student_id: '', student_name: '',
   month: '', year: new Date().getFullYear().toString(),
   punctuality: '', attentiveness: '', engagement: '', homework: '',
-  test_score: '', remarks: '', status: 'submitted',
+  test_score: '', remarks: '', status: 'pending',
 });
 
 export default function TutorGradesPage() {
@@ -293,6 +293,13 @@ export default function TutorGradesPage() {
           <FormField label="Remarks">
             <Textarea rows={2} value={form.remarks}
               onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))} />
+          </FormField>
+
+          <FormField label="Status">
+            <Select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+            </Select>
           </FormField>
 
           <div className="flex gap-3 pt-2">
