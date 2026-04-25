@@ -6,11 +6,10 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Video, Square, ClipboardList, ExternalLink } from 'lucide-react';
+import { Video, Square, ClipboardList, Eye, CheckCircle, AlertCircle, Link2 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
-import Link from 'next/link';
 
 interface Session {
   ssid: string; schedule_id: string;
@@ -57,12 +56,24 @@ function calcDuration(startDate: string, startTime: string, endDate: string, end
   return diff > 0 ? String(diff) : '';
 }
 
-interface Activity { record_id: number; ssid: string; }
+interface Activity {
+  record_id: number; ssid: string; student_name: string; course_name: string; course_code: string;
+  class_activity_date: string; class_activity_time: string;
+  topic_taught: string; details_of_class_activity: string;
+  did_student_complete_prev_homework: string; new_homework_assigned: string; topic_of_homework: string;
+  homework1: string; homework2: string; homework3: string;
+  did_student_join_on_time: string; punctuality1: string;
+  is_student_attentive: string; attentiveness1: string;
+  student_engages_in_class: string; class_engagement1: string;
+  tutors_general_observation: string; tutors_intervention: string;
+  helpful_link1: string; helpful_link2: string; helpful_link3: string;
+}
 
 export default function TutorSessionsPage() {
   const user = useAuthStore(state => state.user);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [activityMap, setActivityMap] = useState<Map<string, number>>(new Map());
+  const [activityMap, setActivityMap] = useState<Map<string, Activity>>(new Map());
+  const [viewActivity, setViewActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
 
   // End session modal
@@ -94,9 +105,9 @@ export default function TutorSessionsPage() {
       ]);
       const [sessData, actData] = await Promise.all([sessRes.json(), actRes.json()]);
       setSessions(sessData.sessions || []);
-      const map = new Map<string, number>();
+      const map = new Map<string, Activity>();
       for (const a of (actData.activities || []) as Activity[]) {
-        if (a.ssid) map.set(a.ssid, a.record_id);
+        if (a.ssid) map.set(a.ssid, a);
       }
       setActivityMap(map);
     } catch { toast.error('Failed to load data'); }
@@ -215,10 +226,10 @@ export default function TutorSessionsPage() {
               {row.status === 'ended' && (
                 activityMap.has(row.ssid)
                   ? (
-                    <Link href={`/tutor/activities/${activityMap.get(row.ssid)}`}
+                    <button onClick={() => setViewActivity(activityMap.get(row.ssid)!)}
                       className="px-2 py-1 text-xs rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center gap-1">
-                      <ExternalLink size={11} /> View Class Activity
-                    </Link>
+                      <Eye size={11} /> View Class Activity
+                    </button>
                   ) : (
                     <button onClick={() => openLogActivity(row)}
                       className="px-2 py-1 text-xs rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center gap-1">
@@ -263,6 +274,107 @@ export default function TutorSessionsPage() {
           <div className="flex gap-3 mt-4">
             <Button variant="secondary" onClick={() => setEndModal(null)}>Cancel</Button>
             <Button loading={endSubmitting} onClick={handleEndSession}>End Session</Button>
+          </div>
+        </Modal>
+      )}
+
+      {/* View Class Activity Modal */}
+      {viewActivity && (
+        <Modal isOpen={true} onClose={() => setViewActivity(null)} title="Class Activity" size="2xl">
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-blue-50 rounded-xl p-3">
+              <div><p className="text-xs text-blue-400 font-medium">Student</p><p className="font-semibold text-blue-900 text-sm">{viewActivity.student_name || '—'}</p></div>
+              <div><p className="text-xs text-blue-400 font-medium">Course</p><p className="font-semibold text-blue-900 text-sm">{viewActivity.course_name || '—'}</p></div>
+              {viewActivity.course_code && <div><p className="text-xs text-blue-400 font-medium">Code</p><p className="font-semibold text-blue-900 text-sm font-mono">{viewActivity.course_code}</p></div>}
+              <div>
+                <p className="text-xs text-blue-400 font-medium">Date</p>
+                <p className="font-semibold text-blue-900 text-sm">
+                  {viewActivity.class_activity_date ? formatDate(viewActivity.class_activity_date) : '—'}
+                  {viewActivity.class_activity_time ? ` · ${formatTime(viewActivity.class_activity_time)}` : ''}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Topic Taught</p>
+                <p className="text-sm text-gray-900">{viewActivity.topic_taught || '—'}</p>
+              </div>
+              {viewActivity.details_of_class_activity && (
+                <div>
+                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Class Details</p>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewActivity.details_of_class_activity}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t pt-4">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Student Assessment</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                {[
+                  ['Joined on Time?', viewActivity.did_student_join_on_time, viewActivity.punctuality1],
+                  ['Attentive?', viewActivity.is_student_attentive, viewActivity.attentiveness1],
+                  ['Engaged?', viewActivity.student_engages_in_class, viewActivity.class_engagement1],
+                ].map(([label, answer, score]) => (
+                  <div key={label as string} className="flex items-start gap-2">
+                    {answer === 'Yes'
+                      ? <CheckCircle size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
+                      : <AlertCircle size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />}
+                    <div>
+                      <p className="text-xs text-gray-400">{label as string}</p>
+                      <p className="text-sm font-medium text-gray-900">{answer || '—'}{score ? <span className="ml-1.5 text-xs text-gray-400">({score}/100)</span> : null}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {(viewActivity.did_student_complete_prev_homework || viewActivity.new_homework_assigned || viewActivity.topic_of_homework || viewActivity.homework1) && (
+              <div className="border-t pt-4">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Homework</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  {viewActivity.did_student_complete_prev_homework && <p><span className="text-gray-400">Completed prev:</span> {viewActivity.did_student_complete_prev_homework}</p>}
+                  {viewActivity.new_homework_assigned && <p><span className="text-gray-400">New assigned:</span> {viewActivity.new_homework_assigned}</p>}
+                  {viewActivity.topic_of_homework && <p><span className="text-gray-400">Topic:</span> {viewActivity.topic_of_homework}</p>}
+                  {[viewActivity.homework1, viewActivity.homework2, viewActivity.homework3].filter(Boolean).length > 0 && (
+                    <div>
+                      <p className="text-gray-400 mb-1">Items:</p>
+                      {[viewActivity.homework1, viewActivity.homework2, viewActivity.homework3].filter(Boolean).map((hw, i) => (
+                        <p key={i} className="text-gray-900">{hw}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {(viewActivity.tutors_general_observation || viewActivity.tutors_intervention) && (
+              <div className="border-t pt-4">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Tutor&apos;s Notes</p>
+                <div className="space-y-2 text-sm">
+                  {viewActivity.tutors_general_observation && <div><p className="text-gray-400 text-xs mb-0.5">General Observation</p><p className="text-gray-900 whitespace-pre-wrap">{viewActivity.tutors_general_observation}</p></div>}
+                  {viewActivity.tutors_intervention && <div><p className="text-gray-400 text-xs mb-0.5">Intervention / Action</p><p className="text-gray-900 whitespace-pre-wrap">{viewActivity.tutors_intervention}</p></div>}
+                </div>
+              </div>
+            )}
+
+            {(viewActivity.helpful_link1 || viewActivity.helpful_link2 || viewActivity.helpful_link3) && (
+              <div className="border-t pt-4">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Helpful Links</p>
+                <div className="space-y-1.5">
+                  {[viewActivity.helpful_link1, viewActivity.helpful_link2, viewActivity.helpful_link3].filter(Boolean).map((link, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Link2 size={13} className="text-blue-500 flex-shrink-0" />
+                      <a href={link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline break-all">{link}</a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <Button variant="secondary" onClick={() => setViewActivity(null)}>Close</Button>
+            </div>
           </div>
         </Modal>
       )}
