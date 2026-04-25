@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DataTable from '@/components/ui/DataTable';
-import Modal from '@/components/ui/Modal';
 import Avatar from '@/components/ui/Avatar';
 import { statusBadge } from '@/components/ui/Badge';
 import { Eye, Users } from 'lucide-react';
@@ -16,9 +16,9 @@ interface Student {
 
 export default function ParentChildrenPage() {
   const user = useAuthStore(state => state.user);
+  const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<Student | null>(null);
 
   useEffect(() => {
     if (!user?.user_id) return;
@@ -70,27 +70,16 @@ export default function ParentChildrenPage() {
           searchKeys={['student_name', 'course_name', 'tutor_name']}
           emptyMessage="No children found"
           actions={(row) => (
-            <button onClick={() => setSelected(row)} className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-600"><Eye size={15} /></button>
+            <button
+              onClick={() => router.push(`/parent/children/${row.student_id}`)}
+              className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors"
+              title="View details"
+            >
+              <Eye size={15} />
+            </button>
           )}
         />
       </div>
-      {selected && (
-        <Modal isOpen={true} onClose={() => setSelected(null)} title="Child Profile" size="md">
-          <div className="text-center mb-4">
-            <Avatar name={selected.student_name} size="lg" className="mx-auto mb-2" />
-            <h3 className="text-lg font-bold">{selected.student_name}</h3>
-            <div className="mt-2">{statusBadge(selected.entry_status)}</div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[['Course', selected.course_name], ['Tutor', selected.tutor_name]].map(([l, v]) => (
-              <div key={l as string} className="bg-gray-50 p-3 rounded-xl">
-                <p className="text-xs text-gray-400">{l as string}</p>
-                <p className="font-medium text-gray-900">{v as string}</p>
-              </div>
-            ))}
-          </div>
-        </Modal>
-      )}
     </DashboardLayout>
   );
 }
