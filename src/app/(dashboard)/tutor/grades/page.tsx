@@ -18,7 +18,9 @@ interface Grade {
 }
 
 const getAvg = (g: Grade) => {
-  const s = [g.punctuality, g.attentiveness, g.engagement, g.homework, g.test_score].filter(Boolean);
+  const s = [g.punctuality, g.attentiveness, g.engagement, g.homework, g.test_score]
+    .map(v => parseFloat(String(v)))
+    .filter(v => !isNaN(v));
   return s.length ? (s.reduce((a, b) => a + b, 0) / s.length).toFixed(1) : '0';
 };
 const getLetter = (avg: number) => {
@@ -80,8 +82,8 @@ export default function TutorGradesPage() {
     { key: 'student_name', label: 'Student', sortable: true },
     { key: 'course_name', label: 'Course' },
     { key: 'month', label: 'Period', render: (_: unknown, row: Grade) => `${row.month} ${row.year}` },
-    { key: 'punctuality', label: 'Punct.', render: (v: unknown) => v ? `${v}%` : '—' },
-    { key: 'test_score', label: 'Test', render: (v: unknown) => v ? `${v}%` : '—' },
+    { key: 'punctuality', label: 'Punct.', render: (v: unknown) => { const n = parseFloat(String(v)); return !isNaN(n) ? `${n}%` : '—'; } },
+    { key: 'test_score',  label: 'Test',   render: (v: unknown) => { const n = parseFloat(String(v)); return !isNaN(n) ? `${n}%` : '—'; } },
     { key: 'average', label: 'Avg', render: (_: unknown, row: Grade) => {
       const avg = parseFloat(getAvg(row)); const g = getLetter(avg);
       return <span className={`font-bold text-sm ${g.c}`}>{avg}% ({g.l})</span>;
@@ -148,18 +150,40 @@ export default function TutorGradesPage() {
             <div className="text-center pb-4 border-b">
               <h3 className="text-lg font-bold">{selected.student_name}</h3>
               <p className="text-gray-500 text-sm">{selected.course_name} — {selected.month} {selected.year}</p>
-              {(() => { const avg = parseFloat(getAvg(selected)); const g = getLetter(avg);
-                return <span className={`text-5xl font-black ${g.c}`}>{g.l}</span>; })()}
+              {(() => {
+                const avg = parseFloat(getAvg(selected));
+                const g = getLetter(avg);
+                return (
+                  <div className="mt-2">
+                    <span className={`text-5xl font-black ${g.c}`}>{g.l}</span>
+                    <p className={`text-lg font-semibold mt-1 ${g.c}`}>{avg}%</p>
+                  </div>
+                );
+              })()}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              {[['Punctuality', selected.punctuality], ['Attentiveness', selected.attentiveness], ['Engagement', selected.engagement], ['Homework', selected.homework], ['Test Score', selected.test_score]].map(([l, v]) => (
-                <div key={l as string} className="bg-gray-50 rounded-xl p-3 text-center">
-                  <p className="text-xs text-gray-400">{l as string}</p>
-                  <p className="text-xl font-bold text-gray-900 mt-1">{v !== null && v !== undefined ? `${v}%` : '—'}</p>
-                </div>
-              ))}
+              {[
+                ['Punctuality',   selected.punctuality],
+                ['Attentiveness', selected.attentiveness],
+                ['Engagement',    selected.engagement],
+                ['Homework',      selected.homework],
+                ['Test Score',    selected.test_score],
+              ].map(([l, v]) => {
+                const num = parseFloat(String(v));
+                return (
+                  <div key={l as string} className="bg-gray-50 rounded-xl p-3 text-center">
+                    <p className="text-xs text-gray-400">{l as string}</p>
+                    <p className="text-xl font-bold text-gray-900 mt-1">{!isNaN(num) ? `${num}%` : '—'}</p>
+                  </div>
+                );
+              })}
             </div>
-            {selected.remarks && <div><p className="text-xs text-gray-400 mb-1">Remarks</p><p className="text-sm bg-gray-50 p-3 rounded-xl">{selected.remarks}</p></div>}
+            {selected.remarks && (
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Remarks</p>
+                <p className="text-sm bg-gray-50 p-3 rounded-xl">{selected.remarks}</p>
+              </div>
+            )}
             <div className="flex justify-end">{statusBadge(selected.status)}</div>
           </div>
         </Modal>
