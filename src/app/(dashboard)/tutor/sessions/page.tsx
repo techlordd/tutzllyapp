@@ -6,10 +6,11 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Video, Square, ClipboardList } from 'lucide-react';
+import { Video, Square, ClipboardList, ExternalLink } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
+import Link from 'next/link';
 
 interface Session {
   ssid: string; schedule_id: string;
@@ -56,9 +57,12 @@ function calcDuration(startDate: string, startTime: string, endDate: string, end
   return diff > 0 ? String(diff) : '';
 }
 
+interface Activity { record_id: number; ssid: string; }
+
 export default function TutorSessionsPage() {
   const user = useAuthStore(state => state.user);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [activityMap, setActivityMap] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
 
   // End session modal
@@ -84,9 +88,17 @@ export default function TutorSessionsPage() {
     if (!user?.user_id) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/sessions?tutor_id=${user.user_id}`);
-      const data = await res.json();
-      setSessions(data.sessions || []);
+      const [sessRes, actRes] = await Promise.all([
+        fetch(`/api/sessions?tutor_id=${user.user_id}`),
+        fetch(`/api/activities?tutor_id=${user.user_id}`),
+      ]);
+      const [sessData, actData] = await Promise.all([sessRes.json(), actRes.json()]);
+      setSessions(sessData.sessions || []);
+      const map = new Map<string, number>();
+      for (const a of (actData.activities || []) as Activity[]) {
+        if (a.ssid) map.set(a.ssid, a.record_id);
+      }
+      setActivityMap(map);
     } catch { toast.error('Failed to load data'); }
     setLoading(false);
   }, [user?.user_id]);
@@ -201,10 +213,18 @@ export default function TutorSessionsPage() {
                 </button>
               )}
               {row.status === 'ended' && (
-                <button onClick={() => openLogActivity(row)}
-                  className="px-2 py-1 text-xs rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center gap-1">
-                  <ClipboardList size={11} /> Log Activity
-                </button>
+                activityMap.has(row.ssid)
+                  ? (
+                    <Link href={`/tutor/activities/${activityMap.get(row.ssid)}`}
+                      className="px-2 py-1 text-xs rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center gap-1">
+                      <ExternalLink size={11} /> View Class Activity
+                    </Link>
+                  ) : (
+                    <button onClick={() => openLogActivity(row)}
+                      className="px-2 py-1 text-xs rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center gap-1">
+                      <ClipboardList size={11} /> Log Activity
+                    </button>
+                  )
               )}
             </div>
           )}
