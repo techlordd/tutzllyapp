@@ -125,6 +125,7 @@ export default function TutorGradesPage() {
           }));
           setAutoCalcNote(`Auto-calculated from ${d.total_activities} session activit${d.total_activities === 1 ? 'y' : 'ies'} in ${form.month} ${form.year}.`);
         } else {
+          setForm(f => ({ ...f, punctuality: '', attentiveness: '', engagement: '', homework: '' }));
           setAutoCalcNote(`No session activities found for ${form.month} ${form.year}. Enter scores manually.`);
         }
       } catch { /* silent */ }
