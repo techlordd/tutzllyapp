@@ -141,7 +141,7 @@ export default function AssessmentReport({ studentId, tutorId }: AssessmentRepor
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number | null) => v != null ? [`${v}%`, 'Test Score'] : ['—', 'Test Score']} />
+                <Tooltip formatter={(v) => v != null ? [`${v}%`, 'Test Score'] : ['—', 'Test Score']} />
                 <Bar dataKey="Test Score" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -157,7 +157,7 @@ export default function AssessmentReport({ studentId, tutorId }: AssessmentRepor
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number | null, name: string) => v != null ? [`${v}%`, name] : ['—', name]} />
+                <Tooltip formatter={(v, name) => v != null ? [`${v}%`, name] : ['—', name]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
                 {METRIC_LINES.map(({ key, color }) => (
                   <Line key={key} type="monotone" dataKey={key} stroke={color}
