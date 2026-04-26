@@ -6,9 +6,12 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Send, Eye, Inbox, Trash2, CornerUpLeft } from 'lucide-react';
+import InboxView from '@/components/messages/InboxView';
+import SentView from '@/components/messages/SentView';
+import { Send, Eye, Inbox, SendHorizonal, LayoutList, Trash2, CornerUpLeft } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '@/store/authStore';
 
 interface Message {
   id: number;
@@ -28,6 +31,7 @@ interface Message {
 }
 
 type MsgType = 'admin' | 'parent' | 'student' | 'tutor';
+type ViewMode = 'all' | 'inbox' | 'sent';
 
 interface ReplyTarget {
   tab: MsgType;
@@ -68,22 +72,30 @@ function buildReplyTarget(msg: Message, currentTab: MsgType): ReplyTarget {
   return { tab: targetTab, subject: `Re: ${msg.subject}`, recipientName: senderName, extraFields };
 }
 
-export default function MessagesPage() {
+export default function AdminMessagesPage() {
+  const user = useAuthStore(state => state.user);
+  const [viewMode, setViewMode]   = useState<ViewMode>('all');
   const [activeType, setActiveType] = useState<MsgType>('admin');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [messages, setMessages]   = useState<Message[]>([]);
+  const [loading, setLoading]     = useState(true);
   const [composeOpen, setComposeOpen] = useState(false);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [selected, setSelected] = useState<Message | null>(null);
+  const [viewOpen, setViewOpen]   = useState(false);
+  const [selected, setSelected]   = useState<Message | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting]   = useState(false);
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
   const [form, setForm] = useState({
-    role: '', sender: '', user_role: '', subject: '', body: '', user_id: '',
-    recipient_email: '', send_email: false,
+    role: 'admin', sender: '', user_role: 'admin', subject: '', body: '',
+    user_id: '', recipient_email: '', send_email: false,
   });
+
+  useEffect(() => {
+    if (user) {
+      setForm(f => ({ ...f, sender: user.username, user_id: String(user.id) }));
+    }
+  }, [user]);
 
   const fetchMessages = useCallback(async () => {
     setLoading(true);
@@ -95,7 +107,9 @@ export default function MessagesPage() {
     setLoading(false);
   }, [activeType]);
 
-  useEffect(() => { fetchMessages(); }, [fetchMessages]);
+  useEffect(() => {
+    if (viewMode === 'all') fetchMessages();
+  }, [viewMode, fetchMessages]);
 
   const openCompose = () => {
     setReplyTarget(null);
@@ -160,39 +174,79 @@ export default function MessagesPage() {
     { key: 'status', label: 'Status', render: (v: unknown) => statusBadge(v as string) },
   ];
 
+  const viewTabs: { key: ViewMode; label: string; icon: React.ElementType }[] = [
+    { key: 'all',   label: 'All Messages', icon: LayoutList },
+    { key: 'inbox', label: 'Inbox',         icon: Inbox },
+    { key: 'sent',  label: 'Sent',          icon: SendHorizonal },
+  ];
+
   return (
     <DashboardLayout title="Messages">
       <div className="space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex gap-2 flex-wrap">
-            {(['admin', 'parent', 'student', 'tutor'] as MsgType[]).map(type => (
-              <button key={type} onClick={() => setActiveType(type)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors capitalize ${
-                  activeType === type ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}>
-                {type}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="danger" icon={Trash2} onClick={() => { setDeleteOpen(true); setDeleteConfirm(''); }}>Delete All</Button>
-            <Button icon={Send} onClick={openCompose}>Compose</Button>
-          </div>
+
+        {/* View mode switcher */}
+        <div className="flex gap-2 border-b border-gray-200 pb-3">
+          {viewTabs.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setViewMode(key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                viewMode === key
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Icon size={15} />
+              {label}
+            </button>
+          ))}
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Inbox size={16} />
-          <span>{msgTypeLabels[activeType]} ({messages.length})</span>
-        </div>
+        {/* Inbox view */}
+        {viewMode === 'inbox' && user && (
+          <InboxView fetchUrl="/api/messages/admin" currentUser={user} />
+        )}
 
-        <DataTable data={messages} columns={columns} loading={loading}
-          searchKeys={['sender', 'subject', 'role']}
-          emptyMessage="No messages yet"
-          actions={(row) => (
-            <button onClick={() => { setSelected(row); setViewOpen(true); }}
-              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"><Eye size={15} /></button>
-          )}
-        />
+        {/* Sent view */}
+        {viewMode === 'sent' && user && (
+          <SentView userId={String(user.id)} userRole="admin" />
+        )}
+
+        {/* All messages view (original) */}
+        {viewMode === 'all' && (
+          <>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex gap-2 flex-wrap">
+                {(['admin', 'parent', 'student', 'tutor'] as MsgType[]).map(type => (
+                  <button key={type} onClick={() => setActiveType(type)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors capitalize ${
+                      activeType === type ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}>
+                    {type}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="danger" icon={Trash2} onClick={() => { setDeleteOpen(true); setDeleteConfirm(''); }}>Delete All</Button>
+                <Button icon={Send} onClick={openCompose}>Compose</Button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Inbox size={16} />
+              <span>{msgTypeLabels[activeType]} ({messages.length})</span>
+            </div>
+
+            <DataTable data={messages} columns={columns} loading={loading}
+              searchKeys={['sender', 'subject', 'role']}
+              emptyMessage="No messages yet"
+              actions={(row) => (
+                <button onClick={() => { setSelected(row); setViewOpen(true); }}
+                  className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"><Eye size={15} /></button>
+              )}
+            />
+          </>
+        )}
       </div>
 
       {/* Compose Modal */}
@@ -211,7 +265,6 @@ export default function MessagesPage() {
               </FormField>
               <FormField label="Role" required>
                 <Select value={form.role} onChange={e => setForm({...form, role: e.target.value})} required>
-                  <option value="">Select Role</option>
                   <option value="admin">Admin</option><option value="tutor">Tutor</option>
                   <option value="student">Student</option><option value="parent">Parent</option>
                 </Select>

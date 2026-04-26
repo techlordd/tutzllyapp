@@ -6,11 +6,18 @@ import { sendEmail } from '@/lib/email';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('user_id');
-    const academyId = getAcademyId(request);
+    const userId      = searchParams.get('user_id');
+    const recipientId = searchParams.get('recipient_id');
+    const academyId   = getAcademyId(request);
     let sql = `SELECT * FROM messages_student WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (userId) { params.push(userId); sql += ` AND user_id = $${params.length}`; }
+    if (recipientId) {
+      params.push(recipientId);
+      sql += ` AND (recipient_id_student = $${params.length} OR recipient_id_student IN (
+        SELECT st.student_id FROM students st JOIN users u ON st.user_id = u.id WHERE u.user_id = $${params.length}
+      ))`;
+    }
     sql += ' ORDER BY message_date DESC, message_time DESC, timestamp DESC';
     const messages = await query(sql, params);
     return NextResponse.json({ messages });
