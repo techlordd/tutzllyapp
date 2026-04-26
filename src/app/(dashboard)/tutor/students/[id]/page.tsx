@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Avatar from '@/components/ui/Avatar';
 import { statusBadge } from '@/components/ui/Badge';
@@ -144,6 +145,7 @@ function sessionStatusBadge(status: string) {
 export default function TutorStudentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const user = useAuthStore(state => state.user);
   const [tab, setTab] = useState<Tab>('bio');
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
@@ -172,16 +174,16 @@ export default function TutorStudentDetailPage() {
     setTabLoading(true);
     try {
       if (t === 'sessions') {
-        const d = await fetch(`/api/sessions?student_id=${id}`).then(r => r.json());
+        const d = await fetch(`/api/sessions?student_id=${id}&tutor_id=${user?.user_id}`).then(r => r.json());
         setSessions(d.sessions || []);
       } else if (t === 'activities') {
-        const d = await fetch(`/api/activities?student_id=${id}`).then(r => r.json());
+        const d = await fetch(`/api/activities?student_id=${id}&tutor_id=${user?.user_id}`).then(r => r.json());
         setActivities(d.activities || []);
       } else if (t === 'courses') {
         const d = await fetch(`/api/enrollments?student_id=${id}`).then(r => r.json());
         setCourses(d.enrollments || []);
       } else if (t === 'grades') {
-        const d = await fetch(`/api/grades?student_id=${id}`).then(r => r.json());
+        const d = await fetch(`/api/grades?student_id=${id}&tutor_id=${user?.user_id}`).then(r => r.json());
         setGrades(d.grades || []);
       }
       setTabLoaded(prev => ({ ...prev, [t]: true }));
