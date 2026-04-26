@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuthStore } from '@/store/authStore';
-import { Palette, Save, RefreshCw, ExternalLink } from 'lucide-react';
+import { Palette, Save, RefreshCw, ExternalLink, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface BrandingForm {
@@ -19,6 +19,13 @@ interface BrandingForm {
   login_tagline: string;
   subdomain: string;
   custom_domain: string;
+  smtp_host: string;
+  smtp_port: string;
+  smtp_username: string;
+  smtp_password: string;
+  smtp_from_name: string;
+  smtp_from_email: string;
+  smtp_encryption: string;
 }
 
 const DEFAULT_BRANDING: BrandingForm = {
@@ -35,6 +42,13 @@ const DEFAULT_BRANDING: BrandingForm = {
   login_tagline: '',
   subdomain: '',
   custom_domain: '',
+  smtp_host: '',
+  smtp_port: '587',
+  smtp_username: '',
+  smtp_password: '',
+  smtp_from_name: '',
+  smtp_from_email: '',
+  smtp_encryption: 'tls',
 };
 
 export default function BrandingPage() {
@@ -66,6 +80,13 @@ export default function BrandingPage() {
             login_tagline: data.academy.login_tagline || '',
             subdomain: data.academy.subdomain || '',
             custom_domain: data.academy.custom_domain || '',
+            smtp_host: data.academy.smtp_host || '',
+            smtp_port: String(data.academy.smtp_port || '587'),
+            smtp_username: data.academy.smtp_username || '',
+            smtp_password: data.academy.smtp_password || '',
+            smtp_from_name: data.academy.smtp_from_name || '',
+            smtp_from_email: data.academy.smtp_from_email || '',
+            smtp_encryption: data.academy.smtp_encryption || 'tls',
           });
         }
       })
@@ -354,6 +375,66 @@ export default function BrandingPage() {
               {form.custom_domain && <span className="font-mono">{form.custom_domain}</span>}.
             </div>
           )}
+        </div>
+
+        {/* SMTP / Email Settings */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+              <Mail size={16} className="text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800">Email / SMTP Settings</h2>
+              <p className="text-xs text-gray-500">Used to send internal messages to users&apos; real email addresses.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">SMTP Host</label>
+              <input type="text" value={form.smtp_host} onChange={e => set('smtp_host', e.target.value)}
+                placeholder="smtp.gmail.com"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">SMTP Port</label>
+              <input type="number" value={form.smtp_port} onChange={e => set('smtp_port', e.target.value)}
+                placeholder="587"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Encryption</label>
+              <select value={form.smtp_encryption} onChange={e => set('smtp_encryption', e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="tls">TLS (STARTTLS)</option>
+                <option value="ssl">SSL</option>
+                <option value="none">None</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+              <input type="text" value={form.smtp_username} onChange={e => set('smtp_username', e.target.value)}
+                placeholder="your@email.com"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <input type="password" value={form.smtp_password} onChange={e => set('smtp_password', e.target.value)}
+                placeholder="••••••••"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">From Name</label>
+              <input type="text" value={form.smtp_from_name} onChange={e => set('smtp_from_name', e.target.value)}
+                placeholder="Bright Minds Academy"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">From Email</label>
+              <input type="email" value={form.smtp_from_email} onChange={e => set('smtp_from_email', e.target.value)}
+                placeholder="noreply@youracademy.com"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </div>
         </div>
 
         {/* Save bottom */}

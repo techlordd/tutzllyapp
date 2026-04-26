@@ -1,0 +1,8 @@
+ALTER TABLE academies
+  ADD COLUMN IF NOT EXISTS smtp_host       TEXT,
+  ADD COLUMN IF NOT EXISTS smtp_port       INTEGER DEFAULT 587,
+  ADD COLUMN IF NOT EXISTS smtp_username   TEXT,
+  ADD COLUMN IF NOT EXISTS smtp_password   TEXT,
+  ADD COLUMN IF NOT EXISTS smtp_from_name  TEXT,
+  ADD COLUMN IF NOT EXISTS smtp_from_email TEXT,
+  ADD COLUMN IF NOT EXISTS smtp_encryption VARCHAR(10) DEFAULT 'tls';

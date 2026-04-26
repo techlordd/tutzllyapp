@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
 import { getAcademyId } from '@/lib/request-context';
+import { sendEmail } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,6 +53,11 @@ export async function POST(request: NextRequest) {
         d.attach_file || null,
       ]
     );
+    if (d.send_email && d.recipient_email && academyId) {
+      sendEmail(academyId, d.recipient_email, d.subject,
+        `<p>${(d.body || '').replace(/\n/g, '<br>')}</p>`
+      ).catch(() => {});
+    }
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
     console.error(error);

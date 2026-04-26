@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
 import { getAcademyId } from '@/lib/request-context';
+import { sendEmail } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const d = await request.json();
+    const academyId = getAcademyId(request);
     const message = await queryOne(
       `INSERT INTO messages_student (message_date, message_time, role, sender, sender_email, user_role,
        message_to, tutor_name, tutor_id, student_name, student_id,
@@ -35,6 +37,11 @@ export async function POST(request: NextRequest) {
        d.recipient_name_tutor, d.recipient_id_tutor, d.recipient_name_parent, d.recipient_id_parent,
        d.recipient_admin, d.cc, d.subject, d.body, d.attach_file, d.user_id]
     );
+    if (d.send_email && d.recipient_email && academyId) {
+      sendEmail(academyId, d.recipient_email, d.subject,
+        `<p>${(d.body || '').replace(/\n/g, '<br>')}</p>`
+      ).catch(() => {});
+    }
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
     console.error(error);

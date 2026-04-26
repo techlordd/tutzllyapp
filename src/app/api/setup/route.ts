@@ -577,6 +577,17 @@ export async function POST(request: Request) {
       await query(`ALTER TABLE class_activities ADD COLUMN IF NOT EXISTS course_code TEXT`);
     } catch { /* ignore */ }
 
+    // ── Migration 021: SMTP settings on academies ──
+    try {
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_host TEXT`);
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_port INTEGER DEFAULT 587`);
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_username TEXT`);
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_password TEXT`);
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_from_name TEXT`);
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_from_email TEXT`);
+      await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_encryption VARCHAR(10) DEFAULT 'tls'`);
+    } catch { /* ignore */ }
+
     return NextResponse.json({
       success: true,
       message: 'Database initialized with demo accounts',

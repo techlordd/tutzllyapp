@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
     const academy = await queryOne(
       `SELECT id, academy_id, academy_name, academy_email, academy_description,
               primary_color, secondary_color, accent_color, logo_url, favicon_url, site_title,
-              login_bg_url, login_tagline, subdomain, custom_domain
+              login_bg_url, login_tagline, subdomain, custom_domain,
+              smtp_host, smtp_port, smtp_username, smtp_password,
+              smtp_from_name, smtp_from_email, smtp_encryption
        FROM academies WHERE id = $1`,
       [academyId]
     );
@@ -45,7 +47,9 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const allowed = ['academy_name', 'academy_email', 'academy_description',
       'primary_color', 'secondary_color', 'accent_color', 'logo_url', 'favicon_url', 'site_title',
-      'login_bg_url', 'login_tagline', 'subdomain', 'custom_domain'];
+      'login_bg_url', 'login_tagline', 'subdomain', 'custom_domain',
+      'smtp_host', 'smtp_port', 'smtp_username', 'smtp_password',
+      'smtp_from_name', 'smtp_from_email', 'smtp_encryption'];
 
     const updates: string[] = [];
     const values: unknown[] = [];
