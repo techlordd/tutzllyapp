@@ -39,7 +39,7 @@ const adminNav: NavItem[] = [
   { label: 'Grade Book', href: '/admin/grades', icon: BarChart3 },
   { label: 'Messages', href: '/admin/messages', icon: MessageSquare },
   { label: 'Import CSV', href: '/admin/import', icon: Upload },
-  { label: 'Branding', href: '/admin/branding', icon: Palette },
+  { label: 'Settings', href: '/admin/branding', icon: Palette },
   { label: 'Profile', href: '/admin/profile', icon: UserCircle },
 ];
 

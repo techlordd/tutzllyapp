@@ -126,7 +126,7 @@ export default function BrandingPage() {
 
   if (loading) {
     return (
-      <DashboardLayout title="Branding">
+      <DashboardLayout title="Settings">
         <div className="flex items-center justify-center h-64">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
         </div>
@@ -135,7 +135,7 @@ export default function BrandingPage() {
   }
 
   return (
-    <DashboardLayout title="Site Branding">
+    <DashboardLayout title="Settings">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
