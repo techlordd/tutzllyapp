@@ -8,19 +8,21 @@ import { statusBadge } from '@/components/ui/Badge';
 import {
   ArrowLeft, Mail, Phone, User, MapPin, Calendar, BookOpen, Video,
   ClipboardList, GraduationCap, CheckCircle, AlertCircle, XCircle,
-  FileText, Users, BarChart3, ChevronLeft, ChevronRight,
+  FileText, Users, BarChart3, ChevronLeft, ChevronRight, TrendingUp,
 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import AssessmentReport from '@/components/student/AssessmentReport';
 
-type Tab = 'bio' | 'sessions' | 'activities' | 'courses' | 'grades';
+type Tab = 'bio' | 'sessions' | 'activities' | 'courses' | 'grades' | 'assessment';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'bio',        label: 'Bio',             icon: User          },
-  { id: 'sessions',   label: 'Session Log',      icon: Video         },
-  { id: 'activities', label: 'Class Activities', icon: ClipboardList },
-  { id: 'courses',    label: 'Enrolled Courses', icon: BookOpen      },
-  { id: 'grades',     label: 'Grade Book',       icon: BarChart3     },
+  { id: 'bio',        label: 'Bio',              icon: User          },
+  { id: 'sessions',   label: 'Session Log',       icon: Video         },
+  { id: 'activities', label: 'Class Activities',  icon: ClipboardList },
+  { id: 'courses',    label: 'Enrolled Courses',  icon: BookOpen      },
+  { id: 'grades',     label: 'Grade Book',        icon: BarChart3     },
+  { id: 'assessment', label: 'Assessment Report', icon: TrendingUp    },
 ];
 
 const PAGE_SIZE = 10;
@@ -158,7 +160,7 @@ export default function TutorStudentDetailPage() {
   const [tabLoading, setTabLoading] = useState(false);
 
   const [pages, setPages] = useState<Record<Tab, number>>({
-    bio: 1, sessions: 1, activities: 1, courses: 1, grades: 1,
+    bio: 1, sessions: 1, activities: 1, courses: 1, grades: 1, assessment: 1,
   });
 
   useEffect(() => {
@@ -170,7 +172,7 @@ export default function TutorStudentDetailPage() {
   }, [id]);
 
   const loadTab = useCallback(async (t: Tab) => {
-    if (tabLoaded[t] || t === 'bio') return;
+    if (tabLoaded[t] || t === 'bio' || t === 'assessment') return;
     setTabLoading(true);
     try {
       if (t === 'sessions') {
@@ -485,6 +487,11 @@ export default function TutorStudentDetailPage() {
                   </>
                 )}
               </div>
+            )}
+
+            {/* ASSESSMENT REPORT */}
+            {!tabLoading && tab === 'assessment' && (
+              <AssessmentReport studentId={id} tutorId={user?.user_id} />
             )}
           </div>
         </div>

@@ -8,13 +8,14 @@ import Button from '@/components/ui/Button';
 import {
   ArrowLeft, Mail, Phone, User, MapPin, Calendar, BookOpen, Video,
   ClipboardList, MessageSquare, GraduationCap, Clock,
-  Edit, CheckCircle, AlertCircle, XCircle, FileText, Users,
+  Edit, CheckCircle, AlertCircle, XCircle, FileText, Users, TrendingUp,
 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import AssessmentReport from '@/components/student/AssessmentReport';
 
-type Tab = 'bio' | 'sessions' | 'activities' | 'courses' | 'messages';
+type Tab = 'bio' | 'sessions' | 'activities' | 'courses' | 'messages' | 'assessment';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'bio',        label: 'Bio',              icon: User          },
@@ -22,6 +23,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'activities', label: 'Class Activities',  icon: ClipboardList },
   { id: 'courses',    label: 'Enrolled Courses',  icon: BookOpen      },
   { id: 'messages',   label: 'Messages',          icon: MessageSquare },
+  { id: 'assessment', label: 'Assessment Report', icon: TrendingUp    },
 ];
 
 interface Student {
@@ -139,7 +141,7 @@ export default function StudentDetailPage() {
   }, [id]);
 
   const loadTab = useCallback(async (t: Tab) => {
-    if (tabLoaded[t] || t === 'bio') return;
+    if (tabLoaded[t] || t === 'bio' || t === 'assessment') return;
     setTabLoading(true);
     try {
       if (t === 'sessions') {
@@ -450,6 +452,11 @@ export default function StudentDetailPage() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ASSESSMENT REPORT */}
+            {!tabLoading && tab === 'assessment' && (
+              <AssessmentReport studentId={id} />
             )}
           </div>
         </div>
