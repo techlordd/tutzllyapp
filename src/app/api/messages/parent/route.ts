@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
 import { getAcademyId } from '@/lib/request-context';
+import { sendEmail } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('user_id');
-    const academyId = getAcademyId(request);
+    const userId      = searchParams.get('user_id');
+    const recipientId = searchParams.get('recipient_id');
+    const academyId   = getAcademyId(request);
     let sql = `SELECT * FROM messages_parent WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (userId) { params.push(userId); sql += ` AND user_id = $${params.length}`; }
+    if (recipientId) {
+      params.push(recipientId);
+      sql += ` AND (recipient_id = $${params.length} OR recipient_id IN (
+        SELECT p.parent_id FROM parents p JOIN users u ON p.user_id = u.id WHERE u.user_id = $${params.length}
+      ))`;
+    }
     sql += ' ORDER BY message_date DESC, message_time DESC, timestamp DESC';
     const messages = await query(sql, params);
     return NextResponse.json({ messages });
@@ -22,6 +30,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const d = await request.json();
+    const academyId = getAcademyId(request);
     const message = await queryOne(
       `INSERT INTO messages_parent (message_date, message_time, role, sender, sender_email, user_role,
        sender_admin, sender_tutor_name, sender_tutor_id,
@@ -35,6 +44,11 @@ export async function POST(request: NextRequest) {
        d.recipient_id, d.recipient_name, d.recipient_email, d.cc,
        d.subject, d.body, d.attach_file, d.user_id]
     );
+    if (d.send_email && d.recipient_email && academyId) {
+      sendEmail(academyId, d.recipient_email, d.subject,
+        `<p>${(d.body || '').replace(/\n/g, '<br>')}</p>`
+      ).catch(() => {});
+    }
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
     console.error(error);

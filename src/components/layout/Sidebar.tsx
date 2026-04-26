@@ -7,7 +7,8 @@ import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, CalendarDays, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
-  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio, RotateCcw, XCircle, TrendingUp, UserCircle
+  School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio, RotateCcw, XCircle,
+  TrendingUp, UserCircle, Inbox, Send, SquarePen,
 } from 'lucide-react';
 
 interface NavItem {
@@ -15,6 +16,7 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  exact?: boolean;
 }
 
 const adminNav: NavItem[] = [
@@ -52,7 +54,9 @@ const tutorNav: NavItem[] = [
   { label: 'Missed Sessions', href: '/tutor/missed-sessions', icon: XCircle },
   { label: 'Class Activities', href: '/tutor/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/tutor/grades', icon: BarChart3 },
-  { label: 'Messages', href: '/tutor/messages', icon: MessageSquare },
+  { label: 'Inbox', href: '/tutor/messages/inbox', icon: Inbox, exact: true },
+  { label: 'Sent', href: '/tutor/messages/sent', icon: Send, exact: true },
+  { label: 'Compose', href: '/tutor/messages/compose', icon: SquarePen, exact: true },
   { label: 'Profile', href: '/tutor/profile', icon: UserCircle },
 ];
 
@@ -63,7 +67,9 @@ const studentNav: NavItem[] = [
   { label: 'Sessions', href: '/student/sessions', icon: Video },
   { label: 'Class Activities', href: '/student/activities', icon: ClipboardList },
   { label: 'Grade Book', href: '/student/grades', icon: BarChart3 },
-  { label: 'Messages', href: '/student/messages', icon: MessageSquare },
+  { label: 'Inbox', href: '/student/messages/inbox', icon: Inbox, exact: true },
+  { label: 'Sent', href: '/student/messages/sent', icon: Send, exact: true },
+  { label: 'Compose', href: '/student/messages/compose', icon: SquarePen, exact: true },
   { label: 'Profile', href: '/student/profile', icon: UserCircle },
 ];
 
@@ -73,7 +79,9 @@ const parentNav: NavItem[] = [
   { label: 'Schedule', href: '/parent/schedule', icon: Calendar },
   { label: 'Sessions', href: '/parent/sessions', icon: Video },
   { label: 'Grade Book', href: '/parent/grades', icon: BarChart3 },
-  { label: 'Messages', href: '/parent/messages', icon: MessageSquare },
+  { label: 'Inbox', href: '/parent/messages/inbox', icon: Inbox, exact: true },
+  { label: 'Sent', href: '/parent/messages/sent', icon: Send, exact: true },
+  { label: 'Compose', href: '/parent/messages/compose', icon: SquarePen, exact: true },
   { label: 'Profile', href: '/parent/profile', icon: UserCircle },
 ];
 
@@ -195,8 +203,9 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
           // Use the first nav item's href as the "root" for this role to avoid
           // the super_admin underscore-vs-hyphen mismatch with /${role}.
           const rootHref = navItems[0]?.href ?? '';
-          const isActive = pathname === item.href ||
-            (item.href !== rootHref && pathname.startsWith(item.href));
+          const isActive = item.exact
+            ? pathname === item.href
+            : pathname === item.href || (item.href !== rootHref && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}

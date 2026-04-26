@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
 import { getAcademyId } from '@/lib/request-context';
+import { sendEmail } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('user_id');
-    const academyId = getAcademyId(request);
-    const tutorId = searchParams.get('tutor_id');
+    const userId      = searchParams.get('user_id');
+    const tutorId     = searchParams.get('tutor_id');
+    const recipientId = searchParams.get('recipient_id');
+    const academyId   = getAcademyId(request);
     let sql = `SELECT * FROM messages_tutor WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
     const params: (string | number)[] = [academyId];
     if (userId)  { params.push(userId);  sql += ` AND user_id = $${params.length}`; }
     if (tutorId) { params.push(tutorId); sql += ` AND recipient_tutor_id = $${params.length}`; }
+    if (recipientId) {
+      params.push(recipientId);
+      sql += ` AND (recipient_tutor_id = $${params.length} OR recipient_tutor_id IN (
+        SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $${params.length}
+      ))`;
+    }
     sql += ' ORDER BY message_date DESC, message_time DESC, timestamp DESC';
     const messages = await query(sql, params);
     return NextResponse.json({ messages });
@@ -52,6 +60,11 @@ export async function POST(request: NextRequest) {
         d.attach_file || null,
       ]
     );
+    if (d.send_email && d.recipient_email && academyId) {
+      sendEmail(academyId, d.recipient_email, d.subject,
+        `<p>${(d.body || '').replace(/\n/g, '<br>')}</p>`
+      ).catch(() => {});
+    }
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
     console.error(error);
