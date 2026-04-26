@@ -11,6 +11,7 @@ export default function ParentInboxPage() {
       <InboxView
         fetchUrl={`/api/messages/parent?recipient_id=${encodeURIComponent(user.user_id)}`}
         currentUser={user}
+        messageType="parent"
       />
     </DashboardLayout>
   );

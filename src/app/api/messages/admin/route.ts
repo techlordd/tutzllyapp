@@ -6,13 +6,22 @@ import { sendEmail } from '@/lib/email';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('user_id');
+    const userId    = searchParams.get('user_id');
+    const status    = searchParams.get('status');
+    const countOnly = searchParams.get('count') === 'true';
     const academyId = getAcademyId(request);
-    let sql = `SELECT * FROM messages_admin WHERE entry_status != 'deleted' AND (academy_id = $1 OR $1 = 0)`;
+
+    const conds: string[] = [`entry_status != 'deleted'`, `(academy_id = $1 OR $1 = 0)`];
     const params: (string | number)[] = [academyId];
-    if (userId) { params.push(userId); sql += ` AND user_id = $${params.length}`; }
-    sql += ' ORDER BY message_date DESC, message_time DESC, timestamp DESC';
-    const messages = await query(sql, params);
+    if (userId) { params.push(userId); conds.push(`user_id = $${params.length}`); }
+    if (status) { params.push(status); conds.push(`status = $${params.length}`); }
+    const where = `WHERE ${conds.join(' AND ')}`;
+
+    if (countOnly) {
+      const row = await queryOne(`SELECT COUNT(*) AS count FROM messages_admin ${where}`, params);
+      return NextResponse.json({ count: Number(row?.count || 0) });
+    }
+    const messages = await query(`SELECT * FROM messages_admin ${where} ORDER BY message_date DESC, message_time DESC, timestamp DESC`, params);
     return NextResponse.json({ messages });
   } catch (error) {
     console.error(error);

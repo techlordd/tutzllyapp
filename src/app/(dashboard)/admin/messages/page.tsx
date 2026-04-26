@@ -204,7 +204,7 @@ export default function AdminMessagesPage() {
 
         {/* Inbox view */}
         {viewMode === 'inbox' && user && (
-          <InboxView fetchUrl="/api/messages/admin" currentUser={user} />
+          <InboxView fetchUrl="/api/messages/admin" currentUser={user} messageType="admin" />
         )}
 
         {/* Sent view */}

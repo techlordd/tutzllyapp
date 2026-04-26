@@ -89,9 +89,10 @@ function buildReplyTarget(msg: Message): ReplyTarget {
 interface InboxViewProps {
   fetchUrl: string;
   currentUser: CurrentUser;
+  messageType: MsgType;
 }
 
-export default function InboxView({ fetchUrl, currentUser }: InboxViewProps) {
+export default function InboxView({ fetchUrl, currentUser, messageType }: InboxViewProps) {
   const [messages, setMessages]     = useState<Message[]>([]);
   const [loading, setLoading]       = useState(true);
   const [viewOpen, setViewOpen]     = useState(false);
@@ -171,7 +172,17 @@ export default function InboxView({ fetchUrl, currentUser }: InboxViewProps) {
         emptyMessage="Your inbox is empty"
         actions={(row) => (
           <button
-            onClick={() => { setSelected(row); setViewOpen(true); }}
+            onClick={() => {
+              setSelected(row);
+              setViewOpen(true);
+              if (row.status === 'unread' && row.record_id) {
+                fetch(`/api/messages/${messageType}/${row.record_id}`)
+                  .then(() => setMessages(prev => prev.map(m =>
+                    m.record_id === row.record_id ? { ...m, status: 'read' } : m
+                  )))
+                  .catch(() => {});
+              }
+            }}
             className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
           >
             <Eye size={15} />

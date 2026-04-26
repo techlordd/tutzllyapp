@@ -117,6 +117,7 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
   const [activeSessionsCount, setActiveSessionsCount] = useState(0);
   const [rescheduledCount, setRescheduledCount] = useState(0);
   const [missedCount, setMissedCount] = useState(0);
+  const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
 
   useEffect(() => {
     if (role !== 'admin' && role !== 'tutor') return;
@@ -134,6 +135,19 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
     return () => clearInterval(interval);
   }, [role, user?.user_id]);
 
+  useEffect(() => {
+    const msgRole = role === 'super_admin' ? null : role;
+    if (!msgRole || !user?.user_id) return;
+    const recipientParam = role === 'admin' ? '' : `&recipient_id=${encodeURIComponent(user.user_id)}`;
+    const fetchUnread = () => {
+      fetch(`/api/messages/${msgRole}?count=true&status=unread${recipientParam}`)
+        .then(r => r.json()).then(d => setInboxUnreadCount(d.count || 0)).catch(() => {});
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [role, user?.user_id]);
+
   const sessionBadges: Record<string, number> = {
     '/admin/active-sessions': activeSessionsCount,
     '/tutor/active-sessions': activeSessionsCount,
@@ -141,6 +155,10 @@ export default function Sidebar({ role, userName, userEmail, isSuperAdmin, acade
     '/tutor/rescheduled-sessions': rescheduledCount,
     '/admin/missed-sessions': missedCount,
     '/tutor/missed-sessions': missedCount,
+    '/admin/messages': inboxUnreadCount,
+    '/tutor/messages/inbox': inboxUnreadCount,
+    '/student/messages/inbox': inboxUnreadCount,
+    '/parent/messages/inbox': inboxUnreadCount,
   };
 
   const navItems = (navMap[role] || []).map(item =>

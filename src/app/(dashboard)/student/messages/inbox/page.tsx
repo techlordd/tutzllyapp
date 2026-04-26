@@ -11,6 +11,7 @@ export default function StudentInboxPage() {
       <InboxView
         fetchUrl={`/api/messages/student?recipient_id=${encodeURIComponent(user.user_id)}`}
         currentUser={user}
+        messageType="student"
       />
     </DashboardLayout>
   );

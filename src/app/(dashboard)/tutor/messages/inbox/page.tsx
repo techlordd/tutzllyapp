@@ -11,6 +11,7 @@ export default function TutorInboxPage() {
       <InboxView
         fetchUrl={`/api/messages/tutor?recipient_id=${encodeURIComponent(user.user_id)}`}
         currentUser={user}
+        messageType="tutor"
       />
     </DashboardLayout>
   );
