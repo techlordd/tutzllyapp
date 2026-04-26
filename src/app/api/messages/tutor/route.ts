@@ -45,12 +45,28 @@ export async function POST(request: NextRequest) {
     const senderCol = d.role === 'student' ? 'sender_student_name'
       : d.role === 'parent' ? 'sender_parent_name'
       : 'sender_admin';
+
+    let senderStudentId: string | null = null;
+    let senderParentId: string | null = null;
+    if (d.user_id) {
+      const numericUserId = Number(d.user_id);
+      if (d.role === 'student') {
+        const row = await queryOne<{ student_id: string }>('SELECT student_id FROM students WHERE user_id = $1', [numericUserId]);
+        senderStudentId = row?.student_id ? String(row.student_id) : null;
+      } else if (d.role === 'parent') {
+        const row = await queryOne<{ parent_id: string }>('SELECT parent_id FROM parents WHERE user_id = $1', [numericUserId]);
+        senderParentId = row?.parent_id ? String(row.parent_id) : null;
+      }
+    }
+
     const message = await queryOne(
       `INSERT INTO messages_tutor (academy_id, message_date, message_time, role, sender, sender_admin,
        sender_student_name, sender_parent_name, sender_email, user_role,
        recipient_tutor_name, recipient_tutor_id, recipient_email, cc,
-       subject, body, attach_file, status, entry_status)
-       VALUES ($1, NOW()::date, NOW()::time, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'unread', 'active') RETURNING *`,
+       subject, body, attach_file, status, entry_status,
+       user_id, sender_student_id, sender_parent_id)
+       VALUES ($1, NOW()::date, NOW()::time, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'unread', 'active',
+       $16, $17, $18) RETURNING *`,
       [
         academyId || null,
         d.role,
@@ -67,6 +83,9 @@ export async function POST(request: NextRequest) {
         d.subject || null,
         d.body || null,
         d.attach_file || null,
+        d.user_id || null,
+        senderStudentId,
+        senderParentId,
       ]
     );
     if (d.send_email && d.recipient_email && academyId) {

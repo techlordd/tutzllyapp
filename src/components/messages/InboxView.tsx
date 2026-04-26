@@ -35,6 +35,7 @@ interface Message {
   sender_tutor_id?: string;
   sender_parent_id?: string;
   sender_student_id?: string;
+  user_id?: string;
   recipient_admin?: string;
   recipient_name?: string;
   recipient_tutor_name?: string;
@@ -76,9 +77,9 @@ function buildReplyTarget(msg: Message): ReplyTarget {
   if (targetTab === 'tutor') {
     extraFields = { recipient_tutor_name: senderName, recipient_tutor_id: msg.tutor_id || msg.sender_tutor_id || '', recipient_email: senderEmail };
   } else if (targetTab === 'student') {
-    extraFields = { student_name: senderName, student_id: msg.student_id || msg.sender_student_id || '', recipient_email: senderEmail };
+    extraFields = { recipient_name_student: senderName, recipient_id_student: msg.sender_student_id || msg.student_id || '', recipient_email: senderEmail };
   } else if (targetTab === 'parent') {
-    extraFields = { recipient_name: senderName, recipient_id: msg.parent_id || msg.sender_parent_id || '', recipient_email: senderEmail };
+    extraFields = { recipient_name: senderName, recipient_id: msg.sender_parent_id || msg.parent_id || '', recipient_email: senderEmail };
   } else {
     extraFields = { recipient_admin: 'Admin', recipient_email: senderEmail };
   }

@@ -33,13 +33,32 @@ export async function POST(request: NextRequest) {
   try {
     const d = await request.json();
     const academyId = getAcademyId(request);
+
+    let resolvedStudentId: string | null = d.student_id || null;
+    let resolvedParentId: string | null = d.parent_id || null;
+    let resolvedTutorId: string | null = d.tutor_id || null;
+    if (d.user_id && !resolvedStudentId && !resolvedParentId && !resolvedTutorId) {
+      const numericUserId = Number(d.user_id);
+      if (d.role === 'student') {
+        const row = await queryOne<{ student_id: string }>('SELECT student_id FROM students WHERE user_id = $1', [numericUserId]);
+        resolvedStudentId = row?.student_id ? String(row.student_id) : null;
+      } else if (d.role === 'parent') {
+        const row = await queryOne<{ parent_id: string }>('SELECT parent_id FROM parents WHERE user_id = $1', [numericUserId]);
+        resolvedParentId = row?.parent_id ? String(row.parent_id) : null;
+      } else if (d.role === 'tutor') {
+        const row = await queryOne<{ tutor_id: string }>('SELECT tutor_id FROM tutors WHERE user_id = $1', [numericUserId]);
+        resolvedTutorId = row?.tutor_id ? String(row.tutor_id) : null;
+      }
+    }
+
     const message = await queryOne(
       `INSERT INTO messages_admin (message_date, message_time, role, sender, user_role, user_role2,
        tutor_name, tutor_id, student_name, student_id, parent_name, parent_id,
        recipient_admin, cc, subject, body, file_upload, status, user_id, entry_status)
        VALUES (NOW()::date, NOW()::time, $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'unread',$16,'active') RETURNING *`,
       [d.role, d.sender, d.user_role, d.user_role2,
-       d.tutor_name, d.tutor_id, d.student_name, d.student_id, d.parent_name, d.parent_id,
+       d.tutor_name || null, resolvedTutorId, d.student_name || null, resolvedStudentId,
+       d.parent_name || null, resolvedParentId,
        d.recipient_admin, d.cc, d.subject, d.body, d.file_upload, d.user_id]
     );
     if (d.send_email && d.recipient_email && academyId) {
