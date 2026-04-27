@@ -81,7 +81,7 @@ function buildReplyTarget(msg: Message): ReplyTarget {
   } else if (targetTab === 'parent') {
     extraFields = { recipient_name: senderName, recipient_id: msg.sender_parent_id || msg.parent_id || '', recipient_email: senderEmail };
   } else {
-    extraFields = { recipient_admin: 'Admin', recipient_email: senderEmail };
+    extraFields = { recipient_admin: senderName || 'Admin', recipient_email: senderEmail };
   }
 
   return { tab: targetTab, subject: `Re: ${msg.subject}`, recipientName: senderName, extraFields };
