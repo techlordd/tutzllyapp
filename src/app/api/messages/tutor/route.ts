@@ -61,8 +61,21 @@ export async function POST(request: NextRequest) {
 
     let recipientTutorId: string | null = d.recipient_tutor_id || null;
     if (!recipientTutorId && d.recipient_sender_user_id) {
-      const row = await queryOne<{ tutor_id: string }>('SELECT tutor_id FROM tutors WHERE user_id = $1', [Number(d.recipient_sender_user_id)]);
-      recipientTutorId = row?.tutor_id ? String(row.tutor_id) : null;
+      const raw = String(d.recipient_sender_user_id).trim();
+      const numericId = Number(raw);
+      // Try numeric users.id first (new messages store user_id as numeric string)
+      if (!isNaN(numericId) && numericId > 0) {
+        const row = await queryOne<{ tutor_id: string }>('SELECT tutor_id FROM tutors WHERE user_id = $1', [numericId]);
+        recipientTutorId = row?.tutor_id ? String(row.tutor_id) : null;
+      }
+      // Fallback: raw is a string-format user_id (e.g. 'TUT-xxx') from older messages
+      if (!recipientTutorId && raw) {
+        const row = await queryOne<{ tutor_id: string }>(
+          'SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $1',
+          [raw]
+        );
+        recipientTutorId = row?.tutor_id ? String(row.tutor_id) : null;
+      }
     }
 
     const message = await queryOne(

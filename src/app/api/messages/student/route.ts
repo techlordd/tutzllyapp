@@ -40,6 +40,17 @@ export async function POST(request: NextRequest) {
   try {
     const d = await request.json();
     const academyId = getAcademyId(request);
+
+    // Resolve tutor_id from user_id when a tutor sends a message, so student replies can find the tutor
+    let resolvedTutorId: string | null = d.tutor_id || null;
+    if (!resolvedTutorId && d.role === 'tutor' && d.user_id) {
+      const numericUserId = Number(String(d.user_id).trim());
+      if (!isNaN(numericUserId) && numericUserId > 0) {
+        const tRow = await queryOne<{ tutor_id: string }>('SELECT tutor_id FROM tutors WHERE user_id = $1', [numericUserId]);
+        resolvedTutorId = tRow?.tutor_id ? String(tRow.tutor_id) : null;
+      }
+    }
+
     const message = await queryOne(
       `INSERT INTO messages_student (academy_id, message_date, message_time, role, sender, sender_email, user_role,
        message_to, tutor_name, tutor_id, student_name, student_id,
@@ -49,7 +60,7 @@ export async function POST(request: NextRequest) {
        VALUES ($1, NOW()::date, NOW()::time, $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,'unread',$23,'active') RETURNING *`,
       [academyId || null,
        d.role, d.sender, d.sender_email, d.user_role, d.message_to,
-       d.tutor_name, d.tutor_id, d.student_name, d.student_id,
+       d.tutor_name, resolvedTutorId, d.student_name, d.student_id,
        d.recipient_name_student, d.recipient_id_student, d.recipient_email,
        d.recipient_name_tutor, d.recipient_id_tutor, d.recipient_name_parent, d.recipient_id_parent,
        d.recipient_admin, d.cc, d.subject, d.body, d.attach_file, d.user_id]
