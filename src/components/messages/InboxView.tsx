@@ -95,6 +95,7 @@ interface InboxViewProps {
 
 export default function InboxView({ fetchUrl, currentUser, messageType }: InboxViewProps) {
   const [messages, setMessages]     = useState<Message[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [loading, setLoading]       = useState(true);
   const [viewOpen, setViewOpen]     = useState(false);
   const [selected, setSelected]     = useState<Message | null>(null);
@@ -116,6 +117,13 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
   }, [fetchUrl]);
 
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
+
+  const filteredMessages = statusFilter === 'all'
+    ? messages
+    : messages.filter(m => m.status === statusFilter);
+
+  const unreadCount = messages.filter(m => m.status === 'unread').length;
+  const readCount   = messages.filter(m => m.status === 'read').length;
 
   const openReply = (msg: Message) => {
     const target = buildReplyTarget(msg);
@@ -163,14 +171,39 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
     { key: 'status', label: 'Status', render: (v: unknown) => statusBadge(v as string) },
   ];
 
+  const filterBtns: { key: 'all' | 'unread' | 'read'; label: string; count: number }[] = [
+    { key: 'all',    label: 'All',    count: messages.length },
+    { key: 'unread', label: 'Unread', count: unreadCount },
+    { key: 'read',   label: 'Read',   count: readCount },
+  ];
+
   return (
     <>
+      <div className="flex gap-2 mb-4">
+        {filterBtns.map(({ key, label, count }) => (
+          <button
+            key={key}
+            onClick={() => setStatusFilter(key)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === key
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+              statusFilter === key ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'
+            }`}>{count}</span>
+          </button>
+        ))}
+      </div>
+
       <DataTable
-        data={messages}
+        data={filteredMessages}
         columns={columns}
         loading={loading}
         searchKeys={['subject']}
-        emptyMessage="Your inbox is empty"
+        emptyMessage={statusFilter === 'all' ? 'Your inbox is empty' : `No ${statusFilter} messages`}
         actions={(row) => (
           <button
             onClick={() => {
