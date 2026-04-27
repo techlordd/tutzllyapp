@@ -163,10 +163,14 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
     { key: 'message_date', label: 'Date', sortable: true, render: (v: unknown) => formatDate(v as string) },
     { key: 'message_time', label: 'Time' },
     { key: 'sender', label: 'From', sortable: true, render: (_v: unknown, row: Message) => (
-      <span className="font-medium text-gray-800">{resolveSender(row)}</span>
+      <span className={row.status === 'unread' ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}>
+        {resolveSender(row)}
+      </span>
     )},
-    { key: 'subject', label: 'Subject', render: (v: unknown) => (
-      <span className="font-medium text-gray-900 truncate max-w-[200px] block">{v as string}</span>
+    { key: 'subject', label: 'Subject', render: (v: unknown, row: Message) => (
+      <span className={`truncate max-w-[200px] block ${row.status === 'unread' ? 'font-semibold text-gray-900' : 'font-medium text-gray-500'}`}>
+        {v as string}
+      </span>
     )},
     { key: 'status', label: 'Status', render: (v: unknown) => statusBadge(v as string) },
   ];
@@ -204,6 +208,10 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
         loading={loading}
         searchKeys={['subject']}
         emptyMessage={statusFilter === 'all' ? 'Your inbox is empty' : `No ${statusFilter} messages`}
+        rowClassName={(row: Message) => row.status === 'unread'
+          ? 'bg-blue-50 hover:bg-blue-100 border-l-4 border-l-blue-400'
+          : 'hover:bg-gray-50 border-l-4 border-l-transparent'
+        }
         actions={(row) => (
           <button
             onClick={() => {

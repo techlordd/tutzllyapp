@@ -21,12 +21,13 @@ interface DataTableProps<T = any> {
   loading?: boolean;
   emptyMessage?: string;
   actions?: (row: T) => React.ReactNode;
+  rowClassName?: (row: T) => string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function DataTable<T = any>({
   data, columns, searchable = true, searchKeys = [], pageSize = 10,
-  loading = false, emptyMessage = 'No data found', actions,
+  loading = false, emptyMessage = 'No data found', actions, rowClassName,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -121,7 +122,7 @@ export default function DataTable<T = any>({
               </tr>
             ) : (
               paged.map((row, i) => (
-                <tr key={i} className="hover:bg-gray-50 transition-colors">
+                <tr key={i} className={cn('transition-colors', rowClassName ? rowClassName(row) : 'hover:bg-gray-50')}>
                   {columns.map((col) => (
                     <td key={col.key} className="px-4 py-3 text-gray-700">
                       {col.render
