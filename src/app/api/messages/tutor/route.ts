@@ -59,6 +59,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    let recipientTutorId: string | null = d.recipient_tutor_id || null;
+    if (!recipientTutorId && d.recipient_sender_user_id) {
+      const row = await queryOne<{ tutor_id: string }>('SELECT tutor_id FROM tutors WHERE user_id = $1', [Number(d.recipient_sender_user_id)]);
+      recipientTutorId = row?.tutor_id ? String(row.tutor_id) : null;
+    }
+
     const message = await queryOne(
       `INSERT INTO messages_tutor (academy_id, message_date, message_time, role, sender, sender_admin,
        sender_student_name, sender_parent_name, sender_email, user_role,
@@ -77,7 +83,7 @@ export async function POST(request: NextRequest) {
         d.sender_email || null,
         d.user_role || d.role || null,
         d.recipient_tutor_name || null,
-        d.recipient_tutor_id || null,
+        recipientTutorId,
         d.recipient_email || null,
         d.cc || null,
         d.subject || null,
