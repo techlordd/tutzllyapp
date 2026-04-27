@@ -41,13 +41,14 @@ export async function POST(request: NextRequest) {
     const d = await request.json();
     const academyId = getAcademyId(request);
     const message = await queryOne(
-      `INSERT INTO messages_student (message_date, message_time, role, sender, sender_email, user_role,
+      `INSERT INTO messages_student (academy_id, message_date, message_time, role, sender, sender_email, user_role,
        message_to, tutor_name, tutor_id, student_name, student_id,
        recipient_name_student, recipient_id_student, recipient_email,
        recipient_name_tutor, recipient_id_tutor, recipient_name_parent, recipient_id_parent,
        recipient_admin, cc, subject, body, attach_file, status, user_id, entry_status)
-       VALUES (NOW()::date, NOW()::time, $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,'unread',$22,'active') RETURNING *`,
-      [d.role, d.sender, d.sender_email, d.user_role, d.message_to,
+       VALUES ($1, NOW()::date, NOW()::time, $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,'unread',$23,'active') RETURNING *`,
+      [academyId || null,
+       d.role, d.sender, d.sender_email, d.user_role, d.message_to,
        d.tutor_name, d.tutor_id, d.student_name, d.student_id,
        d.recipient_name_student, d.recipient_id_student, d.recipient_email,
        d.recipient_name_tutor, d.recipient_id_tutor, d.recipient_name_parent, d.recipient_id_parent,

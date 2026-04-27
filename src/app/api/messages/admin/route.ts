@@ -52,11 +52,12 @@ export async function POST(request: NextRequest) {
     }
 
     const message = await queryOne(
-      `INSERT INTO messages_admin (message_date, message_time, role, sender, user_role, user_role2,
+      `INSERT INTO messages_admin (academy_id, message_date, message_time, role, sender, user_role, user_role2,
        tutor_name, tutor_id, student_name, student_id, parent_name, parent_id,
        recipient_admin, cc, subject, body, file_upload, status, user_id, entry_status)
-       VALUES (NOW()::date, NOW()::time, $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'unread',$16,'active') RETURNING *`,
-      [d.role, d.sender, d.user_role, d.user_role2,
+       VALUES ($1, NOW()::date, NOW()::time, $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'unread',$17,'active') RETURNING *`,
+      [academyId || null,
+       d.role, d.sender, d.user_role, d.user_role2,
        d.tutor_name || null, resolvedTutorId, d.student_name || null, resolvedStudentId,
        d.parent_name || null, resolvedParentId,
        d.recipient_admin, d.cc, d.subject, d.body, d.file_upload, d.user_id]
