@@ -173,6 +173,8 @@ export default function TutorStudentDetailPage() {
 
   const loadTab = useCallback(async (t: Tab) => {
     if (tabLoaded[t] || t === 'bio' || t === 'assessment') return;
+    // Don't fetch tabs that need tutor identity if user hasn't hydrated yet
+    if (!user?.user_id && (t === 'sessions' || t === 'activities' || t === 'grades')) return;
     setTabLoading(true);
     try {
       if (t === 'sessions') {
@@ -191,7 +193,14 @@ export default function TutorStudentDetailPage() {
       setTabLoaded(prev => ({ ...prev, [t]: true }));
     } catch { toast.error('Failed to load tab data'); }
     setTabLoading(false);
-  }, [id, tabLoaded]);
+  }, [id, tabLoaded, user?.user_id]);
+
+  // Re-trigger active tab load once user hydrates from localStorage
+  useEffect(() => {
+    if (user?.user_id && !tabLoaded[tab] && tab !== 'bio' && tab !== 'assessment') {
+      loadTab(tab);
+    }
+  }, [user?.user_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const switchTab = (t: Tab) => {
     setTab(t);
