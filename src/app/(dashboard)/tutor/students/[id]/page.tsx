@@ -41,8 +41,8 @@ interface Student {
 
 interface Session {
   ssid: string; tutor_name: string; course_name: string;
-  start_session_date: string; start_session_time: string;
-  session_duration: number; status: string;
+  start_session_date: string; schedule_start_time: string; schedule_end_time: string;
+  start_session_time: string; end_session_time: string; status: string;
 }
 
 interface Activity {
@@ -354,7 +354,7 @@ export default function TutorStudentDetailPage() {
                     <div className="overflow-x-auto rounded-xl border border-gray-100">
                       <table className="w-full text-sm">
                         <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-                          <tr>{['Date','Tutor','Course','Time','Duration','Status'].map(h => (
+                          <tr>{['Date','Tutor','Course','Period','Session Started','Session Ended'].map(h => (
                             <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                           ))}</tr>
                         </thead>
@@ -364,9 +364,13 @@ export default function TutorStudentDetailPage() {
                               <td className="px-4 py-3 font-medium text-gray-900">{formatDate(s.start_session_date)}</td>
                               <td className="px-4 py-3 text-gray-600">{s.tutor_name || '—'}</td>
                               <td className="px-4 py-3 text-gray-600">{s.course_name || '—'}</td>
+                              <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                                {s.schedule_start_time && s.schedule_end_time
+                                  ? `${formatTime(s.schedule_start_time)} – ${formatTime(s.schedule_end_time)}`
+                                  : '—'}
+                              </td>
                               <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{s.start_session_time ? formatTime(s.start_session_time) : '—'}</td>
-                              <td className="px-4 py-3 text-gray-500">{s.session_duration ? `${s.session_duration}h` : '—'}</td>
-                              <td className="px-4 py-3">{sessionStatusBadge(s.status)}</td>
+                              <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{s.end_session_time ? formatTime(s.end_session_time) : '—'}</td>
                             </tr>
                           ))}
                         </tbody>

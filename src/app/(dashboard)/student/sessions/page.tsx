@@ -2,15 +2,14 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DataTable from '@/components/ui/DataTable';
-import { statusBadge } from '@/components/ui/Badge';
-import { Video } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
 interface Session {
   ssid: string; tutor_firstname: string; tutor_lastname: string; course_name: string;
-  entry_date: string; schedule_start_time: string; session_duration: number;
+  start_session_date: string; schedule_start_time: string; schedule_end_time: string;
+  start_session_time: string; end_session_time: string;
   status: string; zoom_link: string;
 }
 
@@ -28,15 +27,16 @@ export default function StudentSessionsPage() {
   }, [user?.user_id]);
 
   const columns = [
-    { key: 'course_name', label: 'Course', sortable: true },
+    { key: 'start_session_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
     { key: 'tutor_firstname', label: 'Tutor', render: (_: unknown, row: Session) => `${row.tutor_firstname} ${row.tutor_lastname}` },
-    { key: 'entry_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
-    { key: 'schedule_start_time', label: 'Time', render: (v: unknown) => formatTime(v as string) },
-    { key: 'session_duration', label: 'Duration', render: (v: unknown) => v ? `${v} min` : '—' },
-    { key: 'zoom_link', label: 'Zoom', render: (v: unknown) => v ? (
-      <a href={v as string} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs flex items-center gap-1"><Video size={12}/> Join</a>
-    ) : '—' },
-    { key: 'status', label: 'Status', render: (v: unknown) => statusBadge(v as string) },
+    { key: 'course_name', label: 'Course', sortable: true },
+    { key: 'schedule_start_time', label: 'Period', render: (_: unknown, row: Session) =>
+      row.schedule_start_time && row.schedule_end_time
+        ? `${formatTime(row.schedule_start_time)} – ${formatTime(row.schedule_end_time)}`
+        : '—'
+    },
+    { key: 'start_session_time', label: 'Session Started', render: (v: unknown) => v ? formatTime(v as string) : '—' },
+    { key: 'end_session_time', label: 'Session Ended', render: (v: unknown) => v ? formatTime(v as string) : '—' },
   ];
 
   return (
