@@ -38,7 +38,8 @@ interface Tutor {
 interface Session {
   ssid: string; student_name: string; course_name: string;
   start_session_date: string; schedule_start_time: string; schedule_end_time: string;
-  start_session_time: string; end_session_time: string; status: string;
+  start_session_time: string; end_session_time: string;
+  session_duration: number; status: string;
 }
 
 interface Activity {
