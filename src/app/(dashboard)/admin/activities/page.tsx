@@ -1,13 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DataTable from '@/components/ui/DataTable';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
 import Avatar from '@/components/ui/Avatar';
-import { Plus, Eye, Trash2 } from 'lucide-react';
+import { Plus, Eye, Trash2, Link2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -31,7 +30,6 @@ interface Activity {
 }
 
 export default function ActivitiesPage() {
-  const router = useRouter();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [sessions, setSessions] = useState<{ssid: string; tutor_id: string; tutor_firstname: string; tutor_lastname: string; student_id: string; student_name: string; course_name: string; course_code: string}[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +37,8 @@ export default function ActivitiesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [selected, setSelected] = useState<Activity | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
   const [form, setForm] = useState({
     ssid: '', tutor_id: '', tutor_firstname: '', tutor_lastname: '',
     student_id: '', student_name: '', course_name: '', course_code: '', course_id: '',
@@ -147,6 +147,15 @@ export default function ActivitiesPage() {
       const cls = s === 'Yes' ? 'bg-green-100 text-green-700' : s === 'No' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
       return <span className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>{s || '—'}</span>;
     }},
+    { key: 'record_id', label: 'Action', render: (_: unknown, row: Activity) => (
+      <button
+        onClick={() => { setSelected(row); setViewOpen(true); }}
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
+      >
+        <Eye size={12} />
+        View Details
+      </button>
+    )},
   ];
 
   return (
@@ -168,12 +177,6 @@ export default function ActivitiesPage() {
         <DataTable data={activities} columns={columns} loading={loading}
           searchKeys={['student_name', 'student_id', 'tutor_firstname', 'course_name', 'topic_taught', 'ssid']}
           emptyMessage="No class activities recorded yet"
-          actions={(row) => (
-            <button onClick={() => router.push(`/admin/activities/${row.record_id}`)}
-              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="View details">
-              <Eye size={15} />
-            </button>
-          )}
         />
       </div>
 
@@ -190,6 +193,116 @@ export default function ActivitiesPage() {
           </div>
         </div>
       </Modal>
+
+      {/* View Details Modal */}
+      {selected && (
+        <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Activity Details" size="2xl">
+          <div className="space-y-5 text-sm">
+            {/* Student & Tutor */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-blue-50 p-3 rounded-xl">
+                <p className="text-xs text-blue-400 font-medium mb-0.5">Student</p>
+                <p className="font-semibold text-blue-900">{selected.student_name || '—'}</p>
+                <p className="text-xs text-blue-400 mt-0.5 font-mono">{selected.student_id}</p>
+              </div>
+              <div className="bg-green-50 p-3 rounded-xl">
+                <p className="text-xs text-green-400 font-medium mb-0.5">Tutor</p>
+                <p className="font-semibold text-green-900">{[selected.tutor_firstname, selected.tutor_lastname].filter(Boolean).join(' ') || '—'}</p>
+                <p className="text-xs text-green-400 mt-0.5 font-mono">{selected.tutor_id}</p>
+              </div>
+            </div>
+
+            {/* Course & Session */}
+            <div className="border rounded-xl p-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Course &amp; Session</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                <div><p className="text-xs text-gray-400">Course</p><p className="font-medium">{selected.course_name || '—'}</p></div>
+                <div><p className="text-xs text-gray-400">Course Code</p><p className="font-mono font-medium">{selected.course_code || '—'}</p></div>
+                <div><p className="text-xs text-gray-400">SSID</p><p className="font-mono font-medium">{selected.ssid || '—'}</p></div>
+                <div><p className="text-xs text-gray-400">Date</p><p className="font-medium">{formatDate(selected.class_activity_date)}</p></div>
+                <div><p className="text-xs text-gray-400">Time</p><p className="font-medium">{selected.class_activity_time || '—'}</p></div>
+                <div><p className="text-xs text-gray-400">Activity Type</p><p className="font-medium">{selected.activity || '—'}</p></div>
+              </div>
+            </div>
+
+            {/* Class Details */}
+            <div className="border rounded-xl p-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Class Details</p>
+              <div><p className="text-xs text-gray-400">Topic Taught</p><p className="font-medium">{selected.topic_taught || '—'}</p></div>
+              {selected.details_of_class_activity && (
+                <div><p className="text-xs text-gray-400">Details</p><p className="text-gray-700 bg-gray-50 rounded-lg p-2">{selected.details_of_class_activity}</p></div>
+              )}
+            </div>
+
+            {/* Student Assessment */}
+            <div className="border rounded-xl p-3 space-y-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Student Assessment</p>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Punctuality', answer: selected.did_student_join_on_time, score: selected.punctuality1 },
+                  { label: 'Attentiveness', answer: selected.is_student_attentive, score: selected.attentiveness1 },
+                  { label: 'Engagement', answer: selected.student_engages_in_class, score: selected.class_engagement1 },
+                ].map(({ label, answer, score }) => {
+                  const n = Number(score);
+                  const scoreColor = n === 100 ? 'text-green-600' : n >= 50 ? 'text-amber-600' : 'text-red-600';
+                  const answerColor = answer === 'Yes' ? 'text-green-600' : answer === 'No' ? 'text-red-600' : 'text-amber-600';
+                  return (
+                    <div key={label} className="text-center p-3 bg-gray-50 rounded-xl">
+                      <p className="text-xs text-gray-400">{label}</p>
+                      <p className={`font-bold mt-0.5 ${answerColor}`}>{answer || '—'}</p>
+                      {score != null && score !== '' && (
+                        <p className={`text-xs font-semibold mt-1 ${scoreColor}`}>{score}/100</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {selected.student_reason_for_late && (
+                <div><p className="text-xs text-gray-400">Reason for Late</p><p className="font-medium">{selected.student_reason_for_late}</p></div>
+              )}
+            </div>
+
+            {/* Homework */}
+            <div className="border rounded-xl p-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Homework</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                <div><p className="text-xs text-gray-400">Completed Prev. HW?</p><p className="font-medium">{selected.did_student_complete_prev_homework || '—'}</p></div>
+                <div><p className="text-xs text-gray-400">New HW Assigned?</p><p className="font-medium">{selected.new_homework_assigned || '—'}</p></div>
+                {selected.topic_of_homework && (
+                  <div className="col-span-2"><p className="text-xs text-gray-400">Homework Topic</p><p className="font-medium">{selected.topic_of_homework}</p></div>
+                )}
+                {selected.student_reason_for_not_completing && (
+                  <div className="col-span-2"><p className="text-xs text-gray-400">Reason for Not Completing</p><p className="font-medium">{selected.student_reason_for_not_completing}</p></div>
+                )}
+              </div>
+            </div>
+
+            {/* Tutor's Notes */}
+            <div className="border rounded-xl p-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tutor&apos;s Notes</p>
+              {selected.tutors_general_observation && (
+                <div><p className="text-xs text-gray-400">General Observation</p><p className="text-gray-700 bg-gray-50 rounded-lg p-2">{selected.tutors_general_observation}</p></div>
+              )}
+              {selected.tutors_intervention && (
+                <div><p className="text-xs text-gray-400">Intervention / Action</p><p className="text-gray-700 bg-gray-50 rounded-lg p-2">{selected.tutors_intervention}</p></div>
+              )}
+              {(selected.helpful_link1 || selected.helpful_link2 || selected.helpful_link3) && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Helpful Links</p>
+                  <div className="space-y-1">
+                    {[selected.helpful_link1, selected.helpful_link2, selected.helpful_link3].filter(Boolean).map((link, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Link2 size={12} className="text-blue-500 flex-shrink-0" />
+                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">{link}</a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Add Activity Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Record Class Activity" size="2xl">

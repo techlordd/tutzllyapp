@@ -41,6 +41,15 @@ export default function StudentActivitiesPage() {
     { key: 'new_homework_assigned', label: 'HW?', render: (v: unknown) => (
       <span className={`text-xs px-1.5 py-0.5 rounded ${v === 'true' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>{v === 'true' ? 'Yes' : 'No'}</span>
     )},
+    { key: 'id', label: 'Action', render: (_: unknown, row: Activity) => (
+      <button
+        onClick={() => setSelected(row)}
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
+      >
+        <Eye size={12} />
+        View Details
+      </button>
+    )},
   ];
 
   return (
@@ -53,9 +62,6 @@ export default function StudentActivitiesPage() {
         <DataTable data={activities} columns={columns} loading={loading}
           searchKeys={['course_name', 'tutor_firstname', 'topic_taught']}
           emptyMessage="No activity records yet"
-          actions={(row) => (
-            <button onClick={() => setSelected(row)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600"><Eye size={15} /></button>
-          )}
         />
       </div>
       {selected && (

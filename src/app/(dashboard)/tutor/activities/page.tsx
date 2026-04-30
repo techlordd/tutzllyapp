@@ -159,6 +159,15 @@ export default function TutorActivitiesPage() {
     { key: 'student_engages_in_class', label: 'Engaged?', render: (v: unknown) => (
       <span className={`text-xs px-1.5 py-0.5 rounded ${v === 'Yes' ? 'bg-green-100 text-green-700' : v === 'Partially' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{v as string || '—'}</span>
     )},
+    { key: 'record_id', label: 'Action', render: (_: unknown, row: Activity) => (
+      <button
+        onClick={() => { setSelected(row); setViewOpen(true); }}
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
+      >
+        <Eye size={12} />
+        View Details
+      </button>
+    )},
   ];
 
   return (
@@ -174,10 +183,6 @@ export default function TutorActivitiesPage() {
         <DataTable data={activities} columns={columns} loading={loading}
           searchKeys={['student_name', 'course_name', 'topic_taught']}
           emptyMessage="No activities logged yet"
-          actions={(row) => (
-            <button onClick={() => { setSelected(row); setViewOpen(true); }}
-              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600"><Eye size={15} /></button>
-          )}
         />
       </div>
 
