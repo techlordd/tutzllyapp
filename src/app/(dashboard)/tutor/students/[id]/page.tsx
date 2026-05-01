@@ -42,7 +42,7 @@ interface Student {
 
 interface Session {
   ssid: string; tutor_name: string; course_name: string;
-  start_session_date: string; schedule_start_time: string; schedule_end_time: string;
+  entry_date: string; start_session_date: string; schedule_start_time: string; schedule_end_time: string;
   start_session_time: string; end_session_time: string; status: string;
 }
 
@@ -609,8 +609,9 @@ export default function TutorStudentDetailPage() {
               );
               const monthIndex = currMonthIdx;
               const sessionsThisMonth = sessions.filter(s => {
-                if (!s.start_session_date) return false;
-                const d = new Date(s.start_session_date);
+                const dateStr = s.start_session_date || s.entry_date;
+                if (!dateStr) return false;
+                const d = new Date(dateStr);
                 return s.course_name === g.course_name &&
                   d.getFullYear() === Number(g.year) && d.getMonth() === monthIndex;
               });
