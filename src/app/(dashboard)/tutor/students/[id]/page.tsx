@@ -9,7 +9,7 @@ import Modal from '@/components/ui/Modal';
 import {
   ArrowLeft, Mail, Phone, User, MapPin, Calendar, BookOpen, Video,
   ClipboardList, GraduationCap, CheckCircle, AlertCircle, XCircle,
-  FileText, Users, BarChart3, ChevronLeft, ChevronRight, TrendingUp, Eye,
+  FileText, Users, BarChart3, ChevronLeft, ChevronRight, TrendingUp, Eye, Printer,
 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -64,10 +64,14 @@ interface Enrollment {
 }
 
 interface Grade {
-  record_id: number; course_name: string; tutor_name: string;
+  record_id: number; course_name: string; tutor_name: string; student_name: string;
   month: string; year: string;
   punctuality: number; attentiveness: number; engagement: number;
   homework: number; test_score: number; remarks: string; status: string;
+}
+
+interface Branding {
+  logo_url?: string; academy_name?: string; site_title?: string;
 }
 
 function InfoRow({ icon: Icon, label, value }: {
@@ -159,14 +163,15 @@ export default function TutorStudentDetailPage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [sessions,   setSessions]   = useState<Session[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [courses,    setCourses]    = useState<Enrollment[]>([]);
-  const [grades,     setGrades]     = useState<Grade[]>([]);
-  const [tabLoaded,  setTabLoaded]  = useState<Partial<Record<Tab, boolean>>>({});
-  const [tabLoading, setTabLoading] = useState(false);
-
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [sessions,        setSessions]        = useState<Session[]>([]);
+  const [activities,      setActivities]      = useState<Activity[]>([]);
+  const [courses,         setCourses]         = useState<Enrollment[]>([]);
+  const [grades,          setGrades]          = useState<Grade[]>([]);
+  const [tabLoaded,       setTabLoaded]       = useState<Partial<Record<Tab, boolean>>>({});
+  const [tabLoading,      setTabLoading]      = useState(false);
+  const [selectedActivity,setSelectedActivity]= useState<Activity | null>(null);
+  const [selectedGrade,   setSelectedGrade]   = useState<Grade | null>(null);
+  const [branding,        setBranding]        = useState<Branding | null>(null);
 
   const [pages, setPages] = useState<Record<Tab, number>>({
     bio: 1, sessions: 1, activities: 1, courses: 1, grades: 1, assessment: 1,
@@ -179,6 +184,10 @@ export default function TutorStudentDetailPage() {
       .catch(() => toast.error('Failed to load student'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    fetch('/api/branding').then(r => r.json()).then(d => setBranding(d.academy || d)).catch(() => {});
+  }, []);
 
   const loadTab = useCallback(async (t: Tab) => {
     if (tabLoaded[t] || t === 'bio' || t === 'assessment') return;
@@ -535,8 +544,8 @@ export default function TutorStudentDetailPage() {
                     <div className="overflow-x-auto rounded-xl border border-gray-100">
                       <table className="w-full text-sm">
                         <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-                          <tr>{['Period','Course','Tutor','Punct.','Attend.','Engage.','H/Work','Test','Avg','Status'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                          <tr>{['Period','Course','Tutor','Punct.','Attend.','Engage.','H/Work','Test','Avg','Action'].map(h => (
+                            <th key={h} className={`px-4 py-3 text-left font-medium${h === 'Action' ? ' text-right' : ''}`}>{h}</th>
                           ))}</tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -555,7 +564,14 @@ export default function TutorStudentDetailPage() {
                                 <td className="px-4 py-3 text-gray-500">{g.homework != null ? `${parseFloat(String(g.homework))}%` : '—'}</td>
                                 <td className="px-4 py-3 text-gray-500">{g.test_score != null ? `${parseFloat(String(g.test_score))}%` : '—'}</td>
                                 <td className="px-4 py-3 font-semibold text-blue-600">{avg}{avg !== '—' ? '%' : ''}</td>
-                                <td className="px-4 py-3">{statusBadge(g.status)}</td>
+                                <td className="px-4 py-3 text-right">
+                                  <button
+                                    onClick={() => setSelectedGrade(g)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-white hover:bg-blue-600 hover:text-white hover:border-blue-600 text-blue-600 transition-all text-xs font-semibold shadow-sm"
+                                  >
+                                    <Eye size={12} /> Details
+                                  </button>
+                                </td>
                               </tr>
                             );
                           })}
@@ -567,6 +583,159 @@ export default function TutorStudentDetailPage() {
                 )}
               </div>
             )}
+
+            {/* GRADEBOOK PRINT MODAL */}
+            {selectedGrade && (() => {
+              const g = selectedGrade;
+              const prev = grades.find(x =>
+                x.course_name === g.course_name &&
+                x.record_id !== g.record_id &&
+                (Number(x.year) < Number(g.year) ||
+                  (Number(x.year) === Number(g.year) &&
+                    ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(x.month) <
+                    ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(g.month)))
+              );
+              const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              const monthIndex = MONTHS.indexOf(g.month);
+              const sessionsThisMonth = sessions.filter(s => {
+                if (!s.start_session_date) return false;
+                const d = new Date(s.start_session_date);
+                return d.getFullYear() === Number(g.year) && d.getMonth() === monthIndex;
+              });
+              const expected   = sessionsThisMonth.length || 0;
+              const attended   = sessionsThisMonth.filter(s => s.status === 'ended').length;
+              const missed     = sessionsThisMonth.filter(s => s.status === 'missed').length;
+              const rescheduled= sessionsThisMonth.filter(s => s.status === 'rescheduled').length;
+
+              const metrics: { label: string; curr: number | null; prevVal: number | null }[] = [
+                { label: 'Punctuality',      curr: g.punctuality != null ? parseFloat(String(g.punctuality)) : null,    prevVal: prev?.punctuality  != null ? parseFloat(String(prev.punctuality))  : null },
+                { label: 'Attentiveness',    curr: g.attentiveness != null ? parseFloat(String(g.attentiveness)) : null, prevVal: prev?.attentiveness != null ? parseFloat(String(prev.attentiveness)) : null },
+                { label: 'Class Engagement', curr: g.engagement != null ? parseFloat(String(g.engagement)) : null,      prevVal: prev?.engagement != null ? parseFloat(String(prev.engagement)) : null },
+                { label: 'Homework',         curr: g.homework != null ? parseFloat(String(g.homework)) : null,          prevVal: prev?.homework != null ? parseFloat(String(prev.homework)) : null },
+                { label: 'Test Score',       curr: g.test_score != null ? parseFloat(String(g.test_score)) : null,      prevVal: prev?.test_score != null ? parseFloat(String(prev.test_score)) : null },
+              ];
+
+              const handlePrint = () => {
+                const logoHtml = branding?.logo_url
+                  ? `<img src="${branding.logo_url}" alt="logo" style="height:40px;object-fit:contain;" />`
+                  : `<div style="width:80px;height:40px;background:#e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#9ca3af;">${branding?.academy_name || branding?.site_title || 'Academy'}</div>`;
+                const metricsRows = metrics.map(m => {
+                  const tracker = m.prevVal != null && m.curr != null
+                    ? m.curr >= m.prevVal
+                      ? `<span style="color:#16a34a">&#8593; ${m.curr}%</span>`
+                      : `<span style="color:#dc2626">&#8595; ${m.curr}%</span>`
+                    : m.curr != null ? `<span style="color:#16a34a">&#8593; ${m.curr}%</span>` : '—';
+                  return `<tr>
+                    <td style="padding:8px 12px;font-weight:600;border-bottom:1px solid #e5e7eb;">${m.label}</td>
+                    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${m.curr != null ? m.curr + '%' : '—'}</td>
+                    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${m.prevVal != null ? m.prevVal + '%' : ''}</td>
+                    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${tracker}</td>
+                  </tr>`;
+                }).join('');
+                const w = window.open('', '_blank', 'width=900,height=700');
+                if (!w) return;
+                w.document.write(`<!DOCTYPE html><html><head><title>Gradebook</title>
+                <style>body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111;}
+                  table{width:100%;border-collapse:collapse;}
+                  th{background:#f3f4f6;padding:8px 12px;text-align:left;font-size:12px;text-transform:uppercase;color:#6b7280;}
+                  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0;}
+                  .stat-cell{border:1px solid #e5e7eb;padding:12px;text-align:center;border-radius:4px;}
+                  .stat-label{font-size:11px;color:#6b7280;}
+                  .stat-val{font-size:22px;font-weight:700;margin-top:4px;}
+                  .print-btn{display:block;width:100%;padding:12px;background:#3b82f6;color:#fff;border:none;cursor:pointer;font-size:14px;margin-top:24px;}
+                  @media print{.print-btn{display:none;}}</style></head><body>
+                <div style="display:flex;align-items:center;margin-bottom:16px;">${logoHtml}</div>
+                <div style="text-align:center;margin-bottom:16px;">
+                  <h2 style="margin:0;font-size:22px;">Gradebook</h2>
+                  <p style="margin:4px 0;color:#555;">(${g.month} ${g.year})</p>
+                  <p style="margin:0;font-weight:600;">${g.student_name || fullName}</p>
+                </div>
+                <div class="stats">
+                  <div class="stat-cell" style="background:#eff6ff;"><div class="stat-label">Expected Sessions</div><div class="stat-val">${expected}</div></div>
+                  <div class="stat-cell" style="background:#f0fdf4;"><div class="stat-label">Sessions Attended</div><div class="stat-val">${attended}</div></div>
+                  <div class="stat-cell" style="background:#fff1f2;"><div class="stat-label">Sessions Missed</div><div class="stat-val">${missed}</div></div>
+                  <div class="stat-cell" style="background:#fffbeb;"><div class="stat-label">Rescheduled</div><div class="stat-val">${rescheduled}</div></div>
+                </div>
+                <table><thead><tr>
+                  <th>${g.course_name}</th><th>Current</th><th>Previous</th><th>Tracker</th>
+                </tr></thead><tbody>${metricsRows}</tbody></table>
+                ${g.remarks ? `<div style="margin-top:16px;"><p style="color:#dc2626;font-size:13px;margin-bottom:4px;">Remarks:</p><p style="font-size:13px;line-height:1.6;">${g.remarks}</p></div>` : ''}
+                <p style="margin-top:16px;font-weight:600;">Tutor: <span style="font-weight:400;">${g.tutor_name || '—'}</span></p>
+                <button class="print-btn" onclick="window.print()">Print Gradebook</button>
+                </body></html>`);
+                w.document.close();
+              };
+
+              return (
+                <Modal isOpen={true} onClose={() => setSelectedGrade(null)} title="Gradebook" size="xl">
+                  <div className="space-y-4">
+                    {/* Preview header */}
+                    <div className="flex items-center gap-3">
+                      {branding?.logo_url
+                        ? <img src={branding.logo_url} alt="logo" className="h-10 object-contain" />
+                        : <div className="h-10 px-3 bg-gray-100 rounded-lg flex items-center text-xs text-gray-400 font-medium">{branding?.academy_name || branding?.site_title || 'Academy'}</div>
+                      }
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-xl font-bold text-gray-900">Gradebook</h3>
+                      <p className="text-sm text-gray-500">({g.month} {g.year})</p>
+                      <p className="text-sm font-semibold text-gray-800">{g.student_name || fullName}</p>
+                    </div>
+                    {/* Session stats */}
+                    <div className="grid grid-cols-4 gap-3">
+                      {[['Expected Sessions', expected,'bg-blue-50 border-blue-100'],['Sessions Attended', attended,'bg-green-50 border-green-100'],['Sessions Missed', missed,'bg-red-50 border-red-100'],['Rescheduled', rescheduled,'bg-amber-50 border-amber-100']].map(([label,val,cls]) => (
+                        <div key={label as string} className={`border rounded-lg p-3 text-center ${cls}`}>
+                          <p className="text-xs text-gray-500">{label as string}</p>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{val as number}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Metrics table */}
+                    <div className="overflow-hidden rounded-xl border border-gray-100">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{g.course_name}</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Current</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Previous</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tracker</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {metrics.map(m => {
+                            const up = m.prevVal == null || (m.curr != null && m.curr >= m.prevVal);
+                            const arrow = m.curr != null ? (up ? '↑' : '↓') : '';
+                            const arrowCls = up ? 'text-green-600' : 'text-red-500';
+                            return (
+                              <tr key={m.label} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-4 py-3 font-semibold text-gray-800">{m.label}</td>
+                                <td className="px-4 py-3 text-gray-600">{m.curr != null ? `${m.curr}%` : '—'}</td>
+                                <td className="px-4 py-3 text-gray-400">{m.prevVal != null ? `${m.prevVal}%` : ''}</td>
+                                <td className={`px-4 py-3 font-semibold ${arrowCls}`}>{arrow} {m.curr != null ? `${m.curr}%` : ''}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {g.remarks && (
+                      <div>
+                        <p className="text-xs font-semibold text-red-500 mb-1">Remarks:</p>
+                        <p className="text-sm text-gray-700 leading-relaxed">{g.remarks}</p>
+                      </div>
+                    )}
+                    <p className="text-sm"><span className="font-semibold">Tutor:</span> {g.tutor_name || '—'}</p>
+                    {/* Print button */}
+                    <button
+                      onClick={handlePrint}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
+                    >
+                      <Printer size={16} /> Print Gradebook
+                    </button>
+                  </div>
+                </Modal>
+              );
+            })()}
 
             {/* ASSESSMENT REPORT */}
             {!tabLoading && tab === 'assessment' && (
