@@ -49,7 +49,13 @@ interface Session {
 interface Activity {
   id: number; ssid: string; tutor_name: string; course_name: string;
   class_activity_date: string; class_activity_time: string; topic_taught: string;
-  tutors_general_observation: string;
+  details_of_class_activity: string; activity: string;
+  assigned_homework_from_prev: string; status_of_past_homework_review: string;
+  new_homework_assigned: string; topic_of_homework: string; no_homework_why: string;
+  did_student_complete_prev_homework: string; student_reason_for_not_completing: string;
+  did_student_join_on_time: string; student_reason_for_late: string;
+  student_engages_in_class: string; is_student_attentive: string;
+  tutors_general_observation: string; tutors_intervention: string;
 }
 
 interface Enrollment {
@@ -440,38 +446,46 @@ export default function TutorStudentDetailPage() {
               isOpen={!!selectedActivity}
               onClose={() => setSelectedActivity(null)}
               title="Class Activity Details"
-              size="md"
+              size="lg"
             >
-              {selectedActivity && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">Date</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatDate(selectedActivity.class_activity_date)}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">Time</p>
-                      <p className="text-sm font-semibold text-gray-900">{selectedActivity.class_activity_time ? formatTime(selectedActivity.class_activity_time) : '—'}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">Tutor</p>
-                      <p className="text-sm font-semibold text-gray-900">{selectedActivity.tutor_name || '—'}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">Course</p>
-                      <p className="text-sm font-semibold text-gray-900">{selectedActivity.course_name || '—'}</p>
-                    </div>
+              {selectedActivity && (() => {
+                const rows: { label: string; value: string | null | undefined }[] = [
+                  { label: 'Date',                                          value: formatDate(selectedActivity.class_activity_date) },
+                  { label: 'Time',                                          value: selectedActivity.class_activity_time ? formatTime(selectedActivity.class_activity_time) : null },
+                  { label: 'Tutor',                                         value: selectedActivity.tutor_name },
+                  { label: 'Course',                                        value: selectedActivity.course_name },
+                  { label: 'Topic Taught',                                  value: selectedActivity.topic_taught },
+                  { label: 'Details of Class Activity',                     value: selectedActivity.details_of_class_activity },
+                  { label: 'Activity',                                      value: selectedActivity.activity },
+                  { label: 'Assigned Homework from Previous Session?',      value: selectedActivity.assigned_homework_from_prev },
+                  { label: 'Status of Past Homework Review',                value: selectedActivity.status_of_past_homework_review },
+                  { label: 'New Homework Assigned for Current Session?',    value: selectedActivity.new_homework_assigned },
+                  { label: 'Topic of Homework Assigned',                    value: selectedActivity.topic_of_homework },
+                  { label: 'No Homework Why?',                              value: selectedActivity.no_homework_why },
+                  { label: 'Did Student Complete Previous Homework?',       value: selectedActivity.did_student_complete_prev_homework },
+                  { label: 'Student Reason for Not Completing Homework',    value: selectedActivity.student_reason_for_not_completing },
+                  { label: 'Did Student Join Session on Time?',             value: selectedActivity.did_student_join_on_time },
+                  { label: 'Reason for Not Joining Session on Time',        value: selectedActivity.student_reason_for_late },
+                  { label: 'Student Engage in Class?',                      value: selectedActivity.student_engages_in_class },
+                  { label: 'Student Attentive in Class?',                   value: selectedActivity.is_student_attentive },
+                  { label: "Tutor's General Observation",                   value: selectedActivity.tutors_general_observation },
+                  { label: "Tutor's Intervention / Action",                 value: selectedActivity.tutors_intervention },
+                ];
+                return (
+                  <div className="overflow-hidden rounded-xl border border-gray-100">
+                    <table className="w-full text-sm">
+                      <tbody className="divide-y divide-gray-100">
+                        {rows.map(({ label, value }) => (
+                          <tr key={label} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-4 py-3 font-semibold text-gray-700 w-1/2 align-top">{label}</td>
+                            <td className="px-4 py-3 text-gray-600 align-top whitespace-pre-wrap">{value || <span className="text-gray-300">—</span>}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-2">Topic Taught</p>
-                    <p className="text-sm text-gray-800 leading-relaxed">{selectedActivity.topic_taught || '—'}</p>
-                  </div>
-                  <div className="bg-blue-50 rounded-xl p-4">
-                    <p className="text-[11px] text-blue-400 uppercase tracking-wide mb-2">Tutor&apos;s Observation</p>
-                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{selectedActivity.tutors_general_observation || '—'}</p>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </Modal>
 
             {/* ENROLLED COURSES */}
