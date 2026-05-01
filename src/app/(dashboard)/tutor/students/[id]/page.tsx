@@ -198,15 +198,22 @@ export default function TutorStudentDetailPage() {
       if (t === 'sessions') {
         const d = await fetch(`/api/sessions?student_id=${id}&tutor_id=${user?.user_id}`).then(r => r.json());
         setSessions(d.sessions || []);
+      } else if (t === 'grades') {
+        const [gradeData, sessionData] = await Promise.all([
+          fetch(`/api/grades?student_id=${id}&tutor_id=${user?.user_id}`).then(r => r.json()),
+          tabLoaded['sessions'] ? Promise.resolve(null) : fetch(`/api/sessions?student_id=${id}&tutor_id=${user?.user_id}`).then(r => r.json()),
+        ]);
+        setGrades(gradeData.grades || []);
+        if (sessionData) {
+          setSessions(sessionData.sessions || []);
+          setTabLoaded(prev => ({ ...prev, sessions: true }));
+        }
       } else if (t === 'activities') {
         const d = await fetch(`/api/activities?student_id=${id}&tutor_id=${user?.user_id}`).then(r => r.json());
         setActivities(d.activities || []);
       } else if (t === 'courses') {
         const d = await fetch(`/api/enrollments?student_id=${id}`).then(r => r.json());
         setCourses(d.enrollments || []);
-      } else if (t === 'grades') {
-        const d = await fetch(`/api/grades?student_id=${id}&tutor_id=${user?.user_id}`).then(r => r.json());
-        setGrades(d.grades || []);
       }
       setTabLoaded(prev => ({ ...prev, [t]: true }));
     } catch { toast.error('Failed to load tab data'); }
@@ -604,7 +611,8 @@ export default function TutorStudentDetailPage() {
               const sessionsThisMonth = sessions.filter(s => {
                 if (!s.start_session_date) return false;
                 const d = new Date(s.start_session_date);
-                return d.getFullYear() === Number(g.year) && d.getMonth() === monthIndex;
+                return s.course_name === g.course_name &&
+                  d.getFullYear() === Number(g.year) && d.getMonth() === monthIndex;
               });
               const expected   = sessionsThisMonth.length || 0;
               const attended   = sessionsThisMonth.filter(s => s.status === 'ended').length;
