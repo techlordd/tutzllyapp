@@ -47,16 +47,21 @@ export default function TutorStudentsPage() {
   const columns = [
     {
       key: 'student_name',
-      label: 'Student',
+      label: 'Student Name',
       sortable: true,
       render: (_: unknown, row: Student) => (
         <div className="flex items-center gap-3">
           <Avatar name={row.student_name} size="sm" />
-          <div>
-            <p className="font-semibold text-gray-900 leading-tight">{row.student_name}</p>
-            <p className="text-xs text-gray-400 font-mono mt-0.5">{row.student_id}</p>
-          </div>
+          <p className="font-semibold text-gray-900 leading-tight">{row.student_name}</p>
         </div>
+      ),
+    },
+    {
+      key: 'student_id',
+      label: 'Student ID',
+      sortable: true,
+      render: (value: unknown) => (
+        <span className="font-mono text-sm text-gray-600">{String(value ?? '')}</span>
       ),
     },
     {
