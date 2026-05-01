@@ -4,16 +4,20 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import DataTable from '@/components/ui/DataTable';
 import Modal from '@/components/ui/Modal';
 import { Eye } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
 interface Activity {
-  id: number; tutor_firstname: string; tutor_lastname: string; course_name: string;
-  class_activity_date: string; topic_taught: string;
-  did_student_join_on_time: string; is_student_attentive: string;
-  student_engages_in_class: string; tutors_general_observation: string;
-  new_homework_assigned: string; topic_of_homework: string;
+  id: number; tutor_name: string; tutor_firstname: string; tutor_lastname: string; course_name: string;
+  class_activity_date: string; class_activity_time: string; topic_taught: string;
+  details_of_class_activity: string; activity: string;
+  assigned_homework_from_prev: string; status_of_past_homework_review: string;
+  new_homework_assigned: string; topic_of_homework: string; no_homework_why: string;
+  did_student_complete_prev_homework: string; student_reason_for_not_completing: string;
+  did_student_join_on_time: string; student_reason_for_late: string;
+  student_engages_in_class: string; is_student_attentive: string;
+  tutors_general_observation: string; tutors_intervention: string;
 }
 
 export default function StudentActivitiesPage() {
@@ -65,28 +69,45 @@ export default function StudentActivitiesPage() {
         />
       </div>
       {selected && (
-        <Modal isOpen={true} onClose={() => setSelected(null)} title="Activity Details" size="lg">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-blue-50 p-3 rounded-xl"><p className="text-xs text-blue-400">Tutor</p><p className="font-semibold">{selected.tutor_firstname} {selected.tutor_lastname}</p></div>
-              <div className="bg-green-50 p-3 rounded-xl"><p className="text-xs text-green-400">Course</p><p className="font-semibold">{selected.course_name}</p></div>
-            </div>
-            <div><p className="text-xs text-gray-400 mb-1">Topic Taught</p><p className="font-medium">{selected.topic_taught}</p></div>
-            <div className="grid grid-cols-3 gap-3">
-              {[['On Time?', selected.did_student_join_on_time], ['Attentive?', selected.is_student_attentive], ['Engaged?', selected.student_engages_in_class]].map(([l, v]) => (
-                <div key={l as string} className="text-center p-3 bg-gray-50 rounded-xl">
-                  <p className="text-xs text-gray-400">{l as string}</p>
-                  <p className={`font-bold mt-1 text-sm ${v === 'Yes' ? 'text-green-600' : v === 'No' ? 'text-red-600' : 'text-amber-600'}`}>{v as string || '—'}</p>
-                </div>
-              ))}
-            </div>
-            {selected.new_homework_assigned === 'true' && selected.topic_of_homework && (
-              <div><p className="text-xs text-gray-400">Homework Topic</p><p className="text-sm bg-amber-50 p-3 rounded-xl">{selected.topic_of_homework}</p></div>
-            )}
-            {selected.tutors_general_observation && (
-              <div><p className="text-xs text-gray-400">Tutor's Observation</p><p className="text-sm bg-gray-50 p-3 rounded-xl">{selected.tutors_general_observation}</p></div>
-            )}
-          </div>
+        <Modal isOpen={true} onClose={() => setSelected(null)} title="Class Activity Details" size="lg">
+          {selected && (() => {
+            const rows: { label: string; value: string | null | undefined }[] = [
+              { label: 'Date',                                          value: formatDate(selected.class_activity_date) },
+              { label: 'Time',                                          value: selected.class_activity_time ? formatTime(selected.class_activity_time) : null },
+              { label: 'Tutor',                                         value: selected.tutor_name || `${selected.tutor_firstname} ${selected.tutor_lastname}` },
+              { label: 'Course',                                        value: selected.course_name },
+              { label: 'Topic Taught',                                  value: selected.topic_taught },
+              { label: 'Details of Class Activity',                     value: selected.details_of_class_activity },
+              { label: 'Activity',                                      value: selected.activity },
+              { label: 'Assigned Homework from Previous Session?',      value: selected.assigned_homework_from_prev },
+              { label: 'Status of Past Homework Review',                value: selected.status_of_past_homework_review },
+              { label: 'New Homework Assigned for Current Session?',    value: selected.new_homework_assigned },
+              { label: 'Topic of Homework Assigned',                    value: selected.topic_of_homework },
+              { label: 'No Homework Why?',                              value: selected.no_homework_why },
+              { label: 'Did Student Complete Previous Homework?',       value: selected.did_student_complete_prev_homework },
+              { label: 'Student Reason for Not Completing Homework',    value: selected.student_reason_for_not_completing },
+              { label: 'Did Student Join Session on Time?',             value: selected.did_student_join_on_time },
+              { label: 'Reason for Not Joining Session on Time',        value: selected.student_reason_for_late },
+              { label: 'Student Engage in Class?',                      value: selected.student_engages_in_class },
+              { label: 'Student Attentive in Class?',                   value: selected.is_student_attentive },
+              { label: "Tutor's General Observation",                   value: selected.tutors_general_observation },
+              { label: "Tutor's Intervention / Action",                 value: selected.tutors_intervention },
+            ];
+            return (
+              <div className="overflow-hidden rounded-xl border border-gray-100">
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-gray-100">
+                    {rows.map(({ label, value }) => (
+                      <tr key={label} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-gray-700 w-1/2 align-top">{label}</td>
+                        <td className="px-4 py-3 text-gray-600 align-top whitespace-pre-wrap">{value || <span className="text-gray-300">—</span>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
         </Modal>
       )}
     </DashboardLayout>

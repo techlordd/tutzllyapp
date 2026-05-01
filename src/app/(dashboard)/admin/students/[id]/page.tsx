@@ -5,10 +5,11 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Avatar from '@/components/ui/Avatar';
 import { statusBadge } from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import {
   ArrowLeft, Mail, Phone, User, MapPin, Calendar, BookOpen, Video,
   ClipboardList, MessageSquare, GraduationCap, Clock,
-  Edit, CheckCircle, AlertCircle, XCircle, FileText, Users, TrendingUp,
+  Edit, CheckCircle, AlertCircle, XCircle, FileText, Users, TrendingUp, Eye,
 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import Link from 'next/link';
@@ -47,7 +48,13 @@ interface Session {
 interface Activity {
   id: number; ssid: string; tutor_name: string; course_name: string;
   class_activity_date: string; class_activity_time: string; topic_taught: string;
-  tutors_general_observation: string;
+  details_of_class_activity: string; activity: string;
+  assigned_homework_from_prev: string; status_of_past_homework_review: string;
+  new_homework_assigned: string; topic_of_homework: string; no_homework_why: string;
+  did_student_complete_prev_homework: string; student_reason_for_not_completing: string;
+  did_student_join_on_time: string; student_reason_for_late: string;
+  student_engages_in_class: string; is_student_attentive: string;
+  tutors_general_observation: string; tutors_intervention: string;
 }
 
 interface Enrollment {
@@ -125,12 +132,13 @@ export default function StudentDetailPage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [sessions,   setSessions]   = useState<Session[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [courses,    setCourses]    = useState<Enrollment[]>([]);
-  const [messages,   setMessages]   = useState<Message[]>([]);
-  const [tabLoaded,  setTabLoaded]  = useState<Partial<Record<Tab, boolean>>>({});
-  const [tabLoading, setTabLoading] = useState(false);
+  const [sessions,          setSessions]          = useState<Session[]>([]);
+  const [activities,        setActivities]        = useState<Activity[]>([]);
+  const [courses,           setCourses]           = useState<Enrollment[]>([]);
+  const [messages,          setMessages]          = useState<Message[]>([]);
+  const [selectedActivity,  setSelectedActivity]  = useState<Activity | null>(null);
+  const [tabLoaded,         setTabLoaded]         = useState<Partial<Record<Tab, boolean>>>({});
+  const [tabLoading,        setTabLoading]        = useState(false);
 
   useEffect(() => {
     fetch(`/api/students/${id}`)
@@ -369,9 +377,10 @@ export default function StudentDetailPage() {
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
                         <tr>
-                          {['Date', 'Tutor', 'Course', 'Topic Taught', 'Observation'].map(h => (
+                          {['Date', 'Tutor', 'Course', 'Topic Taught'].map(h => (
                             <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                           ))}
+                          <th className="px-4 py-3 text-right font-medium">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
@@ -381,7 +390,14 @@ export default function StudentDetailPage() {
                             <td className="px-4 py-3 text-gray-600">{a.tutor_name || '—'}</td>
                             <td className="px-4 py-3 text-gray-600">{a.course_name || '—'}</td>
                             <td className="px-4 py-3 text-gray-700 max-w-[200px] truncate">{a.topic_taught || '—'}</td>
-                            <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{a.tutors_general_observation || '—'}</td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => setSelectedActivity(a)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-white hover:bg-blue-600 hover:text-white hover:border-blue-600 text-blue-600 transition-all text-xs font-semibold shadow-sm"
+                              >
+                                <Eye size={12} /> View Details
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -390,6 +406,53 @@ export default function StudentDetailPage() {
                 )}
               </div>
             )}
+
+            {/* ACTIVITY DETAILS MODAL */}
+            <Modal
+              isOpen={!!selectedActivity}
+              onClose={() => setSelectedActivity(null)}
+              title="Class Activity Details"
+              size="lg"
+            >
+              {selectedActivity && (() => {
+                const rows: { label: string; value: string | null | undefined }[] = [
+                  { label: 'Date',                                          value: formatDate(selectedActivity.class_activity_date) },
+                  { label: 'Time',                                          value: selectedActivity.class_activity_time ? formatTime(selectedActivity.class_activity_time) : null },
+                  { label: 'Tutor',                                         value: selectedActivity.tutor_name },
+                  { label: 'Course',                                        value: selectedActivity.course_name },
+                  { label: 'Topic Taught',                                  value: selectedActivity.topic_taught },
+                  { label: 'Details of Class Activity',                     value: selectedActivity.details_of_class_activity },
+                  { label: 'Activity',                                      value: selectedActivity.activity },
+                  { label: 'Assigned Homework from Previous Session?',      value: selectedActivity.assigned_homework_from_prev },
+                  { label: 'Status of Past Homework Review',                value: selectedActivity.status_of_past_homework_review },
+                  { label: 'New Homework Assigned for Current Session?',    value: selectedActivity.new_homework_assigned },
+                  { label: 'Topic of Homework Assigned',                    value: selectedActivity.topic_of_homework },
+                  { label: 'No Homework Why?',                              value: selectedActivity.no_homework_why },
+                  { label: 'Did Student Complete Previous Homework?',       value: selectedActivity.did_student_complete_prev_homework },
+                  { label: 'Student Reason for Not Completing Homework',    value: selectedActivity.student_reason_for_not_completing },
+                  { label: 'Did Student Join Session on Time?',             value: selectedActivity.did_student_join_on_time },
+                  { label: 'Reason for Not Joining Session on Time',        value: selectedActivity.student_reason_for_late },
+                  { label: 'Student Engage in Class?',                      value: selectedActivity.student_engages_in_class },
+                  { label: 'Student Attentive in Class?',                   value: selectedActivity.is_student_attentive },
+                  { label: "Tutor's General Observation",                   value: selectedActivity.tutors_general_observation },
+                  { label: "Tutor's Intervention / Action",                 value: selectedActivity.tutors_intervention },
+                ];
+                return (
+                  <div className="overflow-hidden rounded-xl border border-gray-100">
+                    <table className="w-full text-sm">
+                      <tbody className="divide-y divide-gray-100">
+                        {rows.map(({ label, value }) => (
+                          <tr key={label} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-4 py-3 font-semibold text-gray-700 w-1/2 align-top">{label}</td>
+                            <td className="px-4 py-3 text-gray-600 align-top whitespace-pre-wrap">{value || <span className="text-gray-300">—</span>}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </Modal>
 
             {/* ENROLLED COURSES */}
             {!tabLoading && tab === 'courses' && (
