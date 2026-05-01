@@ -209,23 +209,23 @@ export default function TutorSchedulePage() {
             const isActive     = todaySession?.status === 'started';
             const isConcluded  = todaySession?.status === 'ended';
             return (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <button
                   disabled={isActive || isConcluded}
                   onClick={() => { setActionForm({ start_session_date: today, start_session_time: new Date().toTimeString().slice(0, 5), reschedule_to: '', reschedule_time: '' }); setActionModal({ schedule: row, action: 'start' }); }}
-                  className="px-2 py-1 text-xs rounded-lg bg-green-50 text-green-700 hover:bg-green-100 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
-                  <Play size={11} /> Start
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 active:bg-green-800 shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  <Play size={11} fill="currentColor" /> Start
                 </button>
                 <button
                   disabled={isConcluded}
                   onClick={() => { setActionForm(f => ({ ...f, reschedule_to: '', reschedule_time: '' })); setActionModal({ schedule: row, action: 'reschedule' }); }}
-                  className="px-2 py-1 text-xs rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-amber-400 bg-white text-amber-700 hover:bg-amber-50 active:bg-amber-100 shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   <RotateCcw size={11} /> Reschedule
                 </button>
                 <button
                   disabled={isConcluded}
                   onClick={() => handleMissed(row)}
-                  className="px-2 py-1 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 active:bg-red-100 shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   Missed
                 </button>
               </div>
