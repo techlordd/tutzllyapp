@@ -4,9 +4,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import DataTable from '@/components/ui/DataTable';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import { statusBadge } from '@/components/ui/Badge';
-import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Video, Square, ClipboardList, Eye, CheckCircle, AlertCircle, Link2 } from 'lucide-react';
+import { statusBadge } from '@/components/ui/Badge';import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
+import { Square, ClipboardList, Eye, CheckCircle, AlertCircle, Link2 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
@@ -174,22 +173,30 @@ export default function TutorSessionsPage() {
   };
 
   const columns = [
-    { key: 'student_name', label: 'Student', sortable: true },
-    { key: 'course_name', label: 'Course', render: (_: unknown, row: Session) => (
-      <div>
-        <p className="font-medium text-sm">{row.course_name || '—'}</p>
-        {row.course_code && <span className="font-mono text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{row.course_code}</span>}
-      </div>
+    { key: 'entry_date', label: 'Date', sortable: true, render: (_: unknown, row: Session) => {
+      const d = row.start_session_date || row.entry_date;
+      return <span className="text-sm font-medium text-gray-900 whitespace-nowrap">{d ? formatDate(d) : '—'}</span>;
+    }},
+    { key: 'tutor_firstname', label: 'Tutor', sortable: true, render: (_: unknown, row: Session) => {
+      const name = [row.tutor_firstname, row.tutor_lastname].filter(Boolean).join(' ');
+      return <span className="text-sm text-blue-600">{name || '—'}</span>;
+    }},
+    { key: 'course_name', label: 'Course', sortable: true, render: (v: unknown) => (
+      <span className="text-sm text-blue-600">{String(v || '—')}</span>
     )},
-    { key: 'entry_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
-    { key: 'schedule_start_time', label: 'Time', render: (v: unknown) => formatTime(v as string) },
-    { key: 'session_duration', label: 'Duration', render: (v: unknown) => v ? `${v} min` : '—' },
-    { key: 'zoom_link', label: 'Zoom', render: (v: unknown) => v ? (
-      <a href={v as string} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs flex items-center gap-1">
-        <Video size={12} /> Join
-      </a>
-    ) : '—' },
-    { key: 'status', label: 'Status', render: (v: unknown) => statusBadge(v as string) },
+    { key: 'schedule_start_time', label: 'Period', render: (_: unknown, row: Session) => (
+      <span className="text-sm text-gray-700 whitespace-nowrap">
+        {row.schedule_start_time && row.schedule_end_time
+          ? `${formatTime(row.schedule_start_time)} – ${formatTime(row.schedule_end_time)}`
+          : '—'}
+      </span>
+    )},
+    { key: 'start_session_time', label: 'Session Started', render: (v: unknown) => (
+      <span className="text-sm text-gray-700">{v ? formatTime(v as string) : '—'}</span>
+    )},
+    { key: 'end_session_time', label: 'Session Ended', render: (v: unknown) => (
+      <span className="text-sm text-gray-700">{v ? formatTime(v as string) : '—'}</span>
+    )},
   ];
 
   return (
