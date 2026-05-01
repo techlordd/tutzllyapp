@@ -177,10 +177,9 @@ export default function TutorSessionsPage() {
       const d = row.start_session_date || row.entry_date;
       return <span className="text-sm font-medium text-gray-900 whitespace-nowrap">{d ? formatDate(d) : '—'}</span>;
     }},
-    { key: 'tutor_firstname', label: 'Tutor', sortable: true, render: (_: unknown, row: Session) => {
-      const name = [row.tutor_firstname, row.tutor_lastname].filter(Boolean).join(' ');
-      return <span className="text-sm text-blue-600">{name || '—'}</span>;
-    }},
+    { key: 'student_name', label: 'Student', sortable: true, render: (v: unknown) => (
+      <span className="text-sm text-blue-600">{String(v || '—')}</span>
+    )},
     { key: 'course_name', label: 'Course', sortable: true, render: (v: unknown) => (
       <span className="text-sm text-blue-600">{String(v || '—')}</span>
     )},
@@ -211,7 +210,7 @@ export default function TutorSessionsPage() {
           searchKeys={['student_name', 'course_name', 'status']}
           emptyMessage="No sessions yet"
           actions={(row) => (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               {row.status === 'started' && (
                 <button onClick={() => {
                   const now = new Date();
@@ -230,24 +229,21 @@ export default function TutorSessionsPage() {
                   });
                   setEndModal(row);
                 }}
-                  className="px-2 py-1 text-xs rounded-lg bg-red-50 text-red-700 hover:bg-red-100 flex items-center gap-1">
-                  <Square size={11} /> End
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 shadow-sm transition-colors">
+                  <Square size={11} fill="currentColor" /> End Session
                 </button>
               )}
-              {row.status === 'ended' && (
-                activityMap.has(row.ssid)
-                  ? (
-                    <button onClick={() => setViewActivity(activityMap.get(row.ssid)!)}
-                      className="px-2 py-1 text-xs rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center gap-1">
-                      <Eye size={11} /> View Class Activity
-                    </button>
-                  ) : (
-                    <button onClick={() => openLogActivity(row)}
-                      className="px-2 py-1 text-xs rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center gap-1">
-                      <ClipboardList size={11} /> Log Activity
-                    </button>
-                  )
-              )}
+              {activityMap.has(row.ssid) ? (
+                <button onClick={() => setViewActivity(activityMap.get(row.ssid)!)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-300 bg-white text-blue-700 hover:bg-blue-50 shadow-sm transition-colors">
+                  <Eye size={11} /> View Class Activity
+                </button>
+              ) : row.status === 'ended' ? (
+                <button onClick={() => openLogActivity(row)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-purple-300 bg-white text-purple-700 hover:bg-purple-50 shadow-sm transition-colors">
+                  <ClipboardList size={11} /> Log Activity
+                </button>
+              ) : null}
             </div>
           )}
         />
