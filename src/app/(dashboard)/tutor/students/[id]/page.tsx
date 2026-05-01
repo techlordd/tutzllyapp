@@ -615,7 +615,7 @@ export default function TutorStudentDetailPage() {
                   d.getFullYear() === Number(g.year) && d.getMonth() === monthIndex;
               });
               const expected   = sessionsThisMonth.length || 0;
-              const attended   = sessionsThisMonth.filter(s => s.status === 'ended').length;
+              const attended   = sessionsThisMonth.filter(s => !!s.end_session_time).length;
               const missed     = sessionsThisMonth.filter(s => s.status === 'missed').length;
               const rescheduled= sessionsThisMonth.filter(s => s.status === 'rescheduled').length;
 
