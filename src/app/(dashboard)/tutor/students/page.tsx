@@ -64,10 +64,11 @@ export default function TutorStudentsPage() {
           actions={(row) => (
             <button
               onClick={() => router.push(`/tutor/students/${row.student_id}`)}
-              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors text-xs font-medium"
               title="View details"
             >
-              <Eye size={15} />
+              <Eye size={13} />
+              View Details
             </button>
           )}
         />
