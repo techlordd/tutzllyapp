@@ -587,16 +587,20 @@ export default function TutorStudentDetailPage() {
             {/* GRADEBOOK PRINT MODAL */}
             {selectedGrade && (() => {
               const g = selectedGrade;
+              const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              const currMonthIdx = MONTHS.indexOf(g.month);
+              const currYear = Number(g.year);
+              const prevMonthIdx = currMonthIdx === 0 ? 11 : currMonthIdx - 1;
+              const prevYear     = currMonthIdx === 0 ? currYear - 1 : currYear;
+              const prevMonthName = MONTHS[prevMonthIdx];
+              // Find grade for the exact immediately preceding calendar month, same course
               const prev = grades.find(x =>
                 x.course_name === g.course_name &&
                 x.record_id !== g.record_id &&
-                (Number(x.year) < Number(g.year) ||
-                  (Number(x.year) === Number(g.year) &&
-                    ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(x.month) <
-                    ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(g.month)))
+                x.month === prevMonthName &&
+                Number(x.year) === prevYear
               );
-              const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-              const monthIndex = MONTHS.indexOf(g.month);
+              const monthIndex = currMonthIdx;
               const sessionsThisMonth = sessions.filter(s => {
                 if (!s.start_session_date) return false;
                 const d = new Date(s.start_session_date);
@@ -620,11 +624,16 @@ export default function TutorStudentDetailPage() {
                   ? `<img src="${branding.logo_url}" alt="logo" style="height:40px;object-fit:contain;" />`
                   : `<div style="width:80px;height:40px;background:#e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#9ca3af;">${branding?.academy_name || branding?.site_title || 'Academy'}</div>`;
                 const metricsRows = metrics.map(m => {
-                  const tracker = m.prevVal != null && m.curr != null
-                    ? m.curr >= m.prevVal
-                      ? `<span style="color:#16a34a">&#8593; ${m.curr}%</span>`
-                      : `<span style="color:#dc2626">&#8595; ${m.curr}%</span>`
-                    : m.curr != null ? `<span style="color:#16a34a">&#8593; ${m.curr}%</span>` : '—';
+                  let tracker = '—';
+                  if (m.curr != null && m.prevVal != null) {
+                    const diff = parseFloat((m.curr - m.prevVal).toFixed(1));
+                    const sign = diff >= 0 ? '+' : '';
+                    const color = diff >= 0 ? '#16a34a' : '#dc2626';
+                    const arrow = diff >= 0 ? '&#8593;' : '&#8595;';
+                    tracker = `<span style="color:${color}">${arrow} ${sign}${diff}%</span>`;
+                  } else if (m.prevVal == null) {
+                    tracker = '';
+                  }
                   return `<tr>
                     <td style="padding:8px 12px;font-weight:600;border-bottom:1px solid #e5e7eb;">${m.label}</td>
                     <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${m.curr != null ? m.curr + '%' : '—'}</td>
@@ -703,15 +712,20 @@ export default function TutorStudentDetailPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {metrics.map(m => {
-                            const up = m.prevVal == null || (m.curr != null && m.curr >= m.prevVal);
-                            const arrow = m.curr != null ? (up ? '↑' : '↓') : '';
-                            const arrowCls = up ? 'text-green-600' : 'text-red-500';
+                            let trackerEl: React.ReactNode = '';
+                            if (m.curr != null && m.prevVal != null) {
+                              const diff = parseFloat((m.curr - m.prevVal).toFixed(1));
+                              const sign = diff >= 0 ? '+' : '';
+                              const cls  = diff >= 0 ? 'text-green-600' : 'text-red-500';
+                              const arr  = diff >= 0 ? '↑' : '↓';
+                              trackerEl = <span className={`font-semibold ${cls}`}>{arr} {sign}{diff}%</span>;
+                            }
                             return (
                               <tr key={m.label} className="hover:bg-gray-50/50 transition-colors">
                                 <td className="px-4 py-3 font-semibold text-gray-800">{m.label}</td>
                                 <td className="px-4 py-3 text-gray-600">{m.curr != null ? `${m.curr}%` : '—'}</td>
                                 <td className="px-4 py-3 text-gray-400">{m.prevVal != null ? `${m.prevVal}%` : ''}</td>
-                                <td className={`px-4 py-3 font-semibold ${arrowCls}`}>{arrow} {m.curr != null ? `${m.curr}%` : ''}</td>
+                                <td className="px-4 py-3">{trackerEl}</td>
                               </tr>
                             );
                           })}
