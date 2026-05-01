@@ -5,7 +5,7 @@ import DataTable from '@/components/ui/DataTable';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Input } from '@/components/ui/FormField';
-import { Video, Calendar, Play, RotateCcw } from 'lucide-react';
+import { Calendar, Play, RotateCcw } from 'lucide-react';
 import { formatTime } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
@@ -134,30 +134,46 @@ export default function TutorSchedulePage() {
 
   const filtered = selectedDay ? schedules.filter(s => s.day === selectedDay) : schedules;
 
+  const sessionStatusBadge = (schedule: Schedule) => {
+    const s = sessionForToday(schedule);
+    if (!s) return <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 font-medium">Scheduled</span>;
+    const map: Record<string, string> = {
+      started:     'bg-blue-50 text-blue-700',
+      ended:       'bg-green-50 text-green-700',
+      missed:      'bg-red-50 text-red-600',
+      rescheduled: 'bg-amber-50 text-amber-700',
+    };
+    const labels: Record<string, string> = {
+      started: '● Active',
+      ended: '✓ Concluded',
+      missed: 'Missed',
+      rescheduled: 'Rescheduled',
+    };
+    return (
+      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${map[s.status] ?? 'bg-gray-100 text-gray-500'}`}>
+        {labels[s.status] ?? s.status}
+      </span>
+    );
+  };
+
   const columns = [
-    { key: 'student_name', label: 'Student', sortable: true },
-    { key: 'course_name', label: 'Course', render: (_: unknown, row: Schedule) => (
+    { key: 'course_name', label: 'Course', sortable: true, render: (_: unknown, row: Schedule) => (
       <div>
         <p className="font-medium text-sm">{row.course_name || '—'}</p>
         {row.course_code && <span className="font-mono text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{row.course_code}</span>}
       </div>
     )},
-    { key: 'day', label: 'Day', render: (v: unknown) => {
+    { key: 'day', label: 'Day', sortable: true, render: (v: unknown) => {
       const d = DAYS.find(d => d.full === (v as string));
-      return d ? <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${d.light}`}>{v as string}</span> : <span>{v as string}</span>;
+      return d ? <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${d.light}`}>{v as string}</span> : <span>{v as string}</span>;
     }},
-    { key: 'session_start_time', label: 'Time', render: (_: unknown, row: Schedule) =>
-      `${formatTime(row.session_start_time)} – ${formatTime(row.session_end_time)}` },
-    { key: 'duration', label: 'Duration', render: (v: unknown) => v ? `${v} min` : '—' },
-    { key: 'time_zone', label: 'Timezone' },
-    { key: 'zoom_link', label: 'Zoom', render: (v: unknown) => v ? (
-      <a href={v as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline text-xs">
-        <Video size={12} /> Join Zoom
-      </a>
-    ) : '—' },
-    { key: 'assign_status', label: 'Status', render: (v: unknown) =>
-      <span className={`text-xs px-2 py-0.5 rounded-full ${v === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{v as string}</span>
-    },
+    { key: 'student_name', label: 'Student Name', sortable: true },
+    { key: 'session_start_time', label: 'Period', render: (_: unknown, row: Schedule) => (
+      <span className="text-sm text-gray-700 font-mono whitespace-nowrap">
+        {formatTime(row.session_start_time)} – {formatTime(row.session_end_time)}
+      </span>
+    )},
+    { key: 'status', label: 'Status', render: (_: unknown, row: Schedule) => sessionStatusBadge(row) },
   ];
 
   return (
@@ -190,34 +206,26 @@ export default function TutorSchedulePage() {
           emptyMessage="No schedules for this day"
           actions={(row) => {
             const todaySession = sessionForToday(row);
-
-            if (todaySession?.status === 'started') {
-              return <span className="px-2 py-1 text-xs rounded-lg bg-blue-50 text-blue-700 font-medium">● Active Session</span>;
-            }
-            if (todaySession?.status === 'ended') {
-              return <span className="px-2 py-1 text-xs rounded-lg bg-gray-100 text-gray-500 font-medium">✓ Concluded for today</span>;
-            }
-            if (todaySession?.status === 'missed') {
-              return <span className="px-2 py-1 text-xs rounded-lg bg-red-50 text-red-600 font-medium">Missed</span>;
-            }
-            if (todaySession?.status === 'rescheduled') {
-              return <span className="px-2 py-1 text-xs rounded-lg bg-amber-50 text-amber-700 font-medium">Rescheduled</span>;
-            }
-
+            const isActive     = todaySession?.status === 'started';
+            const isConcluded  = todaySession?.status === 'ended';
             return (
               <div className="flex items-center gap-1">
                 <button
+                  disabled={isActive || isConcluded}
                   onClick={() => { setActionForm({ start_session_date: today, start_session_time: new Date().toTimeString().slice(0, 5), reschedule_to: '', reschedule_time: '' }); setActionModal({ schedule: row, action: 'start' }); }}
-                  className="px-2 py-1 text-xs rounded-lg bg-green-50 text-green-700 hover:bg-green-100 flex items-center gap-1">
+                  className="px-2 py-1 text-xs rounded-lg bg-green-50 text-green-700 hover:bg-green-100 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
                   <Play size={11} /> Start
                 </button>
                 <button
+                  disabled={isConcluded}
                   onClick={() => { setActionForm(f => ({ ...f, reschedule_to: '', reschedule_time: '' })); setActionModal({ schedule: row, action: 'reschedule' }); }}
-                  className="px-2 py-1 text-xs rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 flex items-center gap-1">
+                  className="px-2 py-1 text-xs rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
                   <RotateCcw size={11} /> Reschedule
                 </button>
-                <button onClick={() => handleMissed(row)}
-                  className="px-2 py-1 text-xs rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200">
+                <button
+                  disabled={isConcluded}
+                  onClick={() => handleMissed(row)}
+                  className="px-2 py-1 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed">
                   Missed
                 </button>
               </div>
