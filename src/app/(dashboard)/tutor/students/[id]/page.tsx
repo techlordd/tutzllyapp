@@ -5,10 +5,11 @@ import { useAuthStore } from '@/store/authStore';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Avatar from '@/components/ui/Avatar';
 import { statusBadge } from '@/components/ui/Badge';
+import Modal from '@/components/ui/Modal';
 import {
   ArrowLeft, Mail, Phone, User, MapPin, Calendar, BookOpen, Video,
   ClipboardList, GraduationCap, CheckCircle, AlertCircle, XCircle,
-  FileText, Users, BarChart3, ChevronLeft, ChevronRight, TrendingUp,
+  FileText, Users, BarChart3, ChevronLeft, ChevronRight, TrendingUp, Eye,
 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -158,6 +159,8 @@ export default function TutorStudentDetailPage() {
   const [grades,     setGrades]     = useState<Grade[]>([]);
   const [tabLoaded,  setTabLoaded]  = useState<Partial<Record<Tab, boolean>>>({});
   const [tabLoading, setTabLoading] = useState(false);
+
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
   const [pages, setPages] = useState<Record<Tab, number>>({
     bio: 1, sessions: 1, activities: 1, courses: 1, grades: 1, assessment: 1,
@@ -399,9 +402,12 @@ export default function TutorStudentDetailPage() {
                     <div className="overflow-x-auto rounded-xl border border-gray-100">
                       <table className="w-full text-sm">
                         <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-                          <tr>{['Date','Tutor','Course','Topic Taught','Observation'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-                          ))}</tr>
+                          <tr>
+                            {['Date','Tutor','Course','Topic Taught'].map(h => (
+                              <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                            ))}
+                            <th className="px-4 py-3 text-right font-medium">Action</th>
+                          </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                           {pagedActivities.map(a => (
@@ -410,7 +416,14 @@ export default function TutorStudentDetailPage() {
                               <td className="px-4 py-3 text-gray-600">{a.tutor_name || '—'}</td>
                               <td className="px-4 py-3 text-gray-600">{a.course_name || '—'}</td>
                               <td className="px-4 py-3 text-gray-700 max-w-[200px] truncate">{a.topic_taught || '—'}</td>
-                              <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{a.tutors_general_observation || '—'}</td>
+                              <td className="px-4 py-3 text-right">
+                                <button
+                                  onClick={() => setSelectedActivity(a)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-white hover:bg-blue-600 hover:text-white hover:border-blue-600 text-blue-600 transition-all text-xs font-semibold shadow-sm"
+                                >
+                                  <Eye size={12} /> View Details
+                                </button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -421,6 +434,45 @@ export default function TutorStudentDetailPage() {
                 )}
               </div>
             )}
+
+            {/* ACTIVITY DETAILS MODAL */}
+            <Modal
+              isOpen={!!selectedActivity}
+              onClose={() => setSelectedActivity(null)}
+              title="Class Activity Details"
+              size="md"
+            >
+              {selectedActivity && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">Date</p>
+                      <p className="text-sm font-semibold text-gray-900">{formatDate(selectedActivity.class_activity_date)}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">Time</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedActivity.class_activity_time ? formatTime(selectedActivity.class_activity_time) : '—'}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">Tutor</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedActivity.tutor_name || '—'}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">Course</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedActivity.course_name || '—'}</p>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-2">Topic Taught</p>
+                    <p className="text-sm text-gray-800 leading-relaxed">{selectedActivity.topic_taught || '—'}</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-4">
+                    <p className="text-[11px] text-blue-400 uppercase tracking-wide mb-2">Tutor&apos;s Observation</p>
+                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{selectedActivity.tutors_general_observation || '—'}</p>
+                  </div>
+                </div>
+              )}
+            </Modal>
 
             {/* ENROLLED COURSES */}
             {!tabLoading && tab === 'courses' && (
