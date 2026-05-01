@@ -5,9 +5,8 @@ import DataTable from '@/components/ui/DataTable';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import Avatar from '@/components/ui/Avatar';
 import { Plus, Eye, Trash2, Link2 } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Activity {
@@ -113,47 +112,18 @@ export default function ActivitiesPage() {
   };
 
   const columns = [
-    { key: 'student_name', label: 'Student', sortable: true, render: (_: unknown, row: Activity) => (
-      <div className="flex items-center gap-2">
-        <Avatar name={row.student_name || 'S'} size="sm" />
-        <span className="font-medium">{row.student_name || '—'}</span>
-      </div>
-    )},
-    { key: 'tutor_firstname', label: 'Tutor', render: (_: unknown, row: Activity) => (
-      <span className="font-medium">{[row.tutor_firstname, row.tutor_lastname].filter(Boolean).join(' ') || '—'}</span>
-    )},
-    { key: 'course_name', label: 'Course', render: (_: unknown, row: Activity) => (
-      <div>
-        <p className="font-medium text-sm">{row.course_name || '—'}</p>
-        {row.course_code && <span className="font-mono text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{row.course_code}</span>}
-      </div>
-    )},
-    { key: 'class_activity_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
-    { key: 'topic_taught', label: 'Topic', render: (v: unknown) => (
-      <span className="truncate max-w-[180px] block" title={v as string}>{v as string || '—'}</span>
-    )},
-    { key: 'did_student_join_on_time', label: 'On Time?', render: (v: unknown) => {
-      const s = v as string;
-      const cls = s === 'Yes' ? 'bg-green-100 text-green-700' : s === 'No' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500';
-      return <span className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>{s || '—'}</span>;
-    }},
-    { key: 'is_student_attentive', label: 'Attentive?', render: (v: unknown) => {
-      const s = v as string;
-      const cls = s === 'Yes' ? 'bg-green-100 text-green-700' : s === 'No' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
-      return <span className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>{s || '—'}</span>;
-    }},
-    { key: 'student_engages_in_class', label: 'Engaged?', render: (v: unknown) => {
-      const s = v as string;
-      const cls = s === 'Yes' ? 'bg-green-100 text-green-700' : s === 'No' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
-      return <span className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>{s || '—'}</span>;
-    }},
-    { key: 'record_id', label: 'Action', render: (_: unknown, row: Activity) => (
+    { key: 'class_activity_date', label: 'Date', sortable: true, render: (v: unknown) => <span className="text-gray-800">{formatDate(v as string)}</span> },
+    { key: 'class_activity_time', label: 'Time', render: (v: unknown) => <span className="text-blue-500 font-medium">{formatTime(v as string)}</span> },
+    { key: 'student_name', label: 'Student Name', sortable: true, render: (_: unknown, row: Activity) => <span className="text-blue-500 font-medium">{row.student_name || '—'}</span> },
+    { key: 'course_name', label: 'Course ID', render: (_: unknown, row: Activity) => <span className="text-blue-500 font-medium">{row.course_code || row.course_name || '—'}</span> },
+    { key: 'topic_taught', label: 'Topic Taught', render: (v: unknown) => <span className="text-gray-700">{(v as string) || '—'}</span> },
+    { key: 'record_id', label: '', render: (_: unknown, row: Activity) => (
       <button
         onClick={() => { setSelected(row); setViewOpen(true); }}
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
       >
         <Eye size={12} />
-        View Details
+        View
       </button>
     )},
   ];

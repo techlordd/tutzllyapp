@@ -6,7 +6,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
 import { Plus, Eye } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 
@@ -146,26 +146,18 @@ export default function TutorActivitiesPage() {
   };
 
   const columns = [
-    { key: 'student_name', label: 'Student', sortable: true },
-    { key: 'course_name', label: 'Course' },
-    { key: 'class_activity_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
-    { key: 'topic_taught', label: 'Topic' },
-    { key: 'did_student_join_on_time', label: 'On Time?', render: (v: unknown) => (
-      <span className={`text-xs px-1.5 py-0.5 rounded ${v === 'Yes' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{v as string || '—'}</span>
-    )},
-    { key: 'is_student_attentive', label: 'Attentive?', render: (v: unknown) => (
-      <span className={`text-xs px-1.5 py-0.5 rounded ${v === 'Yes' ? 'bg-green-100 text-green-700' : v === 'Partially' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{v as string || '—'}</span>
-    )},
-    { key: 'student_engages_in_class', label: 'Engaged?', render: (v: unknown) => (
-      <span className={`text-xs px-1.5 py-0.5 rounded ${v === 'Yes' ? 'bg-green-100 text-green-700' : v === 'Partially' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{v as string || '—'}</span>
-    )},
-    { key: 'record_id', label: 'Action', render: (_: unknown, row: Activity) => (
+    { key: 'class_activity_date', label: 'Date', sortable: true, render: (v: unknown) => <span className="text-gray-800">{formatDate(v as string)}</span> },
+    { key: 'class_activity_time', label: 'Time', render: (v: unknown) => <span className="text-blue-500 font-medium">{formatTime(v as string)}</span> },
+    { key: 'student_name', label: 'Student Name', sortable: true, render: (v: unknown) => <span className="text-blue-500 font-medium">{v as string || '—'}</span> },
+    { key: 'course_name', label: 'Course ID', render: (_: unknown, row: Activity) => <span className="text-blue-500 font-medium">{(row as Activity & { course_code?: string }).course_code || row.course_name || '—'}</span> },
+    { key: 'topic_taught', label: 'Topic Taught', render: (v: unknown) => <span className="text-gray-700">{v as string || '—'}</span> },
+    { key: 'record_id', label: '', render: (_: unknown, row: Activity) => (
       <button
         onClick={() => { setSelected(row); setViewOpen(true); }}
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
       >
         <Eye size={12} />
-        View Details
+        View
       </button>
     )},
   ];

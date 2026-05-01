@@ -35,23 +35,18 @@ export default function StudentActivitiesPage() {
   }, [user?.user_id]);
 
   const columns = [
-    { key: 'course_name', label: 'Course', sortable: true },
-    { key: 'tutor_firstname', label: 'Tutor', render: (_: unknown, row: Activity) => `${row.tutor_firstname} ${row.tutor_lastname}` },
-    { key: 'class_activity_date', label: 'Date', render: (v: unknown) => formatDate(v as string) },
-    { key: 'topic_taught', label: 'Topic Taught' },
-    { key: 'did_student_join_on_time', label: 'On Time?', render: (v: unknown) => (
-      <span className={`text-xs px-1.5 py-0.5 rounded ${v === 'Yes' ? 'bg-green-100 text-green-700' : v ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>{v as string || '—'}</span>
-    )},
-    { key: 'new_homework_assigned', label: 'HW?', render: (v: unknown) => (
-      <span className={`text-xs px-1.5 py-0.5 rounded ${v === 'true' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>{v === 'true' ? 'Yes' : 'No'}</span>
-    )},
-    { key: 'id', label: 'Action', render: (_: unknown, row: Activity) => (
+    { key: 'class_activity_date', label: 'Date', sortable: true, render: (v: unknown) => <span className="text-gray-800">{formatDate(v as string)}</span> },
+    { key: 'class_activity_time', label: 'Time', render: (v: unknown) => <span className="text-blue-500 font-medium">{formatTime(v as string)}</span> },
+    { key: 'tutor_firstname', label: 'Tutor Name', render: (_: unknown, row: Activity) => <span className="text-blue-500 font-medium">{`${row.tutor_firstname} ${row.tutor_lastname}`.trim() || '—'}</span> },
+    { key: 'course_name', label: 'Course ID', render: (v: unknown) => <span className="text-blue-500 font-medium">{(v as string) || '—'}</span> },
+    { key: 'topic_taught', label: 'Topic Taught', render: (v: unknown) => <span className="text-gray-700">{(v as string) || '—'}</span> },
+    { key: 'id', label: '', render: (_: unknown, row: Activity) => (
       <button
         onClick={() => setSelected(row)}
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
       >
         <Eye size={12} />
-        View Details
+        View
       </button>
     )},
   ];
