@@ -157,14 +157,14 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
 
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
 
+  const unreadCount = messages.filter(m => m.status === 'unread').length;
+  const readCount   = messages.filter(m => m.status === 'read').length;
+
   const filteredMessages = statusFilter === 'all'
     ? messages
     : statusFilter === 'unread'
       ? messages.filter(m => m.status === 'unread')
-      : messages.filter(m => m.status !== 'unread');
-
-  const unreadCount = messages.filter(m => m.status === 'unread').length;
-  const readCount   = messages.filter(m => m.status !== 'unread').length;
+      : messages.filter(m => m.status === 'read');
 
   const openReply = (msg: Message) => {
     const target = buildReplyTarget(msg);
