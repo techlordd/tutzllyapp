@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const params: (string | number)[] = [academyId, userId];
-    const scope = `(academy_id = $1 OR $1 = 0) AND entry_status != 'deleted' AND user_id = $2`;
+    const scope = `(academy_id = $1 OR $1 = 0 OR academy_id IS NULL) AND entry_status != 'deleted' AND user_id = $2`;
 
     const adminQ   = `SELECT 'admin'   AS msg_type, record_id, message_date, message_time, subject, status, body, COALESCE(recipient_admin,       'Admin')   AS recipient_name FROM messages_admin   WHERE ${scope}`;
     const tutorQ   = `SELECT 'tutor'   AS msg_type, record_id, message_date, message_time, subject, status, body, COALESCE(recipient_tutor_name,  'Tutor')   AS recipient_name FROM messages_tutor   WHERE ${scope}`;

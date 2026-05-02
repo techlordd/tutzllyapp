@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const countOnly   = searchParams.get('count') === 'true';
     const academyId   = getAcademyId(request);
 
-    const conds: string[] = [`entry_status != 'deleted'`, `(academy_id = $1 OR $1 = 0)`];
+    const conds: string[] = [`entry_status != 'deleted'`, `(academy_id = $1 OR $1 = 0 OR academy_id IS NULL)`];
     const params: (string | number)[] = [academyId];
     if (userId)  { params.push(userId);  conds.push(`user_id = $${params.length}`); }
     if (tutorId) { params.push(tutorId); conds.push(`recipient_tutor_id = $${params.length}`); }

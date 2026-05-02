@@ -21,6 +21,22 @@ export async function GET(request: NextRequest) {
     };
     await run(`ALTER TABLE messages_tutor ADD COLUMN IF NOT EXISTS sender_student_id TEXT`, 'messages_tutor.sender_student_id');
     await run(`ALTER TABLE messages_tutor ADD COLUMN IF NOT EXISTS sender_parent_id TEXT`, 'messages_tutor.sender_parent_id');
+    await run(
+      `UPDATE messages_student SET academy_id = (SELECT id FROM academies WHERE is_active = true ORDER BY id LIMIT 1) WHERE academy_id IS NULL`,
+      'backfill messages_student.academy_id'
+    );
+    await run(
+      `UPDATE messages_tutor SET academy_id = (SELECT id FROM academies WHERE is_active = true ORDER BY id LIMIT 1) WHERE academy_id IS NULL`,
+      'backfill messages_tutor.academy_id'
+    );
+    await run(
+      `UPDATE messages_admin SET academy_id = (SELECT id FROM academies WHERE is_active = true ORDER BY id LIMIT 1) WHERE academy_id IS NULL`,
+      'backfill messages_admin.academy_id'
+    );
+    await run(
+      `UPDATE messages_parent SET academy_id = (SELECT id FROM academies WHERE is_active = true ORDER BY id LIMIT 1) WHERE academy_id IS NULL`,
+      'backfill messages_parent.academy_id'
+    );
     return NextResponse.json({ migrations: results });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -615,6 +631,28 @@ export async function POST(request: NextRequest) {
     try {
       await query(`ALTER TABLE messages_tutor ADD COLUMN IF NOT EXISTS sender_student_id TEXT`);
       await query(`ALTER TABLE messages_tutor ADD COLUMN IF NOT EXISTS sender_parent_id TEXT`);
+    } catch { /* ignore */ }
+
+    // ── Migration 023: backfill NULL academy_id on messages from CSV imports ──
+    // CSV-imported messages have no academy_id; assign them to the first active academy
+    // so they appear in all role inboxes (even without the IS NULL bypass).
+    try {
+      await query(`
+        UPDATE messages_student SET academy_id = (SELECT id FROM academies WHERE is_active = true ORDER BY id LIMIT 1)
+        WHERE academy_id IS NULL
+      `);
+      await query(`
+        UPDATE messages_tutor SET academy_id = (SELECT id FROM academies WHERE is_active = true ORDER BY id LIMIT 1)
+        WHERE academy_id IS NULL
+      `);
+      await query(`
+        UPDATE messages_admin SET academy_id = (SELECT id FROM academies WHERE is_active = true ORDER BY id LIMIT 1)
+        WHERE academy_id IS NULL
+      `);
+      await query(`
+        UPDATE messages_parent SET academy_id = (SELECT id FROM academies WHERE is_active = true ORDER BY id LIMIT 1)
+        WHERE academy_id IS NULL
+      `);
     } catch { /* ignore */ }
 
     return NextResponse.json({
