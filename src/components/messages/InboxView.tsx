@@ -226,7 +226,7 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
                     setMessages(prev => prev.map(m =>
                       m.record_id === row.record_id ? { ...m, status: updatedStatus } : m
                     ));
-                    setSelected(prev => prev?.record_id === row.record_id ? { ...prev, status: updatedStatus } : prev);
+                    setSelected(prev => prev?.record_id === row.record_id ? { ...prev!, status: updatedStatus } : prev);
                   })
                   .catch(() => {});
               }
