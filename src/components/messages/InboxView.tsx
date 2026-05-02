@@ -4,12 +4,19 @@ import DataTable from '@/components/ui/DataTable';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
-import FormField, { Input, Textarea } from '@/components/ui/FormField';
-import { Eye, Send, CornerUpLeft } from 'lucide-react';
+import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
+import { Eye, Send, CornerUpLeft, PenSquare } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 type MsgType = 'admin' | 'parent' | 'student' | 'tutor';
+
+const ROLE_OPTIONS: Record<string, MsgType[]> = {
+  tutor:   ['admin', 'student', 'parent'],
+  student: ['admin', 'tutor',   'parent'],
+  parent:  ['admin', 'tutor',   'student'],
+  admin:   ['tutor', 'student', 'parent'],
+};
 
 interface Message {
   record_id?: number;
@@ -106,6 +113,38 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
     subject: '', body: '', send_email: false,
   });
 
+  const composeOptions = ROLE_OPTIONS[currentUser.role] || ['admin'];
+  const [composeOpen, setComposeOpen]             = useState(false);
+  const [composeSubmitting, setComposeSubmitting] = useState(false);
+  const [composeTo, setComposeTo]                 = useState<MsgType>(composeOptions[0]);
+  const [composeForm, setComposeForm]             = useState({
+    subject: '', body: '', recipient_email: '', send_email: false,
+  });
+
+  const handleComposeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setComposeSubmitting(true);
+    try {
+      const payload = {
+        role: currentUser.role,
+        sender: currentUser.username,
+        user_role: currentUser.role,
+        user_id: String(currentUser.id),
+        ...composeForm,
+      };
+      const res = await fetch(`/api/messages/${composeTo}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error();
+      toast.success('Message sent!');
+      setComposeOpen(false);
+      setComposeForm({ subject: '', body: '', recipient_email: '', send_email: false });
+    } catch { toast.error('Failed to send message'); }
+    setComposeSubmitting(false);
+  };
+
   const fetchMessages = useCallback(async () => {
     setLoading(true);
     try {
@@ -183,8 +222,9 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
 
   return (
     <>
-      <div className="flex gap-2 mb-4">
-        {filterBtns.map(({ key, label, count }) => (
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-2">
+          {filterBtns.map(({ key, label, count }) => (
           <button
             key={key}
             onClick={() => setStatusFilter(key)}
@@ -200,6 +240,8 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
             }`}>{count}</span>
           </button>
         ))}
+        </div>
+        <Button icon={PenSquare} onClick={() => setComposeOpen(true)}>Compose</Button>
       </div>
 
       <DataTable
@@ -298,6 +340,59 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => { setReplyOpen(false); setReplyTarget(null); }}>Cancel</Button>
             <Button type="submit" loading={submitting} icon={Send}>Send Reply</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Compose modal */}
+      <Modal isOpen={composeOpen} onClose={() => setComposeOpen(false)} title="New Message" size="lg">
+        <form onSubmit={handleComposeSubmit} className="space-y-4">
+          <FormField label="To" required>
+            <Select value={composeTo} onChange={e => setComposeTo(e.target.value as MsgType)} required>
+              {composeOptions.map(opt => (
+                <option key={opt} value={opt}>
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+          <FormField label="Subject" required>
+            <Input
+              value={composeForm.subject}
+              onChange={e => setComposeForm({ ...composeForm, subject: e.target.value })}
+              required
+              placeholder="Message subject"
+            />
+          </FormField>
+          <FormField label="Message" required>
+            <Textarea
+              rows={6}
+              value={composeForm.body}
+              onChange={e => setComposeForm({ ...composeForm, body: e.target.value })}
+              required
+              placeholder="Write your message here..."
+            />
+          </FormField>
+          <FormField label="Recipient Email (optional)">
+            <Input
+              type="email"
+              value={composeForm.recipient_email}
+              onChange={e => setComposeForm({ ...composeForm, recipient_email: e.target.value })}
+              placeholder="recipient@email.com"
+            />
+          </FormField>
+          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={composeForm.send_email}
+              onChange={e => setComposeForm({ ...composeForm, send_email: e.target.checked })}
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Also send to recipient&apos;s real email address
+          </label>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setComposeOpen(false)}>Cancel</Button>
+            <Button type="submit" loading={composeSubmitting} icon={Send}>Send Message</Button>
           </div>
         </form>
       </Modal>
