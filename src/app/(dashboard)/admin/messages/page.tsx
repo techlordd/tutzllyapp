@@ -9,7 +9,7 @@ import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
 import InboxView from '@/components/messages/InboxView';
 import SentView from '@/components/messages/SentView';
 import { Send, Eye, Inbox, SendHorizonal, LayoutList, Trash2, CornerUpLeft } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 
@@ -166,7 +166,7 @@ export default function AdminMessagesPage() {
 
   const columns = [
     { key: 'message_date', label: 'Date', sortable: true, render: (v: unknown) => formatDate(v as string) },
-    { key: 'message_time', label: 'Time' },
+    { key: 'message_time', label: 'Time', render: (v: unknown) => formatTime(v as string) },
     { key: 'sender', label: 'Sender', sortable: true, render: (_v: unknown, row: Message) => resolveSender(row) },
     { key: 'subject', label: 'Subject', render: (v: unknown) => (
       <span className="font-medium text-gray-900 truncate max-w-[200px] block">{v as string}</span>
