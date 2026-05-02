@@ -24,3 +24,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   );
   return NextResponse.json({ message: result });
 }
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  await queryOne(
+    `UPDATE messages_parent SET entry_status='deleted', last_updated=NOW() WHERE record_id=$1`,
+    [Number(id)]
+  );
+  return NextResponse.json({ success: true });
+}

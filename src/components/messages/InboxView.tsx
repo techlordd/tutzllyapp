@@ -5,7 +5,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Eye, Send, CornerUpLeft, PenSquare, Mail, Calendar, Clock, User, Paperclip } from 'lucide-react';
+import { Eye, Send, CornerUpLeft, PenSquare, Mail, Calendar, Clock, User, Paperclip, Trash2 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -132,6 +132,8 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
   const [replyForm, setReplyForm] = useState({
     subject: '', body: '', send_email: false,
   });
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [deleting, setDeleting]       = useState(false);
 
   const composeOptions = ROLE_OPTIONS[currentUser.role] || ['admin'];
   const [composeOpen, setComposeOpen]             = useState(false);
@@ -187,6 +189,37 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
     : statusFilter === 'unread'
       ? messages.filter(m => !isRead(m.status))
       : messages.filter(m =>  isRead(m.status));
+
+  const allFilteredIds = filteredMessages.map(m => m.record_id).filter((id): id is number => id != null);
+  const allSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedIds.has(id));
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(prev => { const next = new Set(prev); allFilteredIds.forEach(id => next.delete(id)); return next; });
+    } else {
+      setSelectedIds(prev => new Set([...prev, ...allFilteredIds]));
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Delete ${selectedIds.size} message${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      await Promise.all(
+        ids.map(id => fetch(`/api/messages/${messageType}/${id}`, { method: 'DELETE' }))
+      );
+      toast.success(`${ids.length} message${ids.length > 1 ? 's' : ''} deleted`);
+      setSelectedIds(new Set());
+      fetchMessages();
+    } catch { toast.error('Failed to delete messages'); }
+    setDeleting(false);
+  };
 
   const openReply = (msg: Message) => {
     const target = buildReplyTarget(msg);
@@ -247,7 +280,7 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {filterBtns.map(({ key, label, count }) => (
           <button
             key={key}
@@ -264,13 +297,45 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
             }`}>{count}</span>
           </button>
         ))}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              disabled={deleting}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+            >
+              <Trash2 size={14} />
+              {deleting ? 'Deleting…' : `Delete (${selectedIds.size})`}
+            </button>
+          )}
         </div>
         <Button icon={PenSquare} onClick={() => setComposeOpen(true)}>Compose</Button>
       </div>
 
       <DataTable
         data={filteredMessages}
-        columns={columns}
+        columns={[
+          {
+            key: '_select',
+            label: (
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+            ) as unknown as string,
+            render: (_v: unknown, row: Message) => (
+              <input
+                type="checkbox"
+                checked={selectedIds.has(row.record_id!)}
+                onChange={() => toggleSelect(row.record_id!)}
+                onClick={e => e.stopPropagation()}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+            ),
+          },
+          ...columns,
+        ]}
         loading={loading}
         searchKeys={['subject']}
         emptyMessage={statusFilter === 'all' ? 'Your inbox is empty' : `No ${statusFilter} messages`}

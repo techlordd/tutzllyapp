@@ -35,3 +35,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch sent messages' }, { status: 500 });
   }
 }
+
+/** PATCH /api/messages/sent — bulk soft-delete by { ids: number[], msg_type: string }[] */
+export async function PATCH(request: NextRequest) {
+  try {
+    const { items }: { items: { id: number; msg_type: string }[] } = await request.json();
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'items array required' }, { status: 400 });
+    }
+    const tableMap: Record<string, string> = {
+      admin: 'messages_admin', tutor: 'messages_tutor',
+      student: 'messages_student', parent: 'messages_parent',
+    };
+    for (const { id, msg_type } of items) {
+      const table = tableMap[msg_type];
+      if (table) {
+        await query(`UPDATE ${table} SET entry_status='deleted', last_updated=NOW() WHERE record_id=$1`, [id]);
+      }
+    }
+    return NextResponse.json({ deleted: items.length });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to delete messages' }, { status: 500 });
+  }
+}
