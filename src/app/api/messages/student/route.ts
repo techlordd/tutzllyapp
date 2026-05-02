@@ -26,6 +26,10 @@ export async function GET(request: NextRequest) {
            JOIN users u ON st.user_id = u.id
            WHERE u.user_id = $1
          UNION
+         SELECT s.student_id AS id FROM students s
+           JOIN users u ON s.email = u.email
+           WHERE u.user_id = $1
+         UNION
          SELECT $1::text AS id`,
         [recipientId]
       );
