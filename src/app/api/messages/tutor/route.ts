@@ -18,10 +18,26 @@ export async function GET(request: NextRequest) {
     if (userId)  { params.push(userId);  conds.push(`user_id = $${params.length}`); }
     if (tutorId) { params.push(tutorId); conds.push(`recipient_tutor_id = $${params.length}`); }
     if (recipientId) {
-      params.push(recipientId);
-      conds.push(`(recipient_tutor_id = $${params.length} OR recipient_tutor_id IN (
-        SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $${params.length}
-      ))`);
+      // Pre-resolve all IDs that could identify this tutor: tutor_id (TUT-xxx) and
+      // users.user_id string (USR-xxx). Avoids fragile FK JOIN through tutors.user_id
+      // INTEGER column (often NULL for CSV-imported tutors).
+      const resolvedRows = await query<{ id: string }>(
+        `SELECT tutor_id AS id FROM tutors WHERE tutor_id = $1
+         UNION
+         SELECT t.tutor_id AS id FROM tutors t
+           JOIN users u ON t.user_id = u.id
+           WHERE u.user_id = $1
+         UNION
+         SELECT $1::text AS id`,
+        [recipientId]
+      );
+      const allIds = Array.from(new Set(resolvedRows.map(r => r.id).filter(Boolean)));
+      if (allIds.length > 0) {
+        const idxStart = params.length + 1;
+        params.push(...allIds);
+        const ph = allIds.map((_, i) => `$${idxStart + i}`).join(', ');
+        conds.push(`recipient_tutor_id IN (${ph})`);
+      }
     }
     if (status) { params.push(status); conds.push(`status = $${params.length}`); }
     const where = `WHERE ${conds.join(' AND ')}`;
@@ -60,21 +76,21 @@ export async function POST(request: NextRequest) {
     }
 
     let recipientTutorId: string | null = d.recipient_tutor_id || null;
-    if (!recipientTutorId && d.recipient_sender_user_id) {
+    // Always prefer users.user_id string (e.g. 'USR-xxx') as recipient_tutor_id when
+    // recipient_sender_user_id (numeric users.id) is available. This allows the tutor
+    // inbox GET to match directly without relying on the fragile tutors.user_id FK.
+    if (d.recipient_sender_user_id) {
       const raw = String(d.recipient_sender_user_id).trim();
       const numericId = Number(raw);
-      // Try numeric users.id first (new messages store user_id as numeric string)
       if (!isNaN(numericId) && numericId > 0) {
-        const row = await queryOne<{ tutor_id: string }>('SELECT tutor_id FROM tutors WHERE user_id = $1', [numericId]);
-        recipientTutorId = row?.tutor_id ? String(row.tutor_id) : null;
-      }
-      // Fallback: raw is a string-format user_id (e.g. 'TUT-xxx') from older messages
-      if (!recipientTutorId && raw) {
-        const row = await queryOne<{ tutor_id: string }>(
-          'SELECT t.tutor_id FROM tutors t JOIN users u ON t.user_id = u.id WHERE u.user_id = $1',
-          [raw]
-        );
-        recipientTutorId = row?.tutor_id ? String(row.tutor_id) : null;
+        const uRow = await queryOne<{ user_id: string }>('SELECT user_id FROM users WHERE id = $1', [numericId]);
+        if (uRow?.user_id) {
+          recipientTutorId = uRow.user_id;
+        } else if (!recipientTutorId) {
+          // Fallback: look up via tutors table FK
+          const tRow = await queryOne<{ tutor_id: string }>('SELECT tutor_id FROM tutors WHERE user_id = $1', [numericId]);
+          recipientTutorId = tRow?.tutor_id ? String(tRow.tutor_id) : null;
+        }
       }
     }
 
