@@ -1,26 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
+import { getUserRole } from '@/lib/request-context';
 
 /**
  * Debug endpoint to diagnose inbox delivery issues.
- * Protected by SETUP_SECRET header.
+ * Protected: must be called while logged in as admin or super_admin.
+ * The middleware sets x-user-role before the request reaches this handler.
  *
  * Usage:
- *   GET /api/debug/messages?user_id=USR-xxx
- *   Headers: x-setup-secret: <your-secret>
- *
- * Returns:
- *   - resolved tutor and student IDs for the given user_id
- *   - last 5 messages in messages_tutor/student where that user is the recipient
- *   - the user row from the users table
+ *   GET /api/debug/messages?user_id=email@example.com
  */
 export async function GET(request: NextRequest) {
-  const secret = process.env.SETUP_SECRET;
-  if (!secret) {
-    return NextResponse.json({ error: 'Debug disabled. Set SETUP_SECRET to enable.' }, { status: 403 });
-  }
-  if (request.headers.get('x-setup-secret') !== secret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const role = getUserRole(request);
+  if (role !== 'admin' && role !== 'super_admin') {
+    return NextResponse.json({ error: 'Unauthorized — log in as admin first' }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
