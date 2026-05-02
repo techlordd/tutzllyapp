@@ -16,10 +16,26 @@ export async function GET(request: NextRequest) {
     const params: (string | number)[] = [academyId];
     if (userId) { params.push(userId); conds.push(`user_id = $${params.length}`); }
     if (recipientId) {
-      params.push(recipientId);
-      conds.push(`(recipient_id_student = $${params.length} OR recipient_id_student IN (
-        SELECT st.student_id FROM students st JOIN users u ON st.user_id = u.id WHERE u.user_id = $${params.length}
-      ))`);
+      // Pre-resolve all IDs that could identify this student so we can do a simple IN match.
+      // This avoids a fragile subquery-level JOIN and handles: user_id string (USR-xxx),
+      // student_id string (STU-xxx), and historic records that stored either format.
+      const resolvedRows = await query<{ id: string }>(
+        `SELECT student_id AS id FROM students WHERE student_id = $1
+         UNION
+         SELECT st.student_id AS id FROM students st
+           JOIN users u ON st.user_id = u.id
+           WHERE u.user_id = $1
+         UNION
+         SELECT $1::text AS id`,
+        [recipientId]
+      );
+      const allIds = Array.from(new Set(resolvedRows.map(r => r.id).filter(Boolean)));
+      if (allIds.length > 0) {
+        const idxStart = params.length + 1;
+        params.push(...allIds);
+        const ph = allIds.map((_, i) => `$${idxStart + i}`).join(', ');
+        conds.push(`recipient_id_student IN (${ph})`);
+      }
     }
     if (status) { params.push(status); conds.push(`status = $${params.length}`); }
     const where = `WHERE ${conds.join(' AND ')}`;
@@ -51,14 +67,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Resolve recipient_id_student from recipient_sender_user_id if not directly provided
+    // Resolve recipient_id_student to the student's users.user_id string (e.g. 'USR-xxx') when
+    // recipient_sender_user_id (their numeric users.id) is available. This allows the student
+    // inbox GET to use a direct match (recipient_id_student = 'USR-xxx') without relying on the
+    // fragile JOIN through students.user_id INTEGER FK (which can be NULL for imported students).
     let resolvedRecipientStudentId: string | null = d.recipient_id_student || null;
-    if (!resolvedRecipientStudentId && d.recipient_sender_user_id) {
+    if (d.recipient_sender_user_id) {
       const raw = String(d.recipient_sender_user_id).trim();
       const numericRecipientId = Number(raw);
       if (!isNaN(numericRecipientId) && numericRecipientId > 0) {
-        const sRow = await queryOne<{ student_id: string }>('SELECT student_id FROM students WHERE user_id = $1', [numericRecipientId]);
-        resolvedRecipientStudentId = sRow?.student_id ? String(sRow.student_id) : null;
+        // Prefer the user_id string for direct inbox matching
+        const uRow = await queryOne<{ user_id: string }>('SELECT user_id FROM users WHERE id = $1', [numericRecipientId]);
+        if (uRow?.user_id) {
+          resolvedRecipientStudentId = uRow.user_id;
+        } else if (!resolvedRecipientStudentId) {
+          // Fallback: try to resolve via students table
+          const sRow = await queryOne<{ student_id: string }>('SELECT student_id FROM students WHERE user_id = $1', [numericRecipientId]);
+          resolvedRecipientStudentId = sRow?.student_id ? String(sRow.student_id) : null;
+        }
       }
     }
 
