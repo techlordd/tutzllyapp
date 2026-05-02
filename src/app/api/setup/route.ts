@@ -1,13 +1,36 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { query } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
+import { getUserRole } from '@/lib/request-context';
+
+/**
+ * GET /api/setup — run pending migrations only (requires admin or super_admin login).
+ */
+export async function GET(request: NextRequest) {
+  const role = getUserRole(request);
+  if (role !== 'admin' && role !== 'super_admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  try {
+    const results: string[] = [];
+    const run = async (sql: string, label: string) => {
+      try { await query(sql); results.push(`OK: ${label}`); }
+      catch (e) { results.push(`SKIP: ${label} — ${(e as Error).message}`); }
+    };
+    await run(`ALTER TABLE messages_tutor ADD COLUMN IF NOT EXISTS sender_student_id TEXT`, 'messages_tutor.sender_student_id');
+    await run(`ALTER TABLE messages_tutor ADD COLUMN IF NOT EXISTS sender_parent_id TEXT`, 'messages_tutor.sender_parent_id');
+    return NextResponse.json({ migrations: results });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
 
 // Protected by SETUP_SECRET env var.
 // In production: set SETUP_SECRET in Vercel env vars, call this endpoint once
 // with the header `x-setup-secret: <your-secret>`, then delete the env var.
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const setupSecret = process.env.SETUP_SECRET;
 
   if (!setupSecret) {
@@ -586,6 +609,12 @@ export async function POST(request: Request) {
       await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_from_name TEXT`);
       await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_from_email TEXT`);
       await query(`ALTER TABLE academies ADD COLUMN IF NOT EXISTS smtp_encryption VARCHAR(10) DEFAULT 'tls'`);
+    } catch { /* ignore */ }
+
+    // ── Migration 022: messages_tutor sender columns ──
+    try {
+      await query(`ALTER TABLE messages_tutor ADD COLUMN IF NOT EXISTS sender_student_id TEXT`);
+      await query(`ALTER TABLE messages_tutor ADD COLUMN IF NOT EXISTS sender_parent_id TEXT`);
     } catch { /* ignore */ }
 
     return NextResponse.json({
