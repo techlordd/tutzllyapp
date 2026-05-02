@@ -15,6 +15,7 @@ import { useAuthStore } from '@/store/authStore';
 
 interface Message {
   id: number;
+  record_id?: number;
   message_date: string; message_time: string; role: string; user_role?: string;
   subject: string; body: string; status: string;
   sender?: string; sender_admin?: string; sender_tutor_name?: string;
@@ -241,7 +242,22 @@ export default function AdminMessagesPage() {
               searchKeys={['sender', 'subject', 'role']}
               emptyMessage="No messages yet"
               actions={(row) => (
-                <button onClick={() => { setSelected(row); setViewOpen(true); }}
+                <button onClick={() => {
+                  setSelected(row);
+                  setViewOpen(true);
+                  if (row.status === 'unread' && (row.record_id || row.id)) {
+                    const msgId = row.record_id || row.id;
+                    fetch(`/api/messages/${activeType}/${msgId}`)
+                      .then(res => res.ok ? res.json() : null)
+                      .then(data => {
+                        if (!data) return;
+                        const updatedStatus = data.message?.status || 'read';
+                        setMessages(prev => prev.map(m => (m.record_id || m.id) === msgId ? { ...m, status: updatedStatus } : m));
+                        setSelected(prev => prev && (prev.record_id || prev.id) === msgId ? { ...prev, status: updatedStatus } : prev);
+                      })
+                      .catch(() => {});
+                  }
+                }}
                   className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"><Eye size={15} /></button>
               )}
             />

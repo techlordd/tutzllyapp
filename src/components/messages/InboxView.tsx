@@ -219,9 +219,15 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
               setViewOpen(true);
               if (row.status === 'unread' && row.record_id) {
                 fetch(`/api/messages/${messageType}/${row.record_id}`)
-                  .then(() => setMessages(prev => prev.map(m =>
-                    m.record_id === row.record_id ? { ...m, status: 'read' } : m
-                  )))
+                  .then(res => res.ok ? res.json() : null)
+                  .then(data => {
+                    if (!data) return;
+                    const updatedStatus = data.message?.status || 'read';
+                    setMessages(prev => prev.map(m =>
+                      m.record_id === row.record_id ? { ...m, status: updatedStatus } : m
+                    ));
+                    setSelected(prev => prev?.record_id === row.record_id ? { ...prev, status: updatedStatus } : prev);
+                  })
                   .catch(() => {});
               }
             }}
