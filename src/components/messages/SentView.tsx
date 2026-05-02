@@ -48,9 +48,6 @@ export default function SentView({ userId, userRole }: SentViewProps) {
     { key: 'recipient_name', label: 'To', sortable: true, render: (v: unknown) => (
       <span className="font-medium text-gray-800">{v as string}</span>
     )},
-    { key: 'msg_type', label: 'Category', render: (v: unknown) => (
-      <span className="capitalize text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{v as string}</span>
-    )},
     { key: 'subject', label: 'Subject', render: (v: unknown) => (
       <span className="font-medium text-gray-900 truncate max-w-[200px] block">{v as string}</span>
     )},
