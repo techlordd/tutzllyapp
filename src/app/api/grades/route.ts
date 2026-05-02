@@ -37,6 +37,15 @@ export async function POST(request: NextRequest) {
       );
       if (resolved) d.tutor_id = resolved.tutor_id;
     }
+    if (d.student_id && d.course_name && d.month && d.year) {
+      const existing = await queryOne(
+        `SELECT record_id FROM grade_book WHERE student_id = $1 AND course_name = $2 AND month = $3 AND year = $4 AND entry_status != 'deleted' LIMIT 1`,
+        [d.student_id, d.course_name, d.month, d.year]
+      );
+      if (existing) {
+        return NextResponse.json({ error: 'A grade entry already exists for this student, course, and month.' }, { status: 409 });
+      }
+    }
     const grade = await queryOne(
       `INSERT INTO grade_book (academy_id, tutor_id, tutor_name, student_id, student_name, course_name, course_id,
        month, year, punctuality, attentiveness, engagement, homework, test_score, remarks, grade_code_status, status, entry_status)

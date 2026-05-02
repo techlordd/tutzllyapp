@@ -145,8 +145,22 @@ export default function TutorGradesPage() {
     return () => { cancelled = true; };
   }, [form.student_id, form.course_name, form.month, form.year]);
 
+  const duplicateGrade = useMemo(() => {
+    if (!form.student_id || !form.course_name || !form.month || !form.year) return false;
+    return grades.some(g =>
+      g.student_id === form.student_id &&
+      g.course_name === form.course_name &&
+      g.month === form.month &&
+      g.year === form.year
+    );
+  }, [grades, form.student_id, form.course_name, form.month, form.year]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (duplicateGrade) {
+      toast.error('A grade entry already exists for this student, course, and month.');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch('/api/grades', {
@@ -158,6 +172,12 @@ export default function TutorGradesPage() {
           tutor_name: tutorName,
         }),
       });
+      if (res.status === 409) {
+        const data = await res.json();
+        toast.error(data.error || 'A grade entry already exists for this student, course, and month.');
+        setSubmitting(false);
+        return;
+      }
       if (!res.ok) throw new Error();
       toast.success('Grades submitted!');
       setModalOpen(false);
@@ -271,6 +291,14 @@ export default function TutorGradesPage() {
             </FormField>
           </div>
 
+          {/* Duplicate warning */}
+          {duplicateGrade && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm">
+              <span className="mt-0.5 text-amber-500">⚠</span>
+              <span>A grade entry already exists for this student, course, and month. Please change the student, course, or period.</span>
+            </div>
+          )}
+
           {/* Auto-calc scores */}
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -328,7 +356,7 @@ export default function TutorGradesPage() {
 
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={submitting}>Submit Grades</Button>
+            <Button type="submit" loading={submitting} disabled={duplicateGrade}>Submit Grades</Button>
           </div>
         </form>
       </Modal>
