@@ -32,6 +32,15 @@ export async function POST(request: NextRequest) {
       );
       if (resolved) d.tutor_id = resolved.tutor_id;
     }
+    if (d.ssid) {
+      const existing = await queryOne(
+        `SELECT record_id FROM class_activities WHERE ssid = $1 AND entry_status != 'deleted' LIMIT 1`,
+        [d.ssid]
+      );
+      if (existing) {
+        return NextResponse.json({ error: 'An activity log already exists for this session.' }, { status: 409 });
+      }
+    }
     const activity = await queryOne(
       `INSERT INTO class_activities (academy_id, ssid, tutor_id, tutor_firstname, tutor_lastname, student_id, student_name,
        course_name, course_id_ref, session_code_status, mothers_email, fathers_email, class_activity_date, class_activity_time,

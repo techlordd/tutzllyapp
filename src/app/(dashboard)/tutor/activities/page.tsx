@@ -132,8 +132,14 @@ export default function TutorActivitiesPage() {
   const handleEngagement = (val: string) =>
     setForm(f => ({ ...f, student_engages_in_class: val, class_engagement1: scoreEngagement(val) }));
 
+  const loggedSsids = new Set(activities.map(a => a.ssid).filter(Boolean));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.ssid && loggedSsids.has(form.ssid)) {
+      toast.error('An activity log already exists for this session.');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch('/api/activities', {
@@ -141,6 +147,12 @@ export default function TutorActivitiesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, tutor_id: user?.user_id }),
       });
+      if (res.status === 409) {
+        const data = await res.json();
+        toast.error(data.error || 'An activity log already exists for this session.');
+        setSubmitting(false);
+        return;
+      }
       if (!res.ok) throw new Error();
       toast.success('Activity recorded!');
       setModalOpen(false);
@@ -191,13 +203,24 @@ export default function TutorActivitiesPage() {
           <FormField label="Session" required>
             <Select value={form.ssid} onChange={e => handleSessionChange(e.target.value)} required>
               <option value="">Select a completed session</option>
-              {sessions.map(s => (
-                <option key={s.ssid} value={s.ssid}>
-                  {s.student_name} — {s.course_name}{s.entry_date ? ` (${formatDate(s.entry_date)})` : ''}{s.status ? ` [${s.status}]` : ''}
-                </option>
-              ))}
+              {sessions.map(s => {
+                const alreadyLogged = loggedSsids.has(s.ssid);
+                return (
+                  <option key={s.ssid} value={s.ssid} disabled={alreadyLogged}>
+                    {alreadyLogged ? '✓ [Already logged] ' : ''}{s.student_name} — {s.course_name}{s.entry_date ? ` (${formatDate(s.entry_date)})` : ''}{s.status ? ` [${s.status}]` : ''}
+                  </option>
+                );
+              })}
             </Select>
           </FormField>
+
+          {/* Duplicate warning */}
+          {form.ssid && loggedSsids.has(form.ssid) && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm">
+              <span className="mt-0.5 text-amber-500">⚠</span>
+              <span>An activity log already exists for this session. Please select a different session.</span>
+            </div>
+          )}
 
           {/* Auto-populated session details */}
           {form.ssid && (
