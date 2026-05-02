@@ -51,6 +51,8 @@ interface Message {
   recipient_name_student?: string;
   recipient_name_tutor?: string;
   recipient_name_parent?: string;
+  attach_file?: string;
+  file_upload?: string;
 }
 
 interface ReplyTarget {
@@ -328,7 +330,7 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
                         {formatTime(selected.message_time)}
                       </span>
                     )}
-                    {selected.attach_file && (
+                    {(selected.attach_file || selected.file_upload) && (
                       <span className="flex items-center gap-1 text-blue-500">
                         <Paperclip size={11} />
                         Attachment
