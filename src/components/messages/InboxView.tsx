@@ -159,10 +159,12 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
 
   const filteredMessages = statusFilter === 'all'
     ? messages
-    : messages.filter(m => m.status === statusFilter);
+    : statusFilter === 'unread'
+      ? messages.filter(m => m.status === 'unread')
+      : messages.filter(m => m.status !== 'unread');
 
   const unreadCount = messages.filter(m => m.status === 'unread').length;
-  const readCount   = messages.filter(m => m.status === 'read').length;
+  const readCount   = messages.filter(m => m.status !== 'unread').length;
 
   const openReply = (msg: Message) => {
     const target = buildReplyTarget(msg);
