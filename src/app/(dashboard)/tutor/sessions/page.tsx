@@ -178,10 +178,10 @@ export default function TutorSessionsPage() {
       return <span className="text-sm font-medium text-gray-900 whitespace-nowrap">{d ? formatDate(d) : '—'}</span>;
     }},
     { key: 'student_name', label: 'Student', sortable: true, render: (v: unknown) => (
-      <span className="text-sm text-blue-600">{String(v || '—')}</span>
+      <span className="text-sm text-gray-800">{String(v || '—')}</span>
     )},
     { key: 'course_name', label: 'Course', sortable: true, render: (v: unknown) => (
-      <span className="text-sm text-blue-600">{String(v || '—')}</span>
+      <span className="text-sm text-gray-800">{String(v || '—')}</span>
     )},
     { key: 'schedule_start_time', label: 'Period', render: (_: unknown, row: Session) => (
       <span className="text-sm text-gray-700 whitespace-nowrap">
