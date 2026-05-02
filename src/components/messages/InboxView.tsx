@@ -251,8 +251,8 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
         searchKeys={['subject']}
         emptyMessage={statusFilter === 'all' ? 'Your inbox is empty' : `No ${statusFilter} messages`}
         rowClassName={(row: Message) => row.status === 'unread'
-          ? 'bg-blue-50 hover:bg-blue-100 border-l-4 border-l-blue-400'
-          : 'hover:bg-gray-50 border-l-4 border-l-transparent'
+          ? 'bg-white hover:bg-blue-50 border-l-4 border-l-blue-500'
+          : 'bg-gray-50 hover:bg-gray-100 border-l-4 border-l-transparent opacity-80'
         }
         actions={(row) => (
           <button
