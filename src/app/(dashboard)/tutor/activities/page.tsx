@@ -25,11 +25,16 @@ interface Session {
 
 interface Activity {
   record_id: number; ssid: string; student_name: string; course_name: string;
-  class_activity_date: string; topic_taught: string;
+  course_code?: string; tutor_firstname?: string; tutor_lastname?: string; tutor_name?: string;
+  class_activity_date: string; class_activity_time?: string;
+  topic_taught: string; details_of_class_activity?: string; activity?: string;
   did_student_join_on_time: string; punctuality1: string;
   is_student_attentive: string; attentiveness1: string;
   student_engages_in_class: string; class_engagement1: string;
-  tutors_general_observation: string;
+  tutors_general_observation: string; tutors_intervention?: string;
+  did_student_complete_prev_homework?: string;
+  new_homework_assigned?: string; topic_of_homework?: string;
+  helpful_link1?: string; helpful_link2?: string; helpful_link3?: string;
 }
 
 const emptyForm = {
@@ -347,15 +352,72 @@ export default function TutorActivitiesPage() {
 
       {/* View Activity Modal */}
       {selected && (
-        <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Activity Details" size="lg">
+        <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Activity Details" size="xl">
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-blue-50 p-3 rounded-xl"><p className="text-xs text-blue-400">Student</p><p className="font-semibold text-blue-900">{selected.student_name}</p></div>
-              <div className="bg-green-50 p-3 rounded-xl"><p className="text-xs text-green-400">Course</p><p className="font-semibold text-green-900">{selected.course_name}</p></div>
-            </div>
-            <div><p className="text-xs text-gray-400">Date</p><p className="font-medium">{formatDate(selected.class_activity_date)}</p></div>
-            <div><p className="text-xs text-gray-400">Topic</p><p className="font-medium">{selected.topic_taught}</p></div>
 
+            {/* Header info: student, course, tutor */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-blue-50 p-3 rounded-xl">
+                <p className="text-xs text-blue-400 font-medium">Student</p>
+                <p className="font-semibold text-blue-900">{selected.student_name || '—'}</p>
+              </div>
+              <div className="bg-green-50 p-3 rounded-xl">
+                <p className="text-xs text-green-400 font-medium">Course</p>
+                <p className="font-semibold text-green-900">{selected.course_code || selected.course_name || '—'}</p>
+                {selected.course_code && selected.course_name && (
+                  <p className="text-xs text-green-600 mt-0.5">{selected.course_name}</p>
+                )}
+              </div>
+              <div className="bg-purple-50 p-3 rounded-xl">
+                <p className="text-xs text-purple-400 font-medium">Tutor</p>
+                <p className="font-semibold text-purple-900">
+                  {selected.tutor_name || [selected.tutor_firstname, selected.tutor_lastname].filter(Boolean).join(' ') || '—'}
+                </p>
+              </div>
+            </div>
+
+            {/* Date, Time, SSID */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div>
+                <p className="text-xs text-gray-400 font-medium">Date</p>
+                <p className="font-medium text-gray-800">{formatDate(selected.class_activity_date)}</p>
+              </div>
+              {selected.class_activity_time && (
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">Time</p>
+                  <p className="font-medium text-gray-800">{formatTime(selected.class_activity_time)}</p>
+                </div>
+              )}
+              {selected.ssid && (
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">Session ID</p>
+                  <p className="font-medium text-gray-600 text-sm font-mono">{selected.ssid}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Topic & Class Details */}
+            <div className="border-t pt-3 space-y-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Class Information</p>
+              <div>
+                <p className="text-xs text-gray-400 font-medium">Topic Taught</p>
+                <p className="font-semibold text-gray-800">{selected.topic_taught || '—'}</p>
+              </div>
+              {selected.details_of_class_activity && (
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">Class Details</p>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl whitespace-pre-wrap">{selected.details_of_class_activity}</p>
+                </div>
+              )}
+              {selected.activity && (
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">Activity</p>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl">{selected.activity}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Class Performance */}
             <div className="border-t pt-3">
               <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Class Performance</p>
               <div className="grid grid-cols-3 gap-3">
@@ -379,9 +441,72 @@ export default function TutorActivitiesPage() {
               </div>
             </div>
 
-            {selected.tutors_general_observation && (
-              <div><p className="text-xs text-gray-400">Observation</p><p className="text-sm bg-gray-50 p-3 rounded-xl">{selected.tutors_general_observation}</p></div>
+            {/* Homework */}
+            {(selected.did_student_complete_prev_homework || selected.new_homework_assigned || selected.topic_of_homework) && (
+              <div className="border-t pt-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Homework</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {selected.did_student_complete_prev_homework && (
+                    <div>
+                      <p className="text-xs text-gray-400 font-medium">Completed Previous Homework?</p>
+                      <p className={`font-semibold text-sm ${
+                        selected.did_student_complete_prev_homework === 'Yes' ? 'text-green-600' :
+                        selected.did_student_complete_prev_homework === 'No' ? 'text-red-600' : 'text-gray-700'
+                      }`}>{selected.did_student_complete_prev_homework}</p>
+                    </div>
+                  )}
+                  {selected.new_homework_assigned && (
+                    <div>
+                      <p className="text-xs text-gray-400 font-medium">New Homework Assigned?</p>
+                      <p className={`font-semibold text-sm ${
+                        selected.new_homework_assigned === 'true' || selected.new_homework_assigned === 'Yes' ? 'text-blue-600' : 'text-gray-500'
+                      }`}>{selected.new_homework_assigned === 'true' ? 'Yes' : selected.new_homework_assigned === 'false' ? 'No' : selected.new_homework_assigned}</p>
+                    </div>
+                  )}
+                </div>
+                {selected.topic_of_homework && (
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium">Homework Topic</p>
+                    <p className="text-sm text-gray-700 bg-yellow-50 p-2 rounded-lg">{selected.topic_of_homework}</p>
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* Observations & Intervention */}
+            {(selected.tutors_general_observation || selected.tutors_intervention) && (
+              <div className="border-t pt-3 space-y-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tutor Notes</p>
+                {selected.tutors_general_observation && (
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium">General Observation</p>
+                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl whitespace-pre-wrap">{selected.tutors_general_observation}</p>
+                  </div>
+                )}
+                {selected.tutors_intervention && (
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium">Intervention / Action</p>
+                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl whitespace-pre-wrap">{selected.tutors_intervention}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Helpful Links */}
+            {(selected.helpful_link1 || selected.helpful_link2 || selected.helpful_link3) && (
+              <div className="border-t pt-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Helpful Links</p>
+                <div className="flex flex-col gap-1.5">
+                  {[selected.helpful_link1, selected.helpful_link2, selected.helpful_link3].filter(Boolean).map((link, i) => (
+                    <a key={i} href={link} target="_blank" rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline truncate">
+                      {link}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         </Modal>
       )}
