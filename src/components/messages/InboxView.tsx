@@ -5,7 +5,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Eye, Send, CornerUpLeft, PenSquare } from 'lucide-react';
+import { Eye, Send, CornerUpLeft, PenSquare, Mail, Calendar, Clock, User, Paperclip } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -287,27 +287,75 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
 
       {/* View message modal */}
       {selected && (
-        <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Message" size="lg">
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-              <div className="flex items-start justify-between gap-4">
-                <p className="font-semibold text-gray-900 text-base">{selected.subject}</p>
+        <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Message" size="2xl">
+          <div className="flex flex-col gap-0 -m-5">
+            {/* Email header strip */}
+            <div className="px-6 pt-6 pb-5 border-b border-gray-100">
+              {/* Subject */}
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <h3 className="text-xl font-bold text-gray-900 leading-snug flex-1">{selected.subject}</h3>
                 {statusBadge(selected.status)}
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-                <div><span className="text-gray-400">From:</span> <span className="text-gray-800 font-medium">{resolveSender(selected)}</span></div>
-                <div><span className="text-gray-400">Date:</span> <span className="text-gray-700">{formatDate(selected.message_date)}</span></div>
-                {selected.message_time && (
-                  <div><span className="text-gray-400">Time:</span> <span className="text-gray-700">{formatTime(selected.message_time)}</span></div>
-                )}
+
+              {/* Sender avatar + meta */}
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold text-sm uppercase select-none">
+                  {(resolveSender(selected) || '?').charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="font-semibold text-gray-900 text-sm">{resolveSender(selected)}</span>
+                    {selected.sender_email && (
+                      <span className="text-xs text-gray-400">&lt;{selected.sender_email}&gt;</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-0.5 text-xs text-gray-500">
+                    {(selected.recipient_name_student || selected.recipient_tutor_name || selected.recipient_name || selected.recipient_admin) && (
+                      <span className="flex items-center gap-1">
+                        <User size={11} />
+                        To: <span className="font-medium text-gray-700">
+                          {selected.recipient_name_student || selected.recipient_tutor_name || selected.recipient_name || selected.recipient_admin}
+                        </span>
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar size={11} />
+                      {formatDate(selected.message_date)}
+                    </span>
+                    {selected.message_time && (
+                      <span className="flex items-center gap-1">
+                        <Clock size={11} />
+                        {formatTime(selected.message_time)}
+                      </span>
+                    )}
+                    {selected.attach_file && (
+                      <span className="flex items-center gap-1 text-blue-500">
+                        <Paperclip size={11} />
+                        Attachment
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="bg-white border border-gray-100 rounded-xl p-4">
-              <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{selected.body}</p>
+
+            {/* Message body */}
+            <div className="px-6 py-6 flex-1 overflow-y-auto">
+              <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed text-sm">
+                {selected.body || <span className="italic text-gray-400">No message body</span>}
+              </div>
             </div>
-            <div className="flex justify-end gap-2 pt-1">
-              <Button type="button" variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
-              <Button icon={CornerUpLeft} onClick={() => openReply(selected)}>Reply</Button>
+
+            {/* Footer actions */}
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                <Mail size={12} />
+                <span className="capitalize">{selected.role || selected.user_role || 'message'}</span>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
+                <Button icon={CornerUpLeft} onClick={() => openReply(selected)}>Reply</Button>
+              </div>
             </div>
           </div>
         </Modal>
