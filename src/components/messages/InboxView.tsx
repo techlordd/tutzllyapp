@@ -157,13 +157,13 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
 
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
 
-  const unreadCount = messages.filter(m => m.status === 'unread').length;
+  const unreadCount = messages.filter(m => m.status !== 'read').length;
   const readCount   = messages.filter(m => m.status === 'read').length;
 
   const filteredMessages = statusFilter === 'all'
     ? messages
     : statusFilter === 'unread'
-      ? messages.filter(m => m.status === 'unread')
+      ? messages.filter(m => m.status !== 'read')
       : messages.filter(m => m.status === 'read');
 
   const openReply = (msg: Message) => {
@@ -204,12 +204,12 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
     { key: 'message_date', label: 'Date', sortable: true, render: (v: unknown) => formatDate(v as string) },
     { key: 'message_time', label: 'Time', render: (v: unknown) => formatTime(v as string) },
     { key: 'sender', label: 'From', sortable: true, render: (_v: unknown, row: Message) => (
-      <span className={row.status === 'unread' ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}>
+      <span className={row.status !== 'read' ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}>
         {resolveSender(row)}
       </span>
     )},
     { key: 'subject', label: 'Subject', render: (v: unknown, row: Message) => (
-      <span className={`truncate max-w-[200px] block ${row.status === 'unread' ? 'font-semibold text-gray-900' : 'font-medium text-gray-500'}`}>
+      <span className={`truncate max-w-[200px] block ${row.status !== 'read' ? 'font-semibold text-gray-900' : 'font-medium text-gray-500'}`}>
         {v as string}
       </span>
     )},
@@ -252,7 +252,7 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
         loading={loading}
         searchKeys={['subject']}
         emptyMessage={statusFilter === 'all' ? 'Your inbox is empty' : `No ${statusFilter} messages`}
-        rowClassName={(row: Message) => row.status === 'unread'
+        rowClassName={(row: Message) => row.status !== 'read'
           ? 'bg-white hover:bg-blue-50 border-l-4 border-l-blue-500'
           : 'bg-gray-50 hover:bg-gray-100 border-l-4 border-l-transparent opacity-80'
         }
