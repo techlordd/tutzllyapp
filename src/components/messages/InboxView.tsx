@@ -84,7 +84,7 @@ function buildReplyTarget(msg: Message): ReplyTarget {
   if (targetTab === 'tutor') {
     extraFields = { recipient_tutor_name: senderName, recipient_tutor_id: msg.tutor_id || msg.sender_tutor_id || '', recipient_sender_user_id: msg.user_id || '', recipient_email: senderEmail };
   } else if (targetTab === 'student') {
-    extraFields = { recipient_name_student: senderName, recipient_id_student: msg.sender_student_id || msg.student_id || '', recipient_email: senderEmail };
+    extraFields = { recipient_name_student: senderName, recipient_id_student: msg.sender_student_id || msg.student_id || '', recipient_sender_user_id: msg.user_id || '', recipient_email: senderEmail };
   } else if (targetTab === 'parent') {
     extraFields = { recipient_name: senderName, recipient_id: msg.sender_parent_id || msg.parent_id || '', recipient_email: senderEmail };
   } else {

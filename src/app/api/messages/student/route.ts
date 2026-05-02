@@ -51,6 +51,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Resolve recipient_id_student from recipient_sender_user_id if not directly provided
+    let resolvedRecipientStudentId: string | null = d.recipient_id_student || null;
+    if (!resolvedRecipientStudentId && d.recipient_sender_user_id) {
+      const raw = String(d.recipient_sender_user_id).trim();
+      const numericRecipientId = Number(raw);
+      if (!isNaN(numericRecipientId) && numericRecipientId > 0) {
+        const sRow = await queryOne<{ student_id: string }>('SELECT student_id FROM students WHERE user_id = $1', [numericRecipientId]);
+        resolvedRecipientStudentId = sRow?.student_id ? String(sRow.student_id) : null;
+      }
+    }
+
     const message = await queryOne(
       `INSERT INTO messages_student (academy_id, message_date, message_time, role, sender, sender_email, user_role,
        message_to, tutor_name, tutor_id, student_name, student_id,
@@ -61,7 +72,7 @@ export async function POST(request: NextRequest) {
       [academyId || null,
        d.role, d.sender, d.sender_email, d.user_role, d.message_to,
        d.tutor_name, resolvedTutorId, d.student_name, d.student_id,
-       d.recipient_name_student, d.recipient_id_student, d.recipient_email,
+       d.recipient_name_student, resolvedRecipientStudentId, d.recipient_email,
        d.recipient_name_tutor, d.recipient_id_tutor, d.recipient_name_parent, d.recipient_id_parent,
        d.recipient_admin, d.cc, d.subject, d.body, d.attach_file, d.user_id]
     );
