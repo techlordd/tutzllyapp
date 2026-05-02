@@ -1,9 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
-import { Send, PenSquare } from 'lucide-react';
+import { Send, PenSquare, Search, X, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type MsgType = 'admin' | 'tutor' | 'student' | 'parent';
@@ -13,6 +13,13 @@ interface CurrentUser {
   user_id: string;
   role: string;
   username: string;
+}
+
+interface RecipientOption {
+  id: string;         // tutor_id / student_id / parent_id
+  name: string;
+  email: string;
+  subtext?: string;   // e.g. student ID or email for disambiguation
 }
 
 interface ComposeViewProps {
@@ -27,6 +34,45 @@ const ROLE_OPTIONS: Record<string, MsgType[]> = {
   admin:   ['tutor', 'student', 'parent'],
 };
 
+function buildRecipientFields(to: MsgType, r: RecipientOption): Record<string, string> {
+  if (to === 'tutor')   return { recipient_tutor_name: r.name, recipient_tutor_id: r.id, recipient_email: r.email };
+  if (to === 'student') return { recipient_name_student: r.name, recipient_id_student: r.id, recipient_email: r.email };
+  if (to === 'parent')  return { recipient_name: r.name, recipient_id: r.id, recipient_email: r.email };
+  return {};
+}
+
+async function searchRecipients(to: MsgType, q: string): Promise<RecipientOption[]> {
+  if (to === 'admin' || q.trim().length < 1) return [];
+  const endpoint = to === 'tutor' ? 'tutors' : to === 'student' ? 'students' : 'parents';
+  const res = await fetch(`/api/${endpoint}?search=${encodeURIComponent(q)}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+
+  if (to === 'tutor') {
+    return (data.tutors || []).slice(0, 8).map((t: Record<string, string>) => ({
+      id: t.tutor_id,
+      name: `${t.firstname || ''} ${t.surname || ''}`.trim() || t.username || t.tutor_id,
+      email: t.email || '',
+      subtext: t.tutor_id,
+    }));
+  }
+  if (to === 'student') {
+    return (data.students || []).slice(0, 8).map((s: Record<string, string>) => ({
+      id: s.student_id,
+      name: `${s.firstname || ''} ${s.surname || ''}`.trim() || s.username || s.student_id,
+      email: s.email || '',
+      subtext: s.student_id,
+    }));
+  }
+  // parent
+  return (data.parents || []).slice(0, 8).map((p: Record<string, string>) => ({
+    id: p.parent_id,
+    name: `${p.full_name_first_name || ''} ${p.full_name_last_name || ''}`.trim() || p.username || p.parent_id,
+    email: p.email || '',
+    subtext: p.parent_id,
+  }));
+}
+
 export default function ComposeView({ currentUser, sentUrl }: ComposeViewProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -36,16 +82,80 @@ export default function ComposeView({ currentUser, sentUrl }: ComposeViewProps) 
     subject: '', body: '', recipient_email: '', send_email: false,
   });
 
+  // Recipient autocomplete state
+  const [recipientQuery, setRecipientQuery]       = useState('');
+  const [suggestions, setSuggestions]             = useState<RecipientOption[]>([]);
+  const [selectedRecipient, setSelectedRecipient] = useState<RecipientOption | null>(null);
+  const [showDropdown, setShowDropdown]           = useState(false);
+  const [searching, setSearching]                 = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Reset recipient when role changes
+  useEffect(() => {
+    setRecipientQuery('');
+    setSuggestions([]);
+    setSelectedRecipient(null);
+    setShowDropdown(false);
+  }, [to]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleRecipientInput = useCallback((value: string) => {
+    setRecipientQuery(value);
+    setSelectedRecipient(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!value.trim()) { setSuggestions([]); setShowDropdown(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      const results = await searchRecipients(to, value);
+      setSuggestions(results);
+      setShowDropdown(true);
+      setSearching(false);
+    }, 300);
+  }, [to]);
+
+  const handleSelectRecipient = (r: RecipientOption) => {
+    setSelectedRecipient(r);
+    setRecipientQuery(r.name);
+    setSuggestions([]);
+    setShowDropdown(false);
+    setForm(f => ({ ...f, recipient_email: r.email }));
+  };
+
+  const clearRecipient = () => {
+    setSelectedRecipient(null);
+    setRecipientQuery('');
+    setSuggestions([]);
+    setForm(f => ({ ...f, recipient_email: '' }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Require a selected recipient for non-admin targets
+    if (to !== 'admin' && !selectedRecipient) {
+      toast.error('Please select a recipient from the suggestions');
+      return;
+    }
     setSubmitting(true);
     try {
+      const recipientFields = selectedRecipient ? buildRecipientFields(to, selectedRecipient) : {};
       const payload = {
         role: currentUser.role,
         sender: currentUser.username,
         user_role: currentUser.role,
         user_id: String(currentUser.id),
         ...form,
+        ...recipientFields,
       };
       const res = await fetch(`/api/messages/${to}`, {
         method: 'POST',
