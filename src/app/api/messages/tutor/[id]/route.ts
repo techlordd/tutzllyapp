@@ -5,7 +5,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const message = await queryOne('SELECT * FROM messages_tutor WHERE record_id = $1', [Number(id)]);
   if (!message) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (message.status === 'unread') {
+  if ((message.status as string)?.toLowerCase() !== 'read') {
     await queryOne(
       `UPDATE messages_tutor SET status='read', last_updated=NOW() WHERE record_id=$1 RETURNING record_id`,
       [Number(id)]

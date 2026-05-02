@@ -157,14 +157,16 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
 
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
 
-  const unreadCount = messages.filter(m => m.status !== 'read').length;
-  const readCount   = messages.filter(m => m.status === 'read').length;
+  const isRead = (status: string | undefined | null) => status?.toLowerCase() === 'read';
+
+  const unreadCount = messages.filter(m => !isRead(m.status)).length;
+  const readCount   = messages.filter(m =>  isRead(m.status)).length;
 
   const filteredMessages = statusFilter === 'all'
     ? messages
     : statusFilter === 'unread'
-      ? messages.filter(m => m.status !== 'read')
-      : messages.filter(m => m.status === 'read');
+      ? messages.filter(m => !isRead(m.status))
+      : messages.filter(m =>  isRead(m.status));
 
   const openReply = (msg: Message) => {
     const target = buildReplyTarget(msg);
@@ -204,12 +206,12 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
     { key: 'message_date', label: 'Date', sortable: true, render: (v: unknown) => formatDate(v as string) },
     { key: 'message_time', label: 'Time', render: (v: unknown) => formatTime(v as string) },
     { key: 'sender', label: 'From', sortable: true, render: (_v: unknown, row: Message) => (
-      <span className={row.status !== 'read' ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}>
+      <span className={!isRead(row.status) ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}>
         {resolveSender(row)}
       </span>
     )},
     { key: 'subject', label: 'Subject', render: (v: unknown, row: Message) => (
-      <span className={`truncate max-w-[200px] block ${row.status !== 'read' ? 'font-semibold text-gray-900' : 'font-medium text-gray-500'}`}>
+      <span className={`truncate max-w-[200px] block ${!isRead(row.status) ? 'font-semibold text-gray-900' : 'font-medium text-gray-500'}`}>
         {v as string}
       </span>
     )},
@@ -252,7 +254,7 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
         loading={loading}
         searchKeys={['subject']}
         emptyMessage={statusFilter === 'all' ? 'Your inbox is empty' : `No ${statusFilter} messages`}
-        rowClassName={(row: Message) => row.status !== 'read'
+        rowClassName={(row: Message) => !isRead(row.status)
           ? 'bg-white hover:bg-blue-50 border-l-4 border-l-blue-500'
           : 'bg-gray-50 hover:bg-gray-100 border-l-4 border-l-transparent opacity-80'
         }
@@ -261,7 +263,7 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
             onClick={() => {
               setSelected(row);
               setViewOpen(true);
-              if (row.status === 'unread' && row.record_id) {
+              if (!isRead(row.status) && row.record_id) {
                 fetch(`/api/messages/${messageType}/${row.record_id}`)
                   .then(res => res.ok ? res.json() : null)
                   .then(data => {
