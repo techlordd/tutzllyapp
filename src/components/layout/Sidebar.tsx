@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar, CalendarDays, Video, ClipboardList,
   BarChart3, MessageSquare, ChevronLeft, ChevronRight, UserPlus, BookMarked,
   School, LogOut, Upload, Palette, Building2, ShieldCheck, Monitor, Radio, RotateCcw, XCircle,
-  TrendingUp, UserCircle, Inbox, Send, SquarePen,
+  TrendingUp, UserCircle, Inbox, Send, SquarePen, Trash2,
 } from 'lucide-react';
 
 interface NavItem {
@@ -57,6 +57,7 @@ const tutorNav: NavItem[] = [
   { label: 'Inbox', href: '/tutor/messages/inbox', icon: Inbox, exact: true },
   { label: 'Sent', href: '/tutor/messages/sent', icon: Send, exact: true },
   { label: 'Compose', href: '/tutor/messages/compose', icon: SquarePen, exact: true },
+  { label: 'Trash', href: '/tutor/messages/trash', icon: Trash2, exact: true },
   { label: 'Profile', href: '/tutor/profile', icon: UserCircle },
 ];
 
@@ -70,6 +71,7 @@ const studentNav: NavItem[] = [
   { label: 'Inbox', href: '/student/messages/inbox', icon: Inbox, exact: true },
   { label: 'Sent', href: '/student/messages/sent', icon: Send, exact: true },
   { label: 'Compose', href: '/student/messages/compose', icon: SquarePen, exact: true },
+  { label: 'Trash', href: '/student/messages/trash', icon: Trash2, exact: true },
   { label: 'Profile', href: '/student/profile', icon: UserCircle },
 ];
 
@@ -82,6 +84,7 @@ const parentNav: NavItem[] = [
   { label: 'Inbox', href: '/parent/messages/inbox', icon: Inbox, exact: true },
   { label: 'Sent', href: '/parent/messages/sent', icon: Send, exact: true },
   { label: 'Compose', href: '/parent/messages/compose', icon: SquarePen, exact: true },
+  { label: 'Trash', href: '/parent/messages/trash', icon: Trash2, exact: true },
   { label: 'Profile', href: '/parent/profile', icon: UserCircle },
 ];
 

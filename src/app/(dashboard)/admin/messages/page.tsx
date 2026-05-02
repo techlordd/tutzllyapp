@@ -8,6 +8,7 @@ import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Select, Textarea } from '@/components/ui/FormField';
 import InboxView from '@/components/messages/InboxView';
 import SentView from '@/components/messages/SentView';
+import TrashView from '@/components/messages/TrashView';
 import { Send, Eye, Inbox, SendHorizonal, LayoutList, Trash2, CornerUpLeft } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -32,7 +33,7 @@ interface Message {
 }
 
 type MsgType = 'admin' | 'parent' | 'student' | 'tutor';
-type ViewMode = 'all' | 'inbox' | 'sent';
+type ViewMode = 'all' | 'inbox' | 'sent' | 'trash';
 
 interface ReplyTarget {
   tab: MsgType;
@@ -179,6 +180,7 @@ export default function AdminMessagesPage() {
     { key: 'all',   label: 'All Messages', icon: LayoutList },
     { key: 'inbox', label: 'Inbox',         icon: Inbox },
     { key: 'sent',  label: 'Sent',          icon: SendHorizonal },
+    { key: 'trash', label: 'Trash',         icon: Trash2 },
   ];
 
   return (
@@ -211,6 +213,11 @@ export default function AdminMessagesPage() {
         {/* Sent view */}
         {viewMode === 'sent' && user && (
           <SentView userId={String(user.id)} userRole="admin" />
+        )}
+
+        {/* Trash view */}
+        {viewMode === 'trash' && user && (
+          <TrashView userId={String(user.id)} userRole="admin" />
         )}
 
         {/* All messages view (original) */}
