@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 
 interface Grade {
-  record_id: number; tutor_id: string; tutor_name: string; student_name: string; course_name: string;
+  record_id: number; tutor_id: string; tutor_name: string; student_id: string; student_name: string; course_name: string;
   month: string; year: string; punctuality: number; attentiveness: number;
   engagement: number; homework: number; test_score: number; remarks: string; status: string;
   timestamp?: string;
