@@ -76,11 +76,29 @@ function resolveSender(row: Message): string {
 }
 
 function buildReplyTarget(msg: Message): ReplyTarget {
-  const senderRole = ((msg.role || msg.user_role || '') as string).toLowerCase() as MsgType;
+  const rawRole = ((msg.role || msg.user_role || '') as string).toLowerCase();
   const senderName = resolveSender(msg);
   const senderEmail = msg.sender_email || '';
-  const targetTab: MsgType = (['admin', 'tutor', 'student', 'parent'] as MsgType[]).includes(senderRole)
-    ? senderRole : 'admin';
+
+  // Map legacy WordPress roles (from CSV imports) to our role types
+  const legacyRoleMap: Record<string, MsgType> = {
+    wdm_instructor: 'tutor',
+    instructor: 'tutor',
+    subscriber: 'student',
+    wdm_student: 'student',
+    administrator: 'admin',
+  };
+  let senderRole: MsgType = (legacyRoleMap[rawRole] || rawRole) as MsgType;
+
+  // If role is still unrecognized, infer from available ID/name fields on the message
+  if (!(['admin', 'tutor', 'student', 'parent'] as MsgType[]).includes(senderRole)) {
+    if (msg.tutor_id || msg.tutor_name || msg.sender_tutor_id) senderRole = 'tutor';
+    else if (msg.student_id || msg.sender_student_id) senderRole = 'student';
+    else if (msg.parent_id || msg.sender_parent_id) senderRole = 'parent';
+    else senderRole = 'admin';
+  }
+
+  const targetTab: MsgType = senderRole;
 
   let extraFields: Record<string, string> = {};
   if (targetTab === 'tutor') {

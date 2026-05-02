@@ -80,21 +80,27 @@ export async function POST(request: NextRequest) {
     }
 
     let recipientTutorId: string | null = d.recipient_tutor_id || null;
-    // Always prefer users.user_id string (e.g. 'USR-xxx') as recipient_tutor_id when
-    // recipient_sender_user_id (numeric users.id) is available. This allows the tutor
-    // inbox GET to match directly without relying on the fragile tutors.user_id FK.
+    // Resolve recipient_tutor_id to users.user_id string when recipient_sender_user_id is set.
+    // Supports both new numeric users.id and legacy WordPress username format.
     if (d.recipient_sender_user_id) {
       const raw = String(d.recipient_sender_user_id).trim();
       const numericId = Number(raw);
       if (!isNaN(numericId) && numericId > 0) {
+        // New-style: numeric users.id → resolve to user_id string
         const uRow = await queryOne<{ user_id: string }>('SELECT user_id FROM users WHERE id = $1', [numericId]);
         if (uRow?.user_id) {
           recipientTutorId = uRow.user_id;
         } else if (!recipientTutorId) {
-          // Fallback: look up via tutors table FK
           const tRow = await queryOne<{ tutor_id: string }>('SELECT tutor_id FROM tutors WHERE user_id = $1', [numericId]);
           recipientTutorId = tRow?.tutor_id ? String(tRow.tutor_id) : null;
         }
+      } else if (raw) {
+        // Legacy: WordPress username → resolve to users.user_id string
+        const uRow = await queryOne<{ user_id: string }>(
+          'SELECT user_id FROM users WHERE username = $1 OR user_id = $1',
+          [raw]
+        );
+        if (uRow?.user_id) recipientTutorId = uRow.user_id;
       }
     }
 

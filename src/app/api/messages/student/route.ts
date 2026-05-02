@@ -80,15 +80,21 @@ export async function POST(request: NextRequest) {
       const raw = String(d.recipient_sender_user_id).trim();
       const numericRecipientId = Number(raw);
       if (!isNaN(numericRecipientId) && numericRecipientId > 0) {
-        // Prefer the user_id string for direct inbox matching
+        // New-style: numeric users.id → resolve to user_id string
         const uRow = await queryOne<{ user_id: string }>('SELECT user_id FROM users WHERE id = $1', [numericRecipientId]);
         if (uRow?.user_id) {
           resolvedRecipientStudentId = uRow.user_id;
         } else if (!resolvedRecipientStudentId) {
-          // Fallback: try to resolve via students table
           const sRow = await queryOne<{ student_id: string }>('SELECT student_id FROM students WHERE user_id = $1', [numericRecipientId]);
           resolvedRecipientStudentId = sRow?.student_id ? String(sRow.student_id) : null;
         }
+      } else if (raw) {
+        // Legacy: WordPress username → resolve to users.user_id string
+        const uRow = await queryOne<{ user_id: string }>(
+          'SELECT user_id FROM users WHERE username = $1 OR user_id = $1',
+          [raw]
+        );
+        if (uRow?.user_id) resolvedRecipientStudentId = uRow.user_id;
       }
     }
 
