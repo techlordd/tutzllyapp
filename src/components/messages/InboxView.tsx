@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import FormField, { Input, Textarea } from '@/components/ui/FormField';
 import { Eye, Send, CornerUpLeft } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 type MsgType = 'admin' | 'parent' | 'student' | 'tutor';
@@ -161,7 +161,7 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
 
   const columns = [
     { key: 'message_date', label: 'Date', sortable: true, render: (v: unknown) => formatDate(v as string) },
-    { key: 'message_time', label: 'Time' },
+    { key: 'message_time', label: 'Time', render: (v: unknown) => formatTime(v as string) },
     { key: 'sender', label: 'From', sortable: true, render: (_v: unknown, row: Message) => (
       <span className={row.status === 'unread' ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}>
         {resolveSender(row)}
@@ -251,7 +251,7 @@ export default function InboxView({ fetchUrl, currentUser, messageType }: InboxV
                 <div><span className="text-gray-400">From:</span> <span className="text-gray-800 font-medium">{resolveSender(selected)}</span></div>
                 <div><span className="text-gray-400">Date:</span> <span className="text-gray-700">{formatDate(selected.message_date)}</span></div>
                 {selected.message_time && (
-                  <div><span className="text-gray-400">Time:</span> <span className="text-gray-700">{selected.message_time}</span></div>
+                  <div><span className="text-gray-400">Time:</span> <span className="text-gray-700">{formatTime(selected.message_time)}</span></div>
                 )}
               </div>
             </div>

@@ -5,7 +5,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { statusBadge } from '@/components/ui/Badge';
 import { Eye } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface SentMessage {
@@ -44,7 +44,7 @@ export default function SentView({ userId, userRole }: SentViewProps) {
 
   const columns = [
     { key: 'message_date', label: 'Date', sortable: true, render: (v: unknown) => formatDate(v as string) },
-    { key: 'message_time', label: 'Time' },
+    { key: 'message_time', label: 'Time', render: (v: unknown) => formatTime(v as string) },
     { key: 'recipient_name', label: 'To', sortable: true, render: (v: unknown) => (
       <span className="font-medium text-gray-800">{v as string}</span>
     )},
@@ -81,7 +81,7 @@ export default function SentView({ userId, userRole }: SentViewProps) {
                 <div><span className="text-gray-400">To:</span> <span className="text-gray-800 font-medium capitalize">{selected.recipient_name}</span></div>
                 <div><span className="text-gray-400">Date:</span> <span className="text-gray-700">{formatDate(selected.message_date)}</span></div>
                 {selected.message_time && (
-                  <div><span className="text-gray-400">Time:</span> <span className="text-gray-700">{selected.message_time}</span></div>
+                  <div><span className="text-gray-400">Time:</span> <span className="text-gray-700">{formatTime(selected.message_time)}</span></div>
                 )}
                 <div>
                   <span className="text-gray-400">Sent to:</span>{' '}
