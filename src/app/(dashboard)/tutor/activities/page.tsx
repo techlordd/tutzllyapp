@@ -164,9 +164,9 @@ export default function TutorActivitiesPage() {
 
   const columns = [
     { key: 'class_activity_date', label: 'Date', sortable: true, render: (v: unknown) => <span className="text-gray-800">{formatDate(v as string)}</span> },
-    { key: 'class_activity_time', label: 'Time', render: (v: unknown) => <span className="text-blue-500 font-medium">{formatTime(v as string)}</span> },
-    { key: 'student_name', label: 'Student Name', sortable: true, render: (v: unknown) => <span className="text-blue-500 font-medium">{v as string || '—'}</span> },
-    { key: 'course_name', label: 'Course ID', render: (_: unknown, row: Activity) => <span className="text-blue-500 font-medium">{(row as Activity & { course_code?: string }).course_code || row.course_name || '—'}</span> },
+    { key: 'class_activity_time', label: 'Time', render: (v: unknown) => <span className="text-gray-800 font-medium">{formatTime(v as string)}</span> },
+    { key: 'student_name', label: 'Student Name', sortable: true, render: (v: unknown) => <span className="text-gray-800 font-medium">{v as string || '—'}</span> },
+    { key: 'course_name', label: 'Course ID', render: (_: unknown, row: Activity) => <span className="text-gray-800 font-medium">{(row as Activity & { course_code?: string }).course_code || row.course_name || '—'}</span> },
     { key: 'topic_taught', label: 'Topic Taught', render: (v: unknown) => <span className="text-gray-700">{v as string || '—'}</span> },
     { key: 'record_id', label: '', render: (_: unknown, row: Activity) => (
       <button
