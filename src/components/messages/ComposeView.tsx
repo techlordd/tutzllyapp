@@ -196,6 +196,80 @@ export default function ComposeView({ currentUser, sentUrl }: ComposeViewProps) 
             </Select>
           </FormField>
 
+          {/* Recipient search — shown for all non-admin targets */}
+          {to !== 'admin' && (
+            <FormField label="Recipient" required>
+              <div className="relative" ref={dropdownRef}>
+                {selectedRecipient ? (
+                  /* Selected pill */
+                  <div className="flex items-center gap-2 px-3 py-2 border border-blue-300 bg-blue-50 rounded-lg">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-600 shrink-0">
+                      <User size={14} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{selectedRecipient.name}</p>
+                      {selectedRecipient.email && (
+                        <p className="text-xs text-gray-500 truncate">{selectedRecipient.email}</p>
+                      )}
+                    </div>
+                    <button type="button" onClick={clearRecipient} className="p-1 rounded hover:bg-blue-100 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  /* Search input */
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                      {searching ? (
+                        <span className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin block" />
+                      ) : (
+                        <Search size={15} />
+                      )}
+                    </span>
+                    <input
+                      type="text"
+                      value={recipientQuery}
+                      onChange={e => handleRecipientInput(e.target.value)}
+                      onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
+                      placeholder={`Search ${to} by name…`}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      autoComplete="off"
+                    />
+                  </div>
+                )}
+
+                {/* Dropdown suggestions */}
+                {showDropdown && suggestions.length > 0 && (
+                  <ul className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                    {suggestions.map(r => (
+                      <li key={r.id}>
+                        <button
+                          type="button"
+                          onMouseDown={() => handleSelectRecipient(r)}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 text-left transition-colors"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-500 shrink-0">
+                            <User size={14} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{r.name}</p>
+                            <p className="text-xs text-gray-400 truncate">{r.email || r.subtext}</p>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {showDropdown && recipientQuery.trim().length > 0 && suggestions.length === 0 && !searching && (
+                  <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 text-sm text-gray-500">
+                    No {to}s found matching &ldquo;{recipientQuery}&rdquo;
+                  </div>
+                )}
+              </div>
+            </FormField>
+          )}
+
           <FormField label="Subject" required>
             <Input
               value={form.subject}

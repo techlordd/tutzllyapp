@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuthStore } from '@/store/authStore';
-import { User, Lock, Save, Eye, EyeOff, MapPin, UserCircle } from 'lucide-react';
+import { User, Lock, Save, Eye, EyeOff, MapPin, UserCircle, Camera, Briefcase } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type ProfileData = Record<string, string | null | undefined>;
@@ -26,6 +26,8 @@ export default function ProfilePage() {
   const [confirmPw, setConfirmPw] = useState('');
   const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false });
   const [changingPw, setChangingPw] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('/api/profile')
@@ -64,6 +66,22 @@ export default function ProfilePage() {
       toast.success('Profile updated successfully');
     } catch { toast.error('Network error'); }
     finally { setSaving(false); }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/profile/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Upload failed'); return; }
+      setForm(prev => ({ ...prev, profile_image: data.url }));
+      toast.success('Photo updated!');
+    } catch { toast.error('Upload failed'); }
+    finally { setUploadingPhoto(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
   };
 
   const handlePasswordChange = async () => {
@@ -197,8 +215,32 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-blue-600 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 shadow-md">
-              {initials}
+            {/* Clickable avatar */}
+            <div className="relative flex-shrink-0 group">
+              <div className="w-20 h-20 rounded-2xl bg-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-md overflow-hidden">
+                {val('profile_image')
+                  ? <img src={val('profile_image')} alt="Profile" className="w-full h-full object-cover" />
+                  : initials
+                }
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              >
+                {uploadingPhoto
+                  ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  : <Camera size={20} className="text-white" />
+                }
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-bold text-gray-900 truncate">{displayName || 'My Profile'}</h2>
@@ -239,6 +281,25 @@ export default function ProfilePage() {
                 <Field label="Date of Birth" fieldKey="date_of_birth" type="date" />
                 <Field label="Email" fieldKey="email" readOnly />
               </div>
+
+              {/* Linked children — read-only */}
+              {([1,2,3,4,5] as const).some(i => val(`student${i}`)) && (
+                <div>
+                  <SectionHeading icon={UserCircle} label="Linked Children" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {([1,2,3,4,5] as const).filter(i => val(`student${i}`)).map(i => (
+                      <div key={i} className="flex items-center gap-2 px-3 py-2 bg-purple-50 border border-purple-100 rounded-xl">
+                        <span className="w-5 h-5 rounded-full bg-purple-200 text-purple-700 text-xs font-bold flex items-center justify-center shrink-0">{i}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{val(`student${i}`)}</p>
+                          {val(`student_id${i}`) && <p className="text-xs text-gray-400">{val(`student_id${i}`)}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <AddressFields />
               <BioField />
             </div>
@@ -263,6 +324,17 @@ export default function ProfilePage() {
                     <Field label="Mother's Email" fieldKey="mothers_email" type="email" />
                     <Field label="Father's Name" fieldKey="fathers_name" />
                     <Field label="Father's Email" fieldKey="fathers_email" type="email" />
+                  </div>
+                </div>
+              )}
+
+              {role === 'tutor' && (
+                <div>
+                  <SectionHeading icon={Briefcase} label="Pay Information" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Field label="Pay Category" fieldKey="pay_category" readOnly />
+                    <Field label="Salary" fieldKey="salary" readOnly />
+                    <Field label="Pay Rate / Hour" fieldKey="payrate_per_hour" readOnly />
                   </div>
                 </div>
               )}

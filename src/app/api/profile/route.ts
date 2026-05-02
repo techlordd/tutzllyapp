@@ -74,8 +74,8 @@ export async function PUT(request: NextRequest) {
          mothers_name=$8, mothers_email=$9, fathers_name=$10, fathers_email=$11,
          address=$12, address_line_1=$13, address_line_2=$14, address_city=$15,
          address_state_province=$16, address_zip_postal=$17, address_country=$18,
-         short_bio=$19, last_updated=NOW()
-         WHERE user_id=$20 AND entry_status != 'deleted' RETURNING *`,
+         short_bio=$19, profile_image=COALESCE($20, profile_image), last_updated=NOW()
+         WHERE user_id=$21 AND entry_status != 'deleted' RETURNING *`,
         [data.firstname || null, data.surname || null, data.phone_no || null, data.sex || null,
          data.date_of_birth || null, data.grade || null, data.school || null,
          data.mothers_name || null, data.mothers_email || null,
@@ -83,7 +83,7 @@ export async function PUT(request: NextRequest) {
          data.address || null, data.address_line_1 || null, data.address_line_2 || null,
          data.address_city || null, data.address_state_province || null,
          data.address_zip_postal || null, data.address_country || null,
-         data.short_bio || null, userId]
+         data.short_bio || null, data.profile_image || null, userId]
       );
     } else if (role === 'tutor') {
       profile = await queryOne(
@@ -92,13 +92,13 @@ export async function PUT(request: NextRequest) {
          phone_no=$3, sex=$4, date_of_birth=$5,
          address=$6, address_line_1=$7, address_line_2=$8, address_city=$9,
          address_state_province=$10, address_zip_postal=$11, address_country=$12,
-         short_bio=$13, last_updated=NOW()
-         WHERE user_id=$14 AND entry_status != 'deleted' RETURNING *`,
+         short_bio=$13, profile_image=COALESCE($14, profile_image), last_updated=NOW()
+         WHERE user_id=$15 AND entry_status != 'deleted' RETURNING *`,
         [data.firstname || null, data.surname || null, data.phone_no || null, data.sex || null,
          data.date_of_birth || null, data.address || null, data.address_line_1 || null,
          data.address_line_2 || null, data.address_city || null,
          data.address_state_province || null, data.address_zip_postal || null,
-         data.address_country || null, data.short_bio || null, userId]
+         data.address_country || null, data.short_bio || null, data.profile_image || null, userId]
       );
     } else if (role === 'parent') {
       profile = await queryOne(
@@ -107,14 +107,14 @@ export async function PUT(request: NextRequest) {
          phone_no=$3, sex=$4, date_of_birth=$5,
          address=$6, address_line_1=$7, address_line_2=$8, address_city=$9,
          address_state_province=$10, address_zip_postal=$11, address_country=$12,
-         short_bio=$13, last_updated=NOW()
-         WHERE user_id=$14 AND entry_status != 'deleted' RETURNING *`,
+         short_bio=$13, profile_image=COALESCE($14, profile_image), last_updated=NOW()
+         WHERE user_id=$15 AND entry_status != 'deleted' RETURNING *`,
         [data.full_name_first_name || null, data.full_name_last_name || null,
          data.phone_no || null, data.sex || null, data.date_of_birth || null,
          data.address || null, data.address_line_1 || null, data.address_line_2 || null,
          data.address_city || null, data.address_state_province || null,
          data.address_zip_postal || null, data.address_country || null,
-         data.short_bio || null, userId]
+         data.short_bio || null, data.profile_image || null, userId]
       );
     } else {
       profile = await queryOne(
