@@ -96,6 +96,16 @@ export async function GET(request: NextRequest) {
         )
       : [];
 
+    // Last 5 recent messages in each table (by timestamp) regardless of sender/recipient
+    const latestTutor = await query(
+      `SELECT record_id, timestamp, role, sender, user_id, recipient_tutor_id, recipient_tutor_name, subject, academy_id
+       FROM messages_tutor ORDER BY timestamp DESC LIMIT 5`
+    );
+    const latestStudent = await query(
+      `SELECT record_id, timestamp, role, sender, user_id, recipient_id_student, recipient_name_student, subject, academy_id
+       FROM messages_student ORDER BY timestamp DESC LIMIT 5`
+    );
+
     return NextResponse.json({
       queried_user_id: userId,
       user_row: userRow,
@@ -105,6 +115,8 @@ export async function GET(request: NextRequest) {
       messages_student_as_recipient: recentStudentMsgs,
       messages_tutor_sent_by_user: sentTutor,
       messages_student_sent_by_user: sentStudent,
+      latest_5_messages_tutor: latestTutor,
+      latest_5_messages_student: latestStudent,
     });
   } catch (error) {
     console.error('[debug/messages]', error);

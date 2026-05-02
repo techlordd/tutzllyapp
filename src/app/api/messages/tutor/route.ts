@@ -134,8 +134,8 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
+    console.error('[messages/tutor POST]', error);
+    return NextResponse.json({ error: 'Failed to send message', detail: String(error) }, { status: 500 });
   }
 }
 
